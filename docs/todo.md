@@ -67,7 +67,28 @@
 
 - A creator can build a deck from an article and publish it.
 
-### Milestone F - Study Engine (SRS) + Daily Review UX
+### Milestone F - OAuth + PDS Record Publishing
+
+#### Deliverables
+
+- OAuth 2.1 client flow (PKCE + DPoP)
+    - client_metadata.json endpoint
+    - handle/DID resolution
+    - token refresh
+- Record publishing to user's PDS
+    - putRecord for decks, cards, notes
+    - blob uploads for media attachments
+    - AT-URI generation for cross-references
+
+#### Acceptance
+
+- A user can authenticate via OAuth, create a deck, and see it in their PDS repository.
+
+#### Notes
+
+- See [docs/at.md](at.md) for full AT Protocol integration research.
+
+### Milestone G - Study Engine (SRS) + Daily Review UX
 
 #### Deliverables
 
@@ -88,7 +109,7 @@
 
 - SM-2 reference behavior is well documented; start there and iterate.
 
-### Milestone G - Social Layer v1 (Follow, Feed, Fork, Comments)
+### Milestone H - Social Layer v1 (Follow, Feed, Fork, Comments)
 
 #### Deliverables
 
@@ -104,7 +125,7 @@
 
 - A user can follow a curator and see new published decks in a feed.
 
-### Milestone H - Search + Discovery + Taxonomy
+### Milestone I - Search + Discovery + Taxonomy
 
 #### Deliverables
 
@@ -119,7 +140,7 @@
 
 - Search is fast (<200ms typical) and results feel relevant.
 
-### Milestone I - Moderation + Abuse Resistance
+### Milestone J - Moderation + Abuse Resistance
 
 #### Deliverables
 
@@ -132,7 +153,7 @@
 
 - You can safely operate an open publishing surface.
 
-### Milestone J - Federation / ATProto Integration Pass
+### Milestone K - Federation / ATProto Integration Pass
 
 #### Deliverables
 
@@ -152,7 +173,7 @@
 - ATProto OAuth is the forward path; plan on it.
 - XRPC endpoint patterns and legacy session behavior exist, but treat them as transitional.
 
-### Milestone K - Reliability, Observability, Launch
+### Milestone L - Reliability, Observability, Launch
 
 #### Deliverables
 

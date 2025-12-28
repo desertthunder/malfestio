@@ -22,12 +22,12 @@ const Landing: Component = () => {
         <section class="max-w-7xl mx-auto px-6 py-24 md:py-32 border-b border-neutral-900">
           <div class="max-w-3xl">
             <h1 class="text-5xl md:text-7xl font-light tracking-tight mb-8 leading-[1.1]">
-              A Learning OS <br />
-              <span class="text-neutral-500">for daily study.</span>
+              Learning on <br />
+              <span class="text-neutral-500">the AT Protocol.</span>
             </h1>
             <p class="text-xl text-neutral-400 font-light mb-12 max-w-2xl leading-relaxed">
-              Master complex topics with spaced repetition, linked notes, and active recall. Designed for serious
-              learners who want to own their data.
+              Master complex topics with spaced repetition, linked notes, and active recall. Share your decks, notes,
+              and discoveries with the community.
             </p>
             <div class="flex gap-4">
               <A
@@ -66,7 +66,12 @@ const Landing: Component = () => {
 
       <footer class="border-t border-[#393939] py-12 bg-[#161616]">
         <div class="max-w-7xl mx-auto px-6 text-[#C6C6C6] text-xs font-light flex flex-col md:flex-row justify-between items-center gap-4">
-          <p>© 2024 Malfestio. All rights reserved.</p>
+          <p>
+            © 2025 Stormlight Labs. Made with ⚡️ by
+            <a href="https://desertthunder.dev" target="_blank" class="hover:text-[#F4F4F4] transition-colors">
+              Owais.
+            </a>
+          </p>
           <div class="flex gap-6">
             <a href="https://github.com/stormlightlabs" target="_blank" class="hover:text-[#F4F4F4] transition-colors">
               GitHub
