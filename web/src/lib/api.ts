@@ -26,5 +26,5 @@ export async function apiFetch(path: string, options: RequestInit = {}) {
 
 export const api = {
   get: (path: string) => apiFetch(path, { method: "GET" }),
-  post: (path: string, body: any) => apiFetch(path, { method: "POST", body: JSON.stringify(body) }),
+  post: (path: string, body: unknown) => apiFetch(path, { method: "POST", body: JSON.stringify(body) }),
 };

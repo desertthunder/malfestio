@@ -4,11 +4,13 @@ import { Show } from "solid-js";
 import { AppLayout } from "./components/layout/AppLayout";
 import { authStore } from "./lib/store";
 import DeckNew from "./pages/DeckNew";
+import DeckView from "./pages/DeckView";
 import Home from "./pages/Home";
 import Import from "./pages/Import";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import NoteNew from "./pages/NoteNew";
+import NotFound from "./pages/NotFound";
 
 const ProtectedRoute: Component<{ component: Component }> = (props) => {
   return (
@@ -24,16 +26,12 @@ const App: Component = () => {
   return (
     <Router>
       <Route path="/login" component={Login} />
-
-      {/* Protected Routes */}
       <Route path="/" component={() => <ProtectedRoute component={Home} />} />
       <Route path="/decks/new" component={() => <ProtectedRoute component={DeckNew} />} />
       <Route path="/notes/new" component={() => <ProtectedRoute component={NoteNew} />} />
+      <Route path="/decks/:id" component={() => <ProtectedRoute component={DeckView} />} />
       <Route path="/import" component={() => <ProtectedRoute component={Import} />} />
-
-      {
-        /* TODO: Catch-all or 404 */
-      }
+      <Route path="*" component={() => <ProtectedRoute component={NotFound} />} />
     </Router>
   );
 };

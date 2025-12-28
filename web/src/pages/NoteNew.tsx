@@ -1,4 +1,3 @@
-import { useNavigate } from "@solidjs/router";
 import { NoteEditor } from "../components/NoteEditor";
 
 const NoteNew = () => {

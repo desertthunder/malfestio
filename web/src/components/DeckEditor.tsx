@@ -1,17 +1,17 @@
 import { createSignal, For, Show } from "solid-js";
 import { api } from "../lib/api";
-import type { Visibility } from "../lib/store";
+import type { Card, CreateDeckPayload, Visibility } from "../lib/store";
 import { toast } from "../lib/toast";
 import { CardEditor } from "./CardEditor";
 import { Button } from "./ui/Button";
 
-export function DeckEditor(props: { onSave?: (data: any) => void }) {
+export function DeckEditor(props: { onSave?: (deck: CreateDeckPayload) => void }) {
   const [title, setTitle] = createSignal("");
   const [description, setDescription] = createSignal("");
   const [visibilityType, setVisibilityType] = createSignal<string>("Private");
   const [sharedWith, setSharedWith] = createSignal("");
 
-  const [cards, setCards] = createSignal<any[]>([]);
+  const [cards, setCards] = createSignal<Card[]>([]);
   const [showCardEditor, setShowCardEditor] = createSignal(false);
 
   const handleSubmit = async (e: Event) => {
@@ -32,14 +32,18 @@ export function DeckEditor(props: { onSave?: (data: any) => void }) {
     }
 
     try {
-      const _res = await api.post("/decks", payload);
-      toast.success("Deck created!");
+      const res = await api.post("/decks", payload);
+      if (res.ok) {
+        toast.success("Deck created!");
+      } else {
+        toast.error("Failed to create deck");
+      }
     } catch {
-      toast.error("Failed to create deck");
+      toast.error("Network error creating deck");
     }
   };
 
-  const addCard = (cardData: any) => {
+  const addCard = (cardData: Card) => {
     setCards([...cards(), cardData]);
     setShowCardEditor(false);
   };

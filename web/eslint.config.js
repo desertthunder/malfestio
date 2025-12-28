@@ -1,10 +1,12 @@
+// @ts-check
 import js from "@eslint/js";
-import * as tsParser from "@typescript-eslint/parser";
 import solid from "eslint-plugin-solid/configs/typescript";
-import globals from "globals";
+import tseslint from "typescript-eslint";
 
-export default [js.configs.recommended, {
-  files: ["**/*.{ts,tsx}"],
-  ...solid,
-  languageOptions: { parser: tsParser, globals: globals.browser },
-}];
+export default tseslint.config(
+  { ignores: ["dist/", "node_modules/", "coverage/"] },
+  js.configs.recommended,
+  tseslint.configs.recommended,
+  solid,
+  { rules: { "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }] } },
+);

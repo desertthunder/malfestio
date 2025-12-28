@@ -2,12 +2,13 @@ import { useNavigate } from "@solidjs/router";
 import type { Component } from "solid-js";
 import { DeckEditor } from "../components/DeckEditor";
 import { api } from "../lib/api";
+import type { Card, CreateDeckPayload } from "../lib/store";
 import { toast } from "../lib/toast";
 
 const DeckNew: Component = () => {
   const navigate = useNavigate();
 
-  const handleSave = async (data: any) => {
+  const handleSave = async (data: CreateDeckPayload) => {
     try {
       const { cards, ...deckPayload } = data;
       const res = await api.post("/decks", deckPayload);
@@ -17,7 +18,7 @@ const DeckNew: Component = () => {
 
         if (cards && cards.length > 0) {
           await Promise.all(
-            cards.map((c: any) =>
+            cards.map((c: Card) =>
               api.post("/cards", { deck_id: deck.id, front: c.front, back: c.back, media_url: c.mediaUrl })
             ),
           );

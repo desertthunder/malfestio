@@ -1,56 +1,63 @@
+/* eslint-disable solid/no-innerhtml */
 import rehypeExternalLinks from "rehype-external-links";
 import rehypeSanitize from "rehype-sanitize";
 import rehypeStringify from "rehype-stringify";
 import remarkParse from "remark-parse";
 import remarkRehype from "remark-rehype";
-import { createEffect, createSignal } from "solid-js";
+import { createEffect, createSignal, Show } from "solid-js";
 import { unified } from "unified";
 import { api } from "../lib/api";
 import { toast } from "../lib/toast";
 import { Button } from "./ui/Button";
 
-interface NoteEditorProps {
-  noteId?: string; // If editing existing
-  initialTitle?: string;
-  initialContent?: string;
-}
+type NoteEditorProps = { noteId?: string; initialTitle?: string; initialContent?: string };
 
 export function NoteEditor(props: NoteEditorProps) {
   const [title, setTitle] = createSignal(props.initialTitle || "");
   const [content, setContent] = createSignal(props.initialContent || "");
   const [preview, setPreview] = createSignal("");
-  const [tags, setTags] = createSignal(""); // Comma sep
-  const [visibility, setVisibility] = createSignal("Private");
+  const [tags, setTags] = createSignal("");
+  const [visibilityType, setVisibilityType] = createSignal<string>("Private");
+  const [sharedWith, setSharedWith] = createSignal("");
 
-  const processor = unified().use(remarkParse) // .use(remarkWikiLink) // Would need a plugin for wikilinks -> links
-    .use(remarkRehype).use(rehypeSanitize) // Safety first
-    .use(rehypeExternalLinks, { target: "_blank", rel: ["nofollow"] }).use(rehypeStringify);
+  const processor = unified().use(remarkParse).use(remarkRehype).use(rehypeSanitize).use(rehypeExternalLinks, {
+    target: "_blank",
+    rel: ["nofollow"],
+  }).use(rehypeStringify);
 
-  createEffect(async () => {
-    try {
-      const file = await processor.process(content());
-      setPreview(String(file));
-    } catch (e) {
-      console.error(e);
-    }
+  createEffect(() => {
+    processor.process(content()).then((file) => setPreview(String(file))).catch((e) => console.error(e));
   });
 
   const handleSubmit = async (e: Event) => {
     e.preventDefault();
     try {
+      let visibility;
+      if (visibilityType() === "SharedWith") {
+        visibility = { type: "SharedWith", content: sharedWith().split(",").map(s => s.trim()).filter(s => s) };
+      } else {
+        visibility = { type: visibilityType() };
+      }
+
       const payload = {
         title: title(),
         body: content(),
         tags: tags().split(",").map(t => t.trim()).filter(t => t),
-        visibility: { type: visibility() as "Private" | "Public" },
+        visibility,
       };
 
-      await api.post("/notes", payload);
-      toast.success("Note saved!");
-      if (!props.noteId) {
-        setTitle("");
-        setContent("");
-        setTags("");
+      const res = await api.post("/notes", payload);
+      if (res.ok) {
+        toast.success("Note saved!");
+        if (!props.noteId) {
+          setTitle("");
+          setContent("");
+          setTags("");
+          setVisibilityType("Private");
+          setSharedWith("");
+        }
+      } else {
+        toast.error("Failed to save note");
       }
     } catch (e) {
       console.error(e);
@@ -97,14 +104,28 @@ export function NoteEditor(props: NoteEditorProps) {
             <div>
               <label class="block text-sm font-medium text-gray-400 mb-1">Visibility</label>
               <select
-                value={visibility()}
-                onChange={e => setVisibility(e.target.value)}
+                value={visibilityType()}
+                onChange={e => setVisibilityType(e.target.value)}
                 class="w-full bg-gray-800 border-gray-700 text-white rounded p-2">
                 <option value="Private">Private</option>
+                <option value="Unlisted">Unlisted</option>
                 <option value="Public">Public</option>
+                <option value="SharedWith">Shared With...</option>
               </select>
             </div>
           </div>
+
+          <Show when={visibilityType() === "SharedWith"}>
+            <div>
+              <label class="block text-sm font-medium text-gray-400 mb-1">Share with DIDs (comma separated)</label>
+              <input
+                type="text"
+                value={sharedWith()}
+                onInput={(e) => setSharedWith(e.target.value)}
+                class="w-full bg-gray-800 border-gray-700 text-white rounded p-2"
+                placeholder="did:plc:..., did:plc:..." />
+            </div>
+          </Show>
 
           <Button type="submit">Save Note</Button>
         </form>
@@ -112,6 +133,7 @@ export function NoteEditor(props: NoteEditorProps) {
 
       <div class="space-y-4">
         <h2 class="text-xl font-semibold text-gray-300">Preview</h2>
+        {}
         <div
           class="prose prose-invert max-w-none bg-gray-900/50 p-6 rounded border border-gray-800 min-h-[500px]"
           innerHTML={preview()} />

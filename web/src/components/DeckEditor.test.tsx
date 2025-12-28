@@ -3,7 +3,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { api } from "../lib/api";
 import { DeckEditor } from "./DeckEditor";
 
-vi.mock("../lib/api", () => ({ api: { post: vi.fn() } }));
+vi.mock(
+  "../lib/api",
+  () => ({ api: { post: vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({}) }) } }),
+);
 
 describe("DeckEditor", () => {
   afterEach(cleanup);

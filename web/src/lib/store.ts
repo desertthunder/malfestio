@@ -46,6 +46,8 @@ export type Visibility = { type: "Private" } | { type: "Unlisted" } | { type: "P
   content: string[];
 };
 
+export type Card = { id?: string; front: string; back: string; mediaUrl?: string };
+
 export type Deck = {
   id: string;
   owner_did: string;
@@ -55,4 +57,12 @@ export type Deck = {
   visibility: Visibility;
   published_at?: string;
   fork_of?: string;
+};
+
+export type CreateDeckPayload = {
+  title: string;
+  description: string;
+  tags: string[];
+  visibility: Visibility;
+  cards: Card[];
 };

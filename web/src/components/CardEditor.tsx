@@ -1,4 +1,4 @@
-import { createSignal, Show } from "solid-js";
+import { createEffect, createSignal, Show } from "solid-js";
 import { Button } from "./ui/Button";
 
 type CardEditorProps = {
@@ -10,9 +10,15 @@ type CardEditorProps = {
 };
 
 export function CardEditor(props: CardEditorProps) {
-  const [front, setFront] = createSignal(props.front || "");
-  const [back, setBack] = createSignal(props.back || "");
-  const [mediaUrl, setMediaUrl] = createSignal(props.mediaUrl || "");
+  const [front, setFront] = createSignal("");
+  const [back, setBack] = createSignal("");
+  const [mediaUrl, setMediaUrl] = createSignal("");
+
+  createEffect(() => {
+    if (props.front) setFront(props.front);
+    if (props.back) setBack(props.back);
+    if (props.mediaUrl) setMediaUrl(props.mediaUrl);
+  });
 
   const handleSubmit = (e: Event) => {
     e.preventDefault();
