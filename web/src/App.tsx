@@ -27,6 +27,7 @@ const App: Component = () => {
     <Router>
       <Route path="/login" component={Login} />
       <Route path="/" component={() => <ProtectedRoute component={Home} />} />
+      <Route path="/decks" component={() => <ProtectedRoute component={Home} />} />
       <Route path="/decks/new" component={() => <ProtectedRoute component={DeckNew} />} />
       <Route path="/notes/new" component={() => <ProtectedRoute component={NoteNew} />} />
       <Route path="/decks/:id" component={() => <ProtectedRoute component={DeckView} />} />

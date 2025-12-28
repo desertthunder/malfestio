@@ -46,15 +46,19 @@ pub async fn start() -> malfestio_core::Result<()> {
         .route("/cards", post(api::card::create_card))
         .layer(axum_middleware::from_fn(middleware::auth::auth_middleware));
 
+    let optional_auth_routes = Router::new()
+        .route("/decks", get(api::deck::list_decks))
+        .route("/decks/{id}", get(api::deck::get_deck))
+        .route("/decks/{id}/cards", get(api::card::list_cards))
+        .route("/notes", get(api::note::list_notes))
+        .route("/notes/{id}", get(api::note::get_note))
+        .layer(axum_middleware::from_fn(middleware::auth::optional_auth_middleware));
+
     let app = Router::new()
         .route("/health", get(health_check))
         .route("/api/auth/login", post(api::auth::login))
-        .route("/api/decks", get(api::deck::list_decks))
-        .route("/api/decks/{id}", get(api::deck::get_deck))
-        .route("/api/decks/{id}/cards", get(api::card::list_cards))
-        .route("/api/notes", get(api::note::list_notes))
-        .route("/api/notes/{id}", get(api::note::get_note))
         .route("/api/import/article", post(api::importer::import_article))
+        .nest("/api", optional_auth_routes)
         .nest("/api", auth_routes)
         .layer(TraceLayer::new_for_http())
         .layer(

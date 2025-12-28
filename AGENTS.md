@@ -50,6 +50,9 @@ pnpm test
 
 # Type check without building
 pnpm check
+
+# Lint
+pnpm lint
 ```
 
 ## Project Structure
