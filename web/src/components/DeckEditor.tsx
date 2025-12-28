@@ -1,6 +1,7 @@
 import { createSignal, Show } from "solid-js";
 import { api } from "../lib/api";
 import type { Visibility } from "../lib/store";
+import { toast } from "../lib/toast";
 
 export function DeckEditor() {
   const [title, setTitle] = createSignal("");
@@ -20,9 +21,12 @@ export function DeckEditor() {
 
     const payload = { title: title(), description: description(), tags: [], visibility };
 
-    await api.post("/decks", payload);
-    // TODO: Navigate or show success
-    alert("Deck created!");
+    try {
+      await api.post("/decks", payload);
+      toast.success("Deck created!");
+    } catch {
+      toast.error("Failed to create deck");
+    }
   };
 
   return (
