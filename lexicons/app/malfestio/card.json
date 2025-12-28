@@ -1,0 +1,59 @@
+{
+  "lexicon": 1,
+  "id": "app.malfestio.card",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "A flashcard for spaced repetition study.",
+      "key": "tid",
+      "record": {
+        "type": "object",
+        "required": ["deckRef", "front", "back", "createdAt"],
+        "properties": {
+          "deckRef": {
+            "type": "string",
+            "format": "at-uri",
+            "description": "Reference to the deck this card belongs to."
+          },
+          "front": {
+            "type": "string",
+            "format": "markdown",
+            "maxLength": 10000,
+            "description": "Content on the front of the card."
+          },
+          "back": {
+            "type": "string",
+            "format": "markdown",
+            "maxLength": 10000,
+            "description": "Content on the back of the card."
+          },
+          "cardType": {
+            "type": "string",
+            "knownValues": ["basic", "cloze"],
+            "default": "basic",
+            "description": "Type of the card (e.g., basic or cloze deletion)."
+          },
+          "hints": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Optional hints to display before revealing the answer."
+          },
+          "media": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["uri", "kind"],
+              "properties": {
+                "uri": { "type": "string", "format": "uri" },
+                "kind": { "type": "string", "knownValues": ["image", "audio"] },
+                "alt": { "type": "string" }
+              }
+            },
+            "description": "Multimedia attachments for the card."
+          },
+          "createdAt": { "type": "string", "format": "datetime" }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "lexicon": 1,
+  "id": "app.malfestio.deck",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "A collection of flashcards and sources.",
+      "key": "tid",
+      "record": {
+        "type": "object",
+        "required": ["title", "createdAt"],
+        "properties": {
+          "title": { "type": "string", "maxLength": 300, "description": "Title of the deck." },
+          "description": { "type": "string", "maxLength": 3000, "description": "Description of the deck context." },
+          "tags": { "type": "array", "items": { "type": "string" }, "maxLength": 64 },
+          "cardRefs": {
+            "type": "array",
+            "items": { "type": "string", "format": "at-uri" },
+            "description": "Ordered list of references to cards in this deck."
+          },
+          "sourceRefs": {
+            "type": "array",
+            "items": { "type": "string", "format": "at-uri" },
+            "description": "References to source materials (articles, lectures) used in this deck."
+          },
+          "license": { "type": "string", "description": "License for the deck content." },
+          "createdAt": { "type": "string", "format": "datetime" }
+        }
+      }
+    }
+  }
+}

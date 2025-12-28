@@ -1,0 +1,21 @@
+{
+  "lexicon": 1,
+  "id": "app.malfestio.thread.comment",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "A comment on a deck, card, or note.",
+      "key": "tid",
+      "record": {
+        "type": "object",
+        "required": ["subjectRef", "body", "createdAt"],
+        "properties": {
+          "subjectRef": { "type": "string", "format": "at-uri", "description": "The root subject being commented on." },
+          "replyTo": { "type": "string", "format": "at-uri", "description": "The parent comment if this is a reply." },
+          "body": { "type": "string", "format": "markdown", "maxLength": 5000, "description": "The comment text." },
+          "createdAt": { "type": "string", "format": "datetime" }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "lexicon": 1,
+  "id": "app.malfestio.source.article",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "A reference to an article used as source material.",
+      "key": "tid",
+      "record": {
+        "type": "object",
+        "required": ["url", "title", "createdAt"],
+        "properties": {
+          "url": { "type": "string", "format": "uri", "description": "URL of the article." },
+          "title": { "type": "string", "description": "Title of the article." },
+          "author": { "type": "string", "description": "Author of the article." },
+          "publishedAt": {
+            "type": "string",
+            "format": "datetime",
+            "description": "Original publication date of the article."
+          },
+          "extractedTextRef": {
+            "type": "string",
+            "format": "at-uri",
+            "description": "Optional reference to a blob or record containing the extracted text."
+          },
+          "highlights": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "quote": { "type": "string", "maxLength": 5000 },
+                "start": { "type": "integer", "description": "Character start offset." },
+                "end": { "type": "integer", "description": "Character end offset." }
+              }
+            },
+            "description": "User highlights from the article."
+          },
+          "createdAt": { "type": "string", "format": "datetime" }
+        }
+      }
+    }
+  }
+}

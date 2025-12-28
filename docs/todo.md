@@ -37,39 +37,9 @@
 
 ## Roadmap Milestones
 
-### Milestone A - Product Spec + IA + UX Flows
+- **(Done) Milestone A**: Defined core user journeys, information architecture, and privacy rules for the platform.
 
-#### Deliverables
-
-- Core user journeys (5):
-    - Import source -> generate notes/cards -> publish deck
-    - Daily study -> review queue -> grade -> progress view
-    - Follow curator -> discover deck -> fork -> contribute improvements
-    - Discuss a card/deck -> moderation/report flow
-    - Lecture workflow -> outline -> timestamps -> linked cards
-- Information architecture + navigation map
-- "Share vs private" rules doc (what becomes public records; what never does)
-
-#### Acceptance
-
-- Every screen maps to a backend capability + a data model entity.
-
-### Milestone B - Lexicon Design Kit + Data Model Mapping
-
-#### Deliverables
-
-- Lexicon repo folder with:
-    - record schemas for note/card/deck/article/lecture/collection/comment
-    - schema evolution notes (what can change, what cannot)
-- Mapping doc:
-    - Public record (lexicon) <-> internal DB row(s)
-- Minimal "publish pipeline" spec (draft->published->deprecated)
-
-#### Acceptance
-
-- You can create a deck and serialize it into a stable record shape.
-- Follow Lexicon rules; prefer additive evolution.
-- Review Bluesky "custom schemas" patterns for compatibility expectations.
+- **(Done) Milestone B**: Designed AT Protocol Lexicons for all core types and documented data model mapping + publishing pipeline.
 
 ### Milestone C - Foundations: Repo, CI, Axum API Skeleton, Solid Shell
 

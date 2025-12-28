@@ -1,0 +1,38 @@
+{
+  "lexicon": 1,
+  "id": "app.malfestio.source.lecture",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "A reference to a lecture or video used as source material.",
+      "key": "tid",
+      "record": {
+        "type": "object",
+        "required": ["url", "title", "createdAt"],
+        "properties": {
+          "url": { "type": "string", "format": "uri", "description": "URL of the lecture (e.g., YouTube link)." },
+          "title": { "type": "string", "description": "Title of the lecture." },
+          "creator": { "type": "string", "description": "Creator or channel name." },
+          "timestamps": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["t", "label"],
+              "properties": {
+                "t": { "type": "integer", "description": "Time in seconds." },
+                "label": { "type": "string", "description": "Description of the timestamp." },
+                "noteRef": {
+                  "type": "string",
+                  "format": "at-uri",
+                  "description": "Optional reference to a note taken at this timestamp."
+                }
+              }
+            },
+            "description": "Important timestamps or chapters in the lecture."
+          },
+          "createdAt": { "type": "string", "format": "datetime" }
+        }
+      }
+    }
+  }
+}

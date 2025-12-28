@@ -1,0 +1,51 @@
+{
+  "lexicon": 1,
+  "id": "app.malfestio.note",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "A standalone note containing rich text, tags, and links.",
+      "key": "tid",
+      "record": {
+        "type": "object",
+        "required": ["title", "body", "createdAt"],
+        "properties": {
+          "title": { "type": "string", "maxLength": 300, "description": "Title of the note." },
+          "body": {
+            "type": "string",
+            "format": "markdown",
+            "maxLength": 100000,
+            "description": "The body content of the note in Markdown format."
+          },
+          "tags": {
+            "type": "array",
+            "items": { "type": "string" },
+            "maxLength": 64,
+            "description": "Tags associated with the note."
+          },
+          "links": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["uri"],
+              "properties": {
+                "uri": { "type": "string", "format": "uri" },
+                "title": { "type": "string" },
+                "type": { "type": "string", "description": "Type hint for the linked resource." }
+              }
+            },
+            "description": "External or internal links referenced in the note."
+          },
+          "createdAt": { "type": "string", "format": "datetime", "description": "Timestamp of creation." },
+          "updatedAt": { "type": "string", "format": "datetime", "description": "Timestamp of last update." },
+          "visibility": {
+            "type": "string",
+            "knownValues": ["private", "unlisted", "public"],
+            "default": "private",
+            "description": "Visibility setting for the note."
+          }
+        }
+      }
+    }
+  }
+}
