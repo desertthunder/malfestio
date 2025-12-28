@@ -4,5 +4,10 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   plugins: [solid(), tailwindcss()],
-  test: { environment: "jsdom", ui: false, watch: false },
+  test: {
+    environment: "jsdom",
+    ui: false,
+    watch: false,
+    server: { deps: { inline: ["@solidjs/router", "solid-js"] } },
+  },
 });

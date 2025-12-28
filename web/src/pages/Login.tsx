@@ -35,35 +35,36 @@ const Login: Component = () => {
   };
 
   return (
-    <div class="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-neutral-100 dark:bg-black p-4">
-      <div class="w-full max-w-md bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-8 shadow-sm">
-        <h1 class="text-3xl font-light text-neutral-900 dark:text-white mb-8 tracking-tight">Login</h1>
+    <div class="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-[#161616] p-4 font-sans text-[#F4F4F4]">
+      <div class="w-full max-w-md bg-[#262626] border border-[#393939] p-8 shadow-lg">
+        <h1 class="text-3xl font-light text-[#F4F4F4] mb-2 tracking-tight">Log in</h1>
+        <p class="text-[#C6C6C6] text-sm mb-8 font-light">Continue to Malfestio</p>
 
         <form onSubmit={handleLogin} class="space-y-6">
           {error() && (
-            <div class="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm p-4 border border-red-200 dark:border-red-900/50">
-              {error()}
+            <div class="bg-red-900/20 text-red-400 text-sm p-4 border-l-2 border-red-500 flex items-start gap-2">
+              <span class="font-bold">Error:</span> {error()}
             </div>
           )}
 
           <div class="space-y-2">
-            <label class="block text-xs font-semibold text-neutral-500 uppercase tracking-wider">Handle</label>
+            <label class="block text-xs font-semibold text-[#8D8D8D] uppercase tracking-wider">Handle</label>
             <input
               type="text"
               value={identifier()}
               onInput={(e) => setIdentifier(e.currentTarget.value)}
-              class="w-full bg-neutral-100 dark:bg-neutral-800 border-b border-neutral-400 dark:border-neutral-600 focus:border-blue-500 focus:outline-none p-3 transition-colors text-neutral-900 dark:text-white rounded-t-sm"
+              class="w-full bg-[#161616] border-b border-[#8D8D8D] focus:border-[#0F62FE] focus:outline-none p-4 transition-colors text-[#F4F4F4] placeholder-[#525252]"
               placeholder="user.bsky.social"
               required />
           </div>
 
           <div class="space-y-2">
-            <label class="block text-xs font-semibold text-neutral-500 uppercase tracking-wider">App Password</label>
+            <label class="block text-xs font-semibold text-[#8D8D8D] uppercase tracking-wider">App Password</label>
             <input
               type="password"
               value={password()}
               onInput={(e) => setPassword(e.currentTarget.value)}
-              class="w-full bg-neutral-100 dark:bg-neutral-800 border-b border-neutral-400 dark:border-neutral-600 focus:border-blue-500 focus:outline-none p-3 transition-colors text-neutral-900 dark:text-white rounded-t-sm"
+              class="w-full bg-[#161616] border-b border-[#8D8D8D] focus:border-[#0F62FE] focus:outline-none p-4 transition-colors text-[#F4F4F4] placeholder-[#525252]"
               placeholder="••••••••"
               required />
           </div>
@@ -72,15 +73,15 @@ const Login: Component = () => {
             <button
               type="submit"
               disabled={isLoading()}
-              class="w-full bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 hover:bg-neutral-800 dark:hover:bg-neutral-100 py-4 font-medium text-sm text-left px-6 flex justify-between items-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+              class="w-full bg-[#0F62FE] hover:bg-[#0353E9] text-white py-4 font-medium text-sm text-left px-4 flex justify-between items-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[#393939]">
               {isLoading() ? "Authenticating..." : "Continue"}
               <span class="text-lg">→</span>
             </button>
           </div>
         </form>
 
-        <div class="mt-8 text-xs text-neutral-500 dark:text-neutral-400">
-          <p class="mt-2">Use your BlueSky App Password, not your main password.</p>
+        <div class="mt-8 text-xs text-[#8D8D8D] border-t border-[#393939] pt-4">
+          <p>Use your BlueSky App Password, not your main password.</p>
         </div>
       </div>
     </div>

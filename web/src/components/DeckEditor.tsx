@@ -3,7 +3,7 @@ import { api } from "../lib/api";
 import type { Visibility } from "../lib/store";
 import { toast } from "../lib/toast";
 
-export function DeckEditor() {
+export function DeckEditor(props: { onSave?: (data: any) => void }) {
   const [title, setTitle] = createSignal("");
   const [description, setDescription] = createSignal("");
   const [visibilityType, setVisibilityType] = createSignal<string>("Private");
@@ -20,6 +20,11 @@ export function DeckEditor() {
     }
 
     const payload = { title: title(), description: description(), tags: [], visibility };
+
+    if (props.onSave) {
+      props.onSave(payload);
+      return;
+    }
 
     try {
       await api.post("/decks", payload);

@@ -10,7 +10,11 @@ export type AuthState = {
 };
 
 function createAuthStore() {
-  const [user, setUser] = createSignal<User | null>(null);
+  const [user, setUser] = createSignal<User | null>(
+    localStorage.getItem("did")
+      ? { did: localStorage.getItem("did")!, handle: localStorage.getItem("handle") || "" }
+      : null,
+  );
   const [accessJwt, setAccessJwt] = createSignal<string | null>(localStorage.getItem("accessJwt"));
   const [_refreshJwt, setRefreshJwt] = createSignal<string | null>(localStorage.getItem("refreshJwt"));
 
