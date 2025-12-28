@@ -1,20 +1,14 @@
-use malfestio_core::model::{Card, Deck, Note};
-use std::sync::{Arc, RwLock};
+use crate::db::DbPool;
+use std::sync::Arc;
 
 pub type SharedState = Arc<AppState>;
 
 pub struct AppState {
-    pub decks: RwLock<Vec<Deck>>,
-    pub notes: RwLock<Vec<Note>>,
-    pub cards: RwLock<Vec<Card>>,
+    pub pool: DbPool,
 }
 
 impl AppState {
-    pub fn new() -> SharedState {
-        Arc::new(Self {
-            decks: RwLock::new(Vec::new()),
-            notes: RwLock::new(Vec::new()),
-            cards: RwLock::new(Vec::new()),
-        })
+    pub fn new(pool: DbPool) -> SharedState {
+        Arc::new(Self { pool })
     }
 }

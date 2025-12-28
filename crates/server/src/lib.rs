@@ -1,4 +1,5 @@
 pub mod api;
+pub mod db;
 pub mod middleware;
 pub mod state;
 
@@ -28,7 +29,14 @@ pub async fn start() -> malfestio_core::Result<()> {
 
     tracing::info!("Starting Malfestio Server...");
 
-    let state = state::AppState::new();
+    let pool = db::create_pool().map_err(|e| {
+        tracing::error!("Failed to create database pool: {}", e);
+        malfestio_core::Error::Database(format!("Failed to create database pool: {}", e))
+    })?;
+
+    tracing::info!("Database connection pool created");
+
+    let state = state::AppState::new(pool);
 
     let auth_routes = Router::new()
         .route("/me", get(api::auth::me))
