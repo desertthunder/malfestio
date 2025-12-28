@@ -17,10 +17,10 @@ pub struct LoginResponse {
     handle: String,
 }
 
-/// TODO: Make PDS URL configurable
+/// TODO: Make PDS URL configurable (bluesky users can use their own PDS)
 pub async fn login(Json(payload): Json<LoginRequest>) -> impl IntoResponse {
     let client = reqwest::Client::new();
-    let pds_url = "https://bsky.social";
+    let pds_url = std::env::var("PDS_URL").unwrap_or_else(|_| "https://bsky.social".to_string());
 
     let resp = client
         .post(format!("{}/xrpc/com.atproto.server.createSession", pds_url))

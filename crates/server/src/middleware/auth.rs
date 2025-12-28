@@ -13,7 +13,7 @@ pub struct UserContext {
     pub handle: String,
 }
 
-/// TODO: Cache this or use signature verification for performance
+/// TODO: Cache or use signature verification for performance
 pub async fn auth_middleware(mut req: Request, next: Next) -> Response {
     let auth_header = req.headers().get(http::header::AUTHORIZATION);
 
@@ -29,7 +29,7 @@ pub async fn auth_middleware(mut req: Request, next: Next) -> Response {
     };
 
     let client = reqwest::Client::new();
-    let pds_url = "https://bsky.social";
+    let pds_url = std::env::var("PDS_URL").unwrap_or_else(|_| "https://bsky.social".to_string());
 
     let resp = client
         .get(format!("{}/xrpc/com.atproto.server.getSession", pds_url))

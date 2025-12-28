@@ -45,21 +45,9 @@
     - Monorepo layout, CI, Axum/Solid skeletons implemented.
     - Backend running on 8080, Frontend on 3000.
 
-### Milestone D - Identity + Permissions + Publishing Model
-
-#### Deliverables
-
-- Auth MVP:
-    - BlueSky App Passwords
-    - ATProto OAuth
-- Permission model:
-    - private / unlisted / public / shared-with
-- Publishing:
-    - draft editing, publish, update, deprecate, fork
-
-#### Acceptance
-
-- A user can publish a deck and another user can view it.
+- **(Done) Milestone D**: Identity + Permissions + Publishing Model.
+    - Auth MVP, Permission model (Private/Public/SharedWith), and basic Publishing flow implemented.
+    - Backend API and Frontend Editor updated with tests covering permissions and publishing.
 
 ### Milestone E - Content Authoring (Notes + Cards + Deck Builder)
 
@@ -177,63 +165,9 @@
 
 - You can run this as a real product with confidence.
 
-## "First Cut" Lexicon Fields (Draft)
+## Lexicon Definitions
 
-### Note (app.malfestio.note)
-
-- title: string
-- body: richtext/markdown string
-- tags: string[]
-- links: { uri, title?, type? }[]
-- createdAt, updatedAt
-- visibility: "private|unlisted|public" (consider leaving as string + documented values)
-
-### Card (app.malfestio.card)
-
-- deckRef: at-uri / stable ref
-- front: string (markdown)
-- back: string (markdown)
-- cardType: "basic|cloze" (optional)
-- hints?: string[]
-- media?: { kind, uri, alt? }[]
-
-### Deck (app.malfestio.deck)
-
-- title, description
-- tags
-- cardRefs: at-uri[]
-- sourceRefs: at-uri[] (articles/lectures)
-- license?: string (strongly recommended)
-
-### Article (app.malfestio.source.article)
-
-- url
-- title
-- author?
-- publishedAt?
-- extractedTextRef? (only if you store it)
-- highlights?: { quote, start?, end? }[]
-
-### Lecture (app.malfestio.source.lecture)
-
-- url
-- title
-- creator?
-- timestamps?: { t, label, noteRef? }[]
-
-### Collection/Path (app.malfestio.collection)
-
-- title, description
-- items: { type, ref, note? }[]
-- tags
-
-### Comment (app.malfestio.thread.comment)
-
-- subjectRef (deck/card/note ref)
-- body
-- replyTo?
-
-(Keep everything extensible; avoid hard commitments early.)
+Authoritative Lexicon definitions are located in the [`lexicons/`](../lexicons) directory.
 
 ## Open Questions (Parked Decisions)
 

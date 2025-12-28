@@ -21,6 +21,11 @@ pub struct CreateDeckRequest {
     visibility: Visibility,
 }
 
+#[derive(Deserialize)]
+pub struct PublishDeckRequest {
+    pub published: bool,
+}
+
 pub fn init_db() -> Db {
     Arc::new(RwLock::new(Vec::new()))
 }
@@ -40,6 +45,8 @@ pub async fn create_deck(
         description: payload.description,
         tags: payload.tags,
         visibility: payload.visibility,
+        published_at: None,
+        fork_of: None,
     };
 
     db.write().unwrap().push(new_deck.clone());
@@ -63,6 +70,12 @@ pub async fn list_decks(State(db): State<Db>, ctx: Option<axum::Extension<UserCo
             if d.visibility == Visibility::Public {
                 return true;
             }
+            if let Visibility::SharedWith(dids) = &d.visibility
+                && let Some(did) = &user_did
+                && dids.contains(did)
+            {
+                return true;
+            }
             false
         })
         .cloned()
@@ -84,6 +97,13 @@ pub async fn get_deck(
             return Json(deck).into_response();
         }
 
+        if let Visibility::SharedWith(dids) = &deck.visibility
+            && let Some(did) = &user_did
+            && dids.contains(did)
+        {
+            return Json(deck).into_response();
+        }
+
         if deck.visibility == Visibility::Unlisted {
             return Json(deck).into_response();
         }
@@ -91,4 +111,169 @@ pub async fn get_deck(
     }
 
     (StatusCode::NOT_FOUND, Json(json!({"error": "Deck not found"}))).into_response()
+}
+
+/// NOTE: Unpublishing sets visibility to Private and clears published_at
+pub async fn publish_deck(
+    State(db): State<Db>, ctx: Option<axum::Extension<UserContext>>, Path(id): Path<String>,
+    Json(payload): Json<PublishDeckRequest>,
+) -> impl IntoResponse {
+    let user = match ctx {
+        Some(axum::Extension(user)) => user,
+        None => return (StatusCode::UNAUTHORIZED, Json(json!({"error": "Unauthorized"}))).into_response(),
+    };
+
+    let mut decks = db.write().unwrap();
+    if let Some(deck) = decks.iter_mut().find(|d| d.id == id) {
+        if deck.owner_did != user.did {
+            return (StatusCode::FORBIDDEN, Json(json!({"error": "Only owner can publish"}))).into_response();
+        }
+
+        if payload.published {
+            deck.visibility = Visibility::Public;
+            deck.published_at = Some(chrono::Utc::now().to_rfc3339());
+        } else {
+            deck.visibility = Visibility::Private;
+            deck.published_at = None;
+        }
+        return Json(deck.clone()).into_response();
+    }
+
+    (StatusCode::NOT_FOUND, Json(json!({"error": "Deck not found"}))).into_response()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::extract::State;
+
+    fn mock_db() -> Db {
+        Arc::new(RwLock::new(vec![
+            Deck {
+                id: "deck-public".to_string(),
+                owner_did: "did:plc:owner".to_string(),
+                title: "Public Deck".to_string(),
+                description: "desc".to_string(),
+                tags: vec![],
+                visibility: Visibility::Public,
+                published_at: None,
+                fork_of: None,
+            },
+            Deck {
+                id: "deck-private".to_string(),
+                owner_did: "did:plc:owner".to_string(),
+                title: "Private Deck".to_string(),
+                description: "desc".to_string(),
+                tags: vec![],
+                visibility: Visibility::Private,
+                published_at: None,
+                fork_of: None,
+            },
+            Deck {
+                id: "deck-shared".to_string(),
+                owner_did: "did:plc:owner".to_string(),
+                title: "Shared Deck".to_string(),
+                description: "desc".to_string(),
+                tags: vec![],
+                visibility: Visibility::SharedWith(vec!["did:plc:friend".to_string()]),
+                published_at: None,
+                fork_of: None,
+            },
+        ]))
+    }
+
+    #[tokio::test]
+    async fn test_get_public_deck() {
+        let db = mock_db();
+        let response = get_deck(State(db), None, Path("deck-public".to_string()))
+            .await
+            .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn test_get_private_deck_owner() {
+        let db = mock_db();
+        let ctx = Some(Extension(UserContext {
+            did: "did:plc:owner".to_string(),
+            handle: "owner.bsky.social".to_string(),
+        }));
+
+        let response = get_deck(State(db), ctx, Path("deck-private".to_string()))
+            .await
+            .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn test_get_private_deck_stranger() {
+        let db = mock_db();
+        let ctx = Some(Extension(UserContext {
+            did: "did:plc:stranger".to_string(),
+            handle: "stranger.bsky.social".to_string(),
+        }));
+
+        let response = get_deck(State(db), ctx, Path("deck-private".to_string()))
+            .await
+            .into_response();
+
+        assert_eq!(response.status(), StatusCode::FORBIDDEN);
+    }
+
+    #[tokio::test]
+    async fn test_get_shared_deck_permitted() {
+        let db = mock_db();
+        let ctx = Some(Extension(UserContext {
+            did: "did:plc:friend".to_string(),
+            handle: "friend.bsky.social".to_string(),
+        }));
+
+        let response = get_deck(State(db), ctx, Path("deck-shared".to_string()))
+            .await
+            .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn test_get_shared_deck_unpermitted() {
+        let db = mock_db();
+        let ctx = Some(Extension(UserContext {
+            did: "did:plc:stranger".to_string(),
+            handle: "stranger.bsky.social".to_string(),
+        }));
+
+        let response = get_deck(State(db), ctx, Path("deck-shared".to_string()))
+            .await
+            .into_response();
+
+        assert_eq!(response.status(), StatusCode::FORBIDDEN);
+    }
+
+    #[tokio::test]
+    async fn test_publish_deck() {
+        let db = mock_db();
+        let ctx = Some(Extension(UserContext {
+            did: "did:plc:owner".to_string(),
+            handle: "owner.bsky.social".to_string(),
+        }));
+
+        let response = publish_deck(
+            State(db.clone()),
+            ctx,
+            Path("deck-private".to_string()),
+            Json(PublishDeckRequest { published: true }),
+        )
+        .await
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let decks = db.read().unwrap();
+        let deck = decks.iter().find(|d| d.id == "deck-private").unwrap();
+        assert_eq!(deck.visibility, Visibility::Public);
+        assert!(deck.published_at.is_some());
+    }
 }

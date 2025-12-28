@@ -15,10 +15,12 @@ pub struct Card {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(tag = "type", content = "content")]
 pub enum Visibility {
     Private,
     Unlisted,
     Public,
+    SharedWith(Vec<String>),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -29,4 +31,6 @@ pub struct Deck {
     pub description: String,
     pub tags: Vec<String>,
     pub visibility: Visibility,
+    pub published_at: Option<String>,
+    pub fork_of: Option<String>,
 }

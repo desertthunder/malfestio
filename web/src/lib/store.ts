@@ -36,3 +36,16 @@ function createAuthStore() {
 }
 
 export const authStore = createRoot(createAuthStore);
+
+export type Visibility = "Private" | "Unlisted" | "Public" | { SharedWith: string[] };
+
+export type Deck = {
+  id: string;
+  owner_did: string;
+  title: string;
+  description: string;
+  tags: string[];
+  visibility: Visibility;
+  published_at?: string;
+  fork_of?: string;
+};
