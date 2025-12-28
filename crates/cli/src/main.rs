@@ -27,6 +27,9 @@ enum Commands {
 
 #[tokio::main]
 async fn main() -> malfestio_core::Result<()> {
+    let _ = dotenvy::from_filename(".env.local");
+    let _ = dotenvy::dotenv();
+
     let cli = Cli::parse();
 
     match &cli.command {
@@ -49,7 +52,7 @@ async fn run_migrations(db_url: Option<&str>) -> malfestio_core::Result<()> {
             malfestio_core::Error::InvalidArgument("DB_URL not provided via --db-url or DB_URL env var".to_string())
         })?;
 
-    println!("🔌 Connecting to database...");
+    println!("Connecting to database...");
     let (mut client, connection) = tokio_postgres::connect(&db_url, NoTls)
         .await
         .map_err(|e| malfestio_core::Error::Database(format!("Failed to connect to database: {}", e)))?;

@@ -1,4 +1,5 @@
 use deadpool_postgres::{Config, Manager, ManagerConfig, Pool, RecyclingMethod};
+use std::time::Duration;
 use tokio_postgres::NoTls;
 
 pub type DbPool = Pool;
@@ -24,4 +25,34 @@ pub fn create_pool() -> Result<DbPool, Box<dyn std::error::Error>> {
     let mgr = Manager::from_config(config, NoTls, mgr_config);
 
     Ok(Pool::builder(mgr).max_size(16).build()?)
+}
+
+/// Retry wrapper for getting database connections with exponential backoff
+pub async fn get_connection_with_retry(
+    pool: &DbPool, max_retries: u32,
+) -> Result<deadpool_postgres::Object, deadpool_postgres::PoolError> {
+    let mut attempts = 0;
+    let mut delay = Duration::from_millis(100);
+
+    loop {
+        match pool.get().await {
+            Ok(conn) => return Ok(conn),
+            Err(e) if attempts < max_retries => {
+                attempts += 1;
+                tracing::warn!(
+                    "Failed to get database connection (attempt {}/{}): {}. Retrying in {:?}...",
+                    attempts,
+                    max_retries,
+                    e,
+                    delay
+                );
+                tokio::time::sleep(delay).await;
+                delay = delay.saturating_mul(2).min(Duration::from_secs(5));
+            }
+            Err(e) => {
+                tracing::error!("Failed to get database connection after {} attempts: {}", attempts, e);
+                return Err(e);
+            }
+        }
+    }
 }
