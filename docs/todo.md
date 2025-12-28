@@ -47,14 +47,14 @@
 
 - Monorepo layout (crates/server/, web/, lexicons/, crates/cli/, crates/core/)
     - core: domain logic, data models
-    - server: axum, postgres, search, eventing, auth
-    - cli: entry point for local dev, PDS sync
-    - web: solidjs app
+    - server: axum, postgres, search, eventing, auth (tokio, deadpool-postgres, tokio-postgres)
+    - cli: entry point for local dev, PDS sync, Db migrations (clap, owo-colors)
+    - web: vite, solidjs app, tailwindcss
 - CI: format/lint/test + schema validation + typegen
 - Axum:
     - health, auth stub, error model, request IDs, structured logging
 - Solid:
-    - tailwind, router shell, auth gate, initial pages + layout system
+    - router shell, auth gate, initial pages + layout system (IBM Carbon inspired design)
 
 #### Acceptance
 

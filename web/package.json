@@ -1,25 +1,20 @@
 {
-    "name": "malfestio-web",
-    "private": true,
-    "version": "0.0.0",
-    "type": "module",
-    "scripts": {
-        "dev": "vite",
-        "build": "tsc -b && vite build",
-        "preview": "vite preview"
-    },
-    "dependencies": {
-        "solid-js": "^1.9.10"
-    },
-    "devDependencies": {
-        "@types/node": "^24.10.1",
-        "typescript": "~5.9.3",
-        "vite": "npm:rolldown-vite@7.2.5",
-        "vite-plugin-solid": "^2.11.10"
-    },
-    "pnpm": {
-        "overrides": {
-            "vite": "npm:rolldown-vite@7.2.5"
-        }
-    }
+  "name": "malfestio-web",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": { "dev": "vite", "build": "tsc -b && vite build", "preview": "vite preview", "test": "vitest" },
+  "dependencies": { "@tailwindcss/vite": "^4.1.18", "solid-js": "^1.9.10", "tailwindcss": "^4.1.18" },
+  "devDependencies": {
+    "@solidjs/testing-library": "^0.8.10",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/node": "^24.10.1",
+    "jsdom": "^27.4.0",
+    "typescript": "~5.9.3",
+    "vite": "npm:rolldown-vite@7.2.5",
+    "vite-plugin-solid": "^2.11.10",
+    "vitest": "^4.0.16"
+  },
+  "pnpm": { "overrides": { "vite": "npm:rolldown-vite@7.2.5" } }
 }
