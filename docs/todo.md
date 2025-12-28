@@ -41,24 +41,9 @@
 
 - **(Done) Milestone B**: Designed AT Protocol Lexicons for all core types and documented data model mapping + publishing pipeline.
 
-### Milestone C - Foundations: Repo, CI, Axum API Skeleton, Solid Shell
-
-#### Deliverables
-
-- Monorepo layout (crates/server/, web/, lexicons/, crates/cli/, crates/core/)
-    - core: domain logic, data models
-    - server: axum, postgres, search, eventing, auth (tokio, deadpool-postgres, tokio-postgres)
-    - cli: entry point for local dev, PDS sync, Db migrations (clap, owo-colors)
-    - web: vite, solidjs app, tailwindcss
-- CI: format/lint/test + schema validation + typegen
-- Axum:
-    - health, auth stub, error model, request IDs, structured logging
-- Solid:
-    - router shell, auth gate, initial pages + layout system (IBM Carbon inspired design)
-
-#### Acceptance
-
-- End-to-end "hello world" for create/read deck locally.
+- **(Done) Milestone C**: Foundations: Repo, CI, Axum API Skeleton, Solid Shell.
+    - Monorepo layout, CI, Axum/Solid skeletons implemented.
+    - Backend running on 8080, Frontend on 3000.
 
 ### Milestone D - Identity + Permissions + Publishing Model
 

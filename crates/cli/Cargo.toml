@@ -4,3 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+clap = { version = "4.5.53", features = ["derive"] }
+malfestio-core = { version = "0.1.0", path = "../core" }
+malfestio-server = { version = "0.1.0", path = "../server" }
+tokio = { version = "1.48.0", features = ["full"] }
