@@ -11,10 +11,19 @@
     "check": "tsc --noEmit"
   },
   "dependencies": {
+    "@solidjs/meta": "^0.29.4",
     "@solidjs/router": "^0.15.4",
     "@tailwindcss/vite": "^4.1.18",
+    "clsx": "^2.1.1",
+    "rehype-external-links": "^3.0.0",
+    "rehype-sanitize": "^6.0.0",
+    "rehype-stringify": "^10.0.1",
+    "remark-parse": "^11.0.0",
+    "remark-rehype": "^11.1.2",
     "solid-js": "^1.9.10",
-    "tailwindcss": "^4.1.18"
+    "tailwind-merge": "^3.4.0",
+    "tailwindcss": "^4.1.18",
+    "unified": "^11.0.5"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",

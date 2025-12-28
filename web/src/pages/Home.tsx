@@ -2,15 +2,14 @@ import { A } from "@solidjs/router";
 import type { Component } from "solid-js";
 import { createResource, For, Show } from "solid-js";
 import { api } from "../lib/api";
-
-type DeckVisibility = "Private" | "Unlisted" | "Public";
+import type { Visibility } from "../lib/store";
 
 type Deck = {
   id: string;
   title: string;
   description: string;
   tags: string[];
-  visibility: DeckVisibility;
+  visibility: Visibility;
   owner_did: string;
 };
 
@@ -27,9 +26,9 @@ const DeckCard: Component<{ deck: Deck }> = (props) => {
         <h3 class="text-lg font-normal text-[#F4F4F4] group-hover:text-[#0F62FE] transition-colors line-clamp-1">
           {props.deck.title}
         </h3>
-        <Show when={props.deck.visibility !== "Public"}>
+        <Show when={props.deck.visibility.type !== "Public"}>
           <span class="text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 bg-[#393939] text-[#C6C6C6]">
-            {props.deck.visibility}
+            {props.deck.visibility.type}
           </span>
         </Show>
       </div>

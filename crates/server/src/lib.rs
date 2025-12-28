@@ -1,5 +1,6 @@
 pub mod api;
 pub mod middleware;
+pub mod state;
 
 use axum::http::Method;
 use axum::{
@@ -27,11 +28,13 @@ pub async fn start() -> malfestio_core::Result<()> {
 
     tracing::info!("Starting Malfestio Server...");
 
-    let db = api::deck::init_db();
+    let state = state::AppState::new();
 
     let auth_routes = Router::new()
         .route("/me", get(api::auth::me))
         .route("/decks", post(api::deck::create_deck))
+        .route("/notes", post(api::note::create_note))
+        .route("/cards", post(api::card::create_card))
         .layer(axum_middleware::from_fn(middleware::auth::auth_middleware));
 
     let app = Router::new()
@@ -39,6 +42,10 @@ pub async fn start() -> malfestio_core::Result<()> {
         .route("/api/auth/login", post(api::auth::login))
         .route("/api/decks", get(api::deck::list_decks))
         .route("/api/decks/{id}", get(api::deck::get_deck))
+        .route("/api/decks/{id}/cards", get(api::card::list_cards))
+        .route("/api/notes", get(api::note::list_notes))
+        .route("/api/notes/{id}", get(api::note::get_note))
+        .route("/api/import/article", post(api::importer::import_article))
         .nest("/api", auth_routes)
         .layer(TraceLayer::new_for_http())
         .layer(
@@ -47,7 +54,7 @@ pub async fn start() -> malfestio_core::Result<()> {
                 .allow_methods([Method::GET, Method::POST, Method::OPTIONS])
                 .allow_headers(Any),
         )
-        .with_state(db);
+        .with_state(state);
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 8080));
 

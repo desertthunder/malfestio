@@ -35,7 +35,7 @@ describe("DeckEditor", () => {
 
     expect(api.post).toHaveBeenCalledWith(
       "/decks",
-      expect.objectContaining({ title: "My Deck", visibility: "Private" }),
+      expect.objectContaining({ title: "My Deck", visibility: { type: "Private" } }),
     );
   });
 
@@ -55,7 +55,10 @@ describe("DeckEditor", () => {
 
     expect(api.post).toHaveBeenCalledWith(
       "/decks",
-      expect.objectContaining({ title: "Shared Deck", visibility: { SharedWith: ["did:plc:123", "did:plc:456"] } }),
+      expect.objectContaining({
+        title: "Shared Deck",
+        visibility: { type: "SharedWith", content: ["did:plc:123", "did:plc:456"] },
+      }),
     );
   });
 });

@@ -41,7 +41,10 @@ function createAuthStore() {
 
 export const authStore = createRoot(createAuthStore);
 
-export type Visibility = "Private" | "Unlisted" | "Public" | { SharedWith: string[] };
+export type Visibility = { type: "Private" } | { type: "Unlisted" } | { type: "Public" } | {
+  type: "SharedWith";
+  content: string[];
+};
 
 export type Deck = {
   id: string;

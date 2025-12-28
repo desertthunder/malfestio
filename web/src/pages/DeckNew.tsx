@@ -9,9 +9,20 @@ const DeckNew: Component = () => {
 
   const handleSave = async (data: any) => {
     try {
-      const res = await api.post("/decks", data);
+      const { cards, ...deckPayload } = data;
+      const res = await api.post("/decks", deckPayload);
+
       if (res.ok) {
         const deck = await res.json();
+
+        if (cards && cards.length > 0) {
+          await Promise.all(
+            cards.map((c: any) =>
+              api.post("/cards", { deck_id: deck.id, front: c.front, back: c.back, media_url: c.mediaUrl })
+            ),
+          );
+        }
+
         toast.success("Deck created successfully");
         navigate(`/decks/${deck.id}`);
       } else {
@@ -19,6 +30,7 @@ const DeckNew: Component = () => {
         toast.error(err.error || "Failed to create deck");
       }
     } catch (e) {
+      console.error(e);
       toast.error("Network error");
     }
   };

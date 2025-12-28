@@ -1,6 +1,6 @@
 import { authStore } from "./store";
 
-const API_BASE = "http://localhost:8080/api";
+const API_BASE = "/api";
 
 export async function apiFetch(path: string, options: RequestInit = {}) {
   const token = authStore.accessJwt();

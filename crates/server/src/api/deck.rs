@@ -1,4 +1,5 @@
 use crate::middleware::auth::UserContext;
+use crate::state::SharedState;
 
 use axum::{
     Json,
@@ -9,9 +10,6 @@ use axum::{
 use malfestio_core::model::{Deck, Visibility};
 use serde::Deserialize;
 use serde_json::json;
-use std::sync::{Arc, RwLock};
-
-type Db = Arc<RwLock<Vec<Deck>>>;
 
 #[derive(Deserialize)]
 pub struct CreateDeckRequest {
@@ -26,12 +24,8 @@ pub struct PublishDeckRequest {
     pub published: bool,
 }
 
-pub fn init_db() -> Db {
-    Arc::new(RwLock::new(Vec::new()))
-}
-
 pub async fn create_deck(
-    State(db): State<Db>, ctx: Option<axum::Extension<UserContext>>, Json(payload): Json<CreateDeckRequest>,
+    State(state): State<SharedState>, ctx: Option<axum::Extension<UserContext>>, Json(payload): Json<CreateDeckRequest>,
 ) -> impl IntoResponse {
     let user = match ctx {
         Some(axum::Extension(user)) => user,
@@ -49,15 +43,17 @@ pub async fn create_deck(
         fork_of: None,
     };
 
-    db.write().unwrap().push(new_deck.clone());
+    state.decks.write().unwrap().push(new_deck.clone());
 
     (StatusCode::CREATED, Json(new_deck)).into_response()
 }
 
-pub async fn list_decks(State(db): State<Db>, ctx: Option<axum::Extension<UserContext>>) -> impl IntoResponse {
+pub async fn list_decks(
+    State(state): State<SharedState>, ctx: Option<axum::Extension<UserContext>>,
+) -> impl IntoResponse {
     let user_did = ctx.map(|Extension(u)| u.did);
 
-    let decks = db.read().unwrap();
+    let decks = state.decks.read().unwrap();
 
     let visible_decks: Vec<Deck> = decks
         .iter()
@@ -85,10 +81,10 @@ pub async fn list_decks(State(db): State<Db>, ctx: Option<axum::Extension<UserCo
 }
 
 pub async fn get_deck(
-    State(db): State<Db>, ctx: Option<axum::Extension<UserContext>>, Path(id): Path<String>,
+    State(state): State<SharedState>, ctx: Option<axum::Extension<UserContext>>, Path(id): Path<String>,
 ) -> impl IntoResponse {
     let user_did = ctx.map(|Extension(u)| u.did);
-    let decks = db.read().unwrap();
+    let decks = state.decks.read().unwrap();
 
     if let Some(deck) = decks.iter().find(|d| d.id == id) {
         let is_owner = user_did.as_ref() == Some(&deck.owner_did);
@@ -115,7 +111,7 @@ pub async fn get_deck(
 
 /// NOTE: Unpublishing sets visibility to Private and clears published_at
 pub async fn publish_deck(
-    State(db): State<Db>, ctx: Option<axum::Extension<UserContext>>, Path(id): Path<String>,
+    State(state): State<SharedState>, ctx: Option<axum::Extension<UserContext>>, Path(id): Path<String>,
     Json(payload): Json<PublishDeckRequest>,
 ) -> impl IntoResponse {
     let user = match ctx {
@@ -123,7 +119,7 @@ pub async fn publish_deck(
         None => return (StatusCode::UNAUTHORIZED, Json(json!({"error": "Unauthorized"}))).into_response(),
     };
 
-    let mut decks = db.write().unwrap();
+    let mut decks = state.decks.write().unwrap();
     if let Some(deck) = decks.iter_mut().find(|d| d.id == id) {
         if deck.owner_did != user.did {
             return (StatusCode::FORBIDDEN, Json(json!({"error": "Only owner can publish"}))).into_response();
@@ -145,10 +141,13 @@ pub async fn publish_deck(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::state::AppState;
     use axum::extract::State;
 
-    fn mock_db() -> Db {
-        Arc::new(RwLock::new(vec![
+    fn mock_state() -> SharedState {
+        let state = AppState::new();
+        let mut decks = state.decks.write().unwrap();
+        *decks = vec![
             Deck {
                 id: "deck-public".to_string(),
                 owner_did: "did:plc:owner".to_string(),
@@ -179,13 +178,14 @@ mod tests {
                 published_at: None,
                 fork_of: None,
             },
-        ]))
+        ];
+        state.clone()
     }
 
     #[tokio::test]
     async fn test_get_public_deck() {
-        let db = mock_db();
-        let response = get_deck(State(db), None, Path("deck-public".to_string()))
+        let state = mock_state();
+        let response = get_deck(State(state), None, Path("deck-public".to_string()))
             .await
             .into_response();
 
@@ -194,13 +194,13 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_private_deck_owner() {
-        let db = mock_db();
+        let state = mock_state();
         let ctx = Some(Extension(UserContext {
             did: "did:plc:owner".to_string(),
             handle: "owner.bsky.social".to_string(),
         }));
 
-        let response = get_deck(State(db), ctx, Path("deck-private".to_string()))
+        let response = get_deck(State(state), ctx, Path("deck-private".to_string()))
             .await
             .into_response();
 
@@ -209,13 +209,13 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_private_deck_stranger() {
-        let db = mock_db();
+        let state = mock_state();
         let ctx = Some(Extension(UserContext {
             did: "did:plc:stranger".to_string(),
             handle: "stranger.bsky.social".to_string(),
         }));
 
-        let response = get_deck(State(db), ctx, Path("deck-private".to_string()))
+        let response = get_deck(State(state), ctx, Path("deck-private".to_string()))
             .await
             .into_response();
 
@@ -224,13 +224,13 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_shared_deck_permitted() {
-        let db = mock_db();
+        let state = mock_state();
         let ctx = Some(Extension(UserContext {
             did: "did:plc:friend".to_string(),
             handle: "friend.bsky.social".to_string(),
         }));
 
-        let response = get_deck(State(db), ctx, Path("deck-shared".to_string()))
+        let response = get_deck(State(state), ctx, Path("deck-shared".to_string()))
             .await
             .into_response();
 
@@ -239,13 +239,13 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_shared_deck_unpermitted() {
-        let db = mock_db();
+        let state = mock_state();
         let ctx = Some(Extension(UserContext {
             did: "did:plc:stranger".to_string(),
             handle: "stranger.bsky.social".to_string(),
         }));
 
-        let response = get_deck(State(db), ctx, Path("deck-shared".to_string()))
+        let response = get_deck(State(state), ctx, Path("deck-shared".to_string()))
             .await
             .into_response();
 
@@ -254,14 +254,14 @@ mod tests {
 
     #[tokio::test]
     async fn test_publish_deck() {
-        let db = mock_db();
+        let state = mock_state();
         let ctx = Some(Extension(UserContext {
             did: "did:plc:owner".to_string(),
             handle: "owner.bsky.social".to_string(),
         }));
 
         let response = publish_deck(
-            State(db.clone()),
+            State(state.clone()),
             ctx,
             Path("deck-private".to_string()),
             Json(PublishDeckRequest { published: true }),
@@ -271,7 +271,7 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::OK);
 
-        let decks = db.read().unwrap();
+        let decks = state.decks.read().unwrap();
         let deck = decks.iter().find(|d| d.id == "deck-private").unwrap();
         assert_eq!(deck.visibility, Visibility::Public);
         assert!(deck.published_at.is_some());

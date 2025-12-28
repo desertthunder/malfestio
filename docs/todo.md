@@ -55,11 +55,11 @@
 
 - Note editor (markdown + attachments + backlinks)
 - Card editor:
-    - basic front/back + cloze v1
-    - images/audio attachments (optional)
+    - basic front/back + cloze
+    - images/audio attachments
 - Deck builder:
     - tags, ordering, sections
-- Importers v1:
+- Importers:
     - article URL -> extracted snapshot + highlights
     - lecture URL -> outline + timestamps (manual entry initially)
 
@@ -71,7 +71,7 @@
 
 #### Deliverables
 
-- SRS scheduler v1 (SM-2 baseline)
+- SRS scheduler (SM-2 baseline)
     - grade 0–5, EF, interval, repetition count
 - Review queue generation rules
 - Study session UI:
