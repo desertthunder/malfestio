@@ -5,5 +5,5 @@ import solid from "eslint-plugin-solid/configs/typescript";
 export default [js.configs.recommended, {
   files: ["**/*.{ts,tsx}"],
   ...solid,
-  languageOptions: { parser: tsParser, parserOptions: { project: "./tsconfig.app.json" } },
+  languageOptions: { parser: tsParser, parserOptions: { project: "./tsconfig.app.json" }, globals: globals.browser },
 }];

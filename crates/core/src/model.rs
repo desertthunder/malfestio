@@ -14,9 +14,19 @@ pub struct Card {
     pub deck_ref: Option<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub enum Visibility {
+    Private,
+    Unlisted,
+    Public,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Deck {
+    pub id: String,
+    pub owner_did: String,
     pub title: String,
     pub description: String,
     pub tags: Vec<String>,
+    pub visibility: Visibility,
 }

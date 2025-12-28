@@ -1,37 +1,98 @@
+import { A } from "@solidjs/router";
 import type { Component } from "solid-js";
-import { Button } from "../components/ui/Button";
-import { Card } from "../components/ui/Card";
+import { createResource, For, Show } from "solid-js";
+import { api } from "../lib/api";
+
+type DeckVisibility = "Private" | "Unlisted" | "Public";
+
+type Deck = {
+  id: string;
+  title: string;
+  description: string;
+  tags: string[];
+  visibility: DeckVisibility;
+  owner_did: string;
+};
+
+const fetchDecks = async (): Promise<Deck[]> => {
+  const res = await api.get("/decks");
+  if (!res.ok) return [];
+  return res.json();
+};
+
+const DeckCard: Component<{ deck: Deck }> = (props) => {
+  return (
+    <div class="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-4 hover:border-blue-500 transition-colors group relative">
+      <div class="flex justify-between items-start mb-2">
+        <h3 class="text-lg font-normal text-neutral-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+          {props.deck.title}
+        </h3>
+        <Show when={props.deck.visibility !== "Public"}>
+          <span class="text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400">
+            {props.deck.visibility}
+          </span>
+        </Show>
+      </div>
+      <p class="text-sm text-neutral-500 dark:text-neutral-400 mb-6 line-clamp-2 min-h-[2.5em] font-light">
+        {props.deck.description}
+      </p>
+
+      <div class="flex items-center gap-2 mb-4 flex-wrap">
+        <For each={props.deck.tags}>
+          {(tag) => (
+            <span class="text-xs text-neutral-500 dark:text-neutral-400 bg-neutral-50 dark:bg-neutral-900/50 px-2 py-0.5 border border-neutral-100 dark:border-neutral-800">
+              #{tag}
+            </span>
+          )}
+        </For>
+      </div>
+
+      <div class="flex justify-end pt-4 border-t border-neutral-100 dark:border-neutral-800">
+        <A
+          href={`/decks/${props.deck.id}`}
+          class="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300">
+          View Deck →
+        </A>
+      </div>
+    </div>
+  );
+};
 
 const Home: Component = () => {
-  return (
-    <div class="space-y-8">
-      <section class="text-center py-16 space-y-6">
-        <h1 class="text-5xl font-extrabold tracking-tight text-white sm:text-6xl bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">
-          Learn Together
-        </h1>
-        <p class="text-xl text-gray-400 max-w-2xl mx-auto">
-          Malfestio is a social learning platform built on the AT Protocol.
-        </p>
-        <div class="flex items-center justify-center gap-4 pt-4">
-          <Button size="lg" variant="primary">Get Started</Button>
-          <Button size="lg" variant="ghost">Learn More</Button>
-        </div>
-      </section>
+  const [decks] = createResource(fetchDecks);
 
-      <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card title="Decks">
-          <p class="mb-4">Create and manage your flashcard decks. Import from articles and lectures.</p>
-          <Button variant="secondary" size="sm">View Decks</Button>
-        </Card>
-        <Card title="Review">
-          <p class="mb-4">Daily review sessions optimized by the SM-2 algorithm to maximize retention.</p>
-          <Button variant="secondary" size="sm">Start Review</Button>
-        </Card>
-        <Card title="Community">
-          <p class="mb-4">Discover shared decks and follow other learners in the network.</p>
-          <Button variant="secondary" size="sm">Explore</Button>
-        </Card>
-      </section>
+  return (
+    <div class="max-w-7xl mx-auto px-6 py-12">
+      <div class="flex justify-between items-end mb-12 border-b border-neutral-200 dark:border-neutral-800 pb-4">
+        <div>
+          <h1 class="text-4xl font-light text-neutral-900 dark:text-white tracking-tight mb-2">Library</h1>
+          <p class="text-neutral-500 dark:text-neutral-400 font-light">
+            Manage your study decks and discover new content.
+          </p>
+        </div>
+        <button class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 font-medium text-sm transition-colors flex items-center gap-2 shadow-sm">
+          <span>+</span> Create Deck
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <Show when={decks.loading}>
+          <div class="col-span-full h-32 flex items-center justify-center text-neutral-400 font-light">
+            Loading library...
+          </div>
+        </Show>
+
+        <Show when={!decks.loading && decks()?.length === 0}>
+          <div class="col-span-full py-16 text-center border border-dashed border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900/30">
+            <h3 class="text-lg font-medium text-neutral-900 dark:text-gray-100 mb-2">No decks found</h3>
+            <p class="text-sm text-neutral-500 max-w-sm mx-auto font-light">
+              Create your first deck to get started with spaced repetition learning.
+            </p>
+          </div>
+        </Show>
+
+        <For each={decks()}>{(deck) => <DeckCard deck={deck} />}</For>
+      </div>
     </div>
   );
 };

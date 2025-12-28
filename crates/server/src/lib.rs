@@ -1,12 +1,18 @@
+pub mod api;
+pub mod middleware;
+
+use axum::http::Method;
 use axum::{
     Json, Router,
     http::StatusCode,
+    middleware as axum_middleware,
     response::{IntoResponse, Response},
-    routing::get,
+    routing::{get, post},
 };
 use serde_json::json;
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
+use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -21,9 +27,28 @@ pub async fn start() -> malfestio_core::Result<()> {
 
     tracing::info!("Starting Malfestio Server...");
 
+    let db = api::deck::init_db();
+
+    let auth_routes = Router::new()
+        .route("/me", get(api::auth::me))
+        .route("/decks", post(api::deck::create_deck))
+        .layer(axum_middleware::from_fn(middleware::auth::auth_middleware));
+
     let app = Router::new()
         .route("/health", get(health_check))
-        .layer(TraceLayer::new_for_http());
+        .route("/api/auth/login", post(api::auth::login))
+        .route("/api/decks", get(api::deck::list_decks))
+        .route("/api/decks/{id}", get(api::deck::get_deck))
+        .nest("/api", auth_routes)
+        .layer(TraceLayer::new_for_http())
+        .layer(
+            CorsLayer::new()
+                .allow_origin(Any)
+                .allow_methods([Method::GET, Method::POST, Method::OPTIONS])
+                .allow_headers(Any),
+        )
+        .with_state(db);
+
     let addr = SocketAddr::from(([127, 0, 0, 1], 8080));
 
     tracing::info!("Listening on {}", addr);

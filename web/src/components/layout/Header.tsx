@@ -1,5 +1,12 @@
 import { A } from "@solidjs/router";
-import type { Component } from "solid-js";
+import { type Component, Show } from "solid-js";
+import { authStore } from "../../lib/store";
+
+const Login: Component = () => (
+  <A href="/login" class="px-4 py-2 bg-white text-gray-900 text-sm font-medium hover:bg-gray-100 transition-colors">
+    Login
+  </A>
+);
 
 export const Header: Component = () => {
   return (
@@ -12,8 +19,19 @@ export const Header: Component = () => {
         </nav>
       </div>
       <div class="flex items-center gap-4">
-        {/* Placeholder for Auth/User menu */}
-        <div class="w-8 h-8 rounded-full bg-gray-700" />
+        <Show when={authStore.user()} fallback={<Login />}>
+          <div class="flex items-center gap-3">
+            <span class="text-xs text-gray-400">{authStore.user()?.handle}</span>
+            <button
+              onClick={() => authStore.logout()}
+              class="text-xs text-red-400 hover:text-red-300 transition-colors">
+              Logout
+            </button>
+            <div class="w-8 h-8 rounded-full bg-blue-900/50 border border-blue-500/30 flex items-center justify-center text-blue-400 text-xs font-bold">
+              {authStore.user()?.handle.slice(0, 2).toUpperCase()}
+            </div>
+          </div>
+        </Show>
       </div>
     </header>
   );
