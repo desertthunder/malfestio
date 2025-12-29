@@ -1,6 +1,8 @@
 pub mod api;
 pub mod db;
 pub mod middleware;
+pub mod oauth;
+pub mod pds;
 pub mod repository;
 pub mod state;
 

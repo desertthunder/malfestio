@@ -84,10 +84,6 @@
 
 - A user can authenticate via OAuth, create a deck, and see it in their PDS repository.
 
-#### Notes
-
-- See [docs/at.md](at.md) for full AT Protocol integration research.
-
 ### Milestone G - Study Engine (SRS) + Daily Review UX
 
 #### Deliverables

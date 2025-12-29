@@ -6,17 +6,26 @@ edition = "2024"
 [dependencies]
 async-trait = "0.1.83"
 axum = "0.8.8"
+base64 = "0.22"
 chrono = { version = "0.4.42", features = ["serde"] }
 deadpool-postgres = "0.14.0"
 dotenvy = "0.15.7"
+ed25519-dalek = { version = "2.2.0", features = ["serde"] }
+getrandom = { version = "0.3", features = ["std"] }
 malfestio-core = { version = "0.1.0", path = "../core" }
 readability = "0.3.0"
 regex = "1.12.2"
 reqwest = { version = "0.12.28", features = ["json"] }
 serde = "1.0.228"
 serde_json = "1.0.148"
+sha2 = "0.10"
 tokio = { version = "1.48.0", features = ["full"] }
-tokio-postgres = { version = "0.7.13", features = ["with-serde_json-1", "with-chrono-0_4", "with-uuid-1"] }
+urlencoding = "2.1"
+tokio-postgres = { version = "0.7.13", features = [
+    "with-serde_json-1",
+    "with-chrono-0_4",
+    "with-uuid-1",
+] }
 tower = "0.5.2"
 tower-cookies = "0.11.0"
 tower-http = { version = "0.6.8", features = ["cors", "trace"] }
