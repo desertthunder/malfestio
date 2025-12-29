@@ -40,6 +40,7 @@ pub async fn start() -> malfestio_core::Result<()> {
     tracing::info!("Database connection pool created");
 
     let state = state::AppState::new(pool);
+    let oauth_state = std::sync::Arc::new(api::oauth::OAuthState::new());
 
     let auth_routes = Router::new()
         .route("/me", get(api::auth::me))
@@ -56,10 +57,21 @@ pub async fn start() -> malfestio_core::Result<()> {
         .route("/notes/{id}", get(api::note::get_note))
         .layer(axum_middleware::from_fn(middleware::auth::optional_auth_middleware));
 
+    let oauth_routes = Router::new()
+        .route("/authorize", post(api::oauth::authorize))
+        .route("/callback", get(api::oauth::callback))
+        .route("/refresh", post(api::oauth::refresh))
+        .with_state(oauth_state.clone());
+
     let app = Router::new()
         .route("/health", get(health_check))
+        .route(
+            "/.well-known/oauth-client-metadata",
+            get(oauth::client_metadata::client_metadata_handler),
+        )
         .route("/api/auth/login", post(api::auth::login))
         .route("/api/import/article", post(api::importer::import_article))
+        .nest("/api/oauth", oauth_routes)
         .nest("/api", optional_auth_routes)
         .nest("/api", auth_routes)
         .layer(TraceLayer::new_for_http())

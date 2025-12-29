@@ -89,6 +89,16 @@ impl DpopKeypair {
 
         format!("{}.{}.{}", header_b64, payload_b64, signature_b64)
     }
+
+    /// Create a DpopKeypair from an existing SigningKey.
+    pub fn from_signing_key(signing_key: SigningKey) -> Self {
+        Self { signing_key }
+    }
+
+    /// Get the private key bytes for storage.
+    pub fn private_key_bytes(&self) -> Vec<u8> {
+        self.signing_key.to_bytes().to_vec()
+    }
 }
 
 /// Generate a unique JWT ID.
