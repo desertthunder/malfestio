@@ -1,10 +1,12 @@
 pub mod api;
 pub mod db;
+pub mod firehose;
 pub mod middleware;
 pub mod oauth;
 pub mod pds;
 pub mod repository;
 pub mod state;
+pub mod well_known;
 
 use axum::http::Method;
 use axum::{
@@ -45,6 +47,7 @@ pub async fn start() -> malfestio_core::Result<()> {
     let auth_routes = Router::new()
         .route("/me", get(api::auth::me))
         .route("/decks", post(api::deck::create_deck))
+        .route("/decks/{id}/publish", post(api::deck::publish_deck))
         .route("/notes", post(api::note::create_note))
         .route("/cards", post(api::card::create_card))
         .layer(axum_middleware::from_fn(middleware::auth::auth_middleware));
@@ -69,6 +72,7 @@ pub async fn start() -> malfestio_core::Result<()> {
             "/.well-known/oauth-client-metadata",
             get(oauth::client_metadata::client_metadata_handler),
         )
+        .route("/.well-known/atproto-did", get(well_known::atproto_did_handler))
         .route("/api/auth/login", post(api::auth::login))
         .route("/api/import/article", post(api::importer::import_article))
         .nest("/api/oauth", oauth_routes)

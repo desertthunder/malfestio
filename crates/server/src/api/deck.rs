@@ -294,7 +294,11 @@ pub async fn publish_deck(
     };
 
     let deck_row = match client
-        .query_opt("SELECT owner_did FROM decks WHERE id = $1", &[&deck_id])
+        .query_opt(
+            "SELECT id, owner_did, title, description, tags, visibility, published_at, fork_of
+             FROM decks WHERE id = $1",
+            &[&deck_id],
+        )
         .await
     {
         Ok(Some(row)) => row,
@@ -314,24 +318,126 @@ pub async fn publish_deck(
         return (StatusCode::FORBIDDEN, Json(json!({"error": "Only owner can publish"}))).into_response();
     }
 
-    let (new_visibility, published_at) = if payload.published {
-        (
-            serde_json::to_value(&Visibility::Public).unwrap(),
-            Some(chrono::Utc::now()),
-        )
-    } else {
-        (serde_json::to_value(&Visibility::Private).unwrap(), None)
+    let visibility_json: serde_json::Value = deck_row.get("visibility");
+    let visibility: Visibility = match serde_json::from_value(visibility_json) {
+        Ok(v) => v,
+        Err(e) => {
+            tracing::error!("Failed to parse visibility: {}", e);
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": "Invalid deck data"})),
+            )
+                .into_response();
+        }
     };
 
-    match client
-        .execute(
-            "UPDATE decks SET visibility = $1, published_at = $2 WHERE id = $3",
-            &[&new_visibility, &published_at, &deck_id],
-        )
-        .await
-    {
-        Ok(_) => (),
-        Err(e) => {
+    let fork_of: Option<uuid::Uuid> = deck_row.get("fork_of");
+    let mut deck = Deck {
+        id: deck_id.to_string(),
+        owner_did: owner_did.clone(),
+        title: deck_row.get("title"),
+        description: deck_row.get("description"),
+        tags: deck_row.get("tags"),
+        visibility: visibility.clone(),
+        published_at: deck_row
+            .get::<_, Option<chrono::DateTime<chrono::Utc>>>("published_at")
+            .map(|dt| dt.to_rfc3339()),
+        fork_of: fork_of.map(|u| u.to_string()),
+    };
+
+    let mut deck_at_uri: Option<String> = None;
+
+    if payload.published {
+        let card_rows = match client
+            .query(
+                "SELECT id, owner_did, deck_id, front, back, media_url
+                 FROM cards WHERE deck_id = $1 ORDER BY created_at ASC",
+                &[&deck_id],
+            )
+            .await
+        {
+            Ok(rows) => rows,
+            Err(e) => {
+                tracing::error!("Failed to fetch cards: {}", e);
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(json!({"error": "Failed to fetch cards"})),
+                )
+                    .into_response();
+            }
+        };
+
+        let cards: Vec<malfestio_core::model::Card> = card_rows
+            .iter()
+            .map(|row| {
+                let card_id: uuid::Uuid = row.get("id");
+                let card_deck_id: uuid::Uuid = row.get("deck_id");
+                malfestio_core::model::Card {
+                    id: card_id.to_string(),
+                    owner_did: row.get("owner_did"),
+                    deck_id: card_deck_id.to_string(),
+                    front: row.get("front"),
+                    back: row.get("back"),
+                    media_url: row.get("media_url"),
+                }
+            })
+            .collect();
+
+        match crate::pds::publish::publish_deck_to_pds(state.oauth_repo.clone(), &user.did, &deck, &cards).await {
+            Ok(result) => {
+                deck_at_uri = Some(result.deck_at_uri.clone());
+
+                if let Err(e) = client
+                    .execute(
+                        "UPDATE decks SET at_uri = $1, visibility = $2, published_at = $3 WHERE id = $4",
+                        &[
+                            &result.deck_at_uri,
+                            &serde_json::to_value(&Visibility::Public).unwrap(),
+                            &Some(chrono::Utc::now()),
+                            &deck_id,
+                        ],
+                    )
+                    .await
+                {
+                    tracing::error!("Failed to store deck AT-URI: {}", e);
+                }
+
+                for (i, at_uri) in result.card_at_uris.iter().enumerate() {
+                    if i < cards.len()
+                        && let Ok(card_uuid) = uuid::Uuid::parse_str(&cards[i].id)
+                        && let Err(e) = client
+                            .execute("UPDATE cards SET at_uri = $1 WHERE id = $2", &[at_uri, &card_uuid])
+                            .await
+                    {
+                        tracing::warn!("Failed to store card AT-URI: {}", e);
+                    }
+                }
+
+                deck.visibility = Visibility::Public;
+                deck.published_at = Some(chrono::Utc::now().to_rfc3339());
+            }
+            Err(e) => {
+                tracing::error!("Failed to publish to PDS: {}", e);
+                return (
+                    StatusCode::SERVICE_UNAVAILABLE,
+                    Json(json!({"error": format!("Failed to publish to PDS: {}", e)})),
+                )
+                    .into_response();
+            }
+        }
+    } else {
+        // Unpublish - just update local visibility
+        let (new_visibility, published_at) = (
+            serde_json::to_value(&Visibility::Private).unwrap(),
+            None::<chrono::DateTime<chrono::Utc>>,
+        );
+        if let Err(e) = client
+            .execute(
+                "UPDATE decks SET visibility = $1, published_at = $2 WHERE id = $3",
+                &[&new_visibility, &published_at, &deck_id],
+            )
+            .await
+        {
             tracing::error!("Failed to update deck: {}", e);
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
@@ -339,44 +445,17 @@ pub async fn publish_deck(
             )
                 .into_response();
         }
+        deck.visibility = Visibility::Private;
+        deck.published_at = None;
     }
 
-    let row = match client
-        .query_one(
-            "SELECT id, owner_did, title, description, tags, visibility, published_at, fork_of
-             FROM decks WHERE id = $1",
-            &[&deck_id],
-        )
-        .await
-    {
-        Ok(row) => row,
-        Err(e) => {
-            tracing::error!("Failed to fetch updated deck: {}", e);
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({"error": "Failed to retrieve updated deck"})),
-            )
-                .into_response();
-        }
-    };
-
-    let visibility_json: serde_json::Value = row.get("visibility");
-    let visibility: Visibility = serde_json::from_value(visibility_json).unwrap();
-    let uuid_id: uuid::Uuid = row.get("id");
-    let fork_of: Option<uuid::Uuid> = row.get("fork_of");
-
-    let deck = Deck {
-        id: uuid_id.to_string(),
-        owner_did: row.get("owner_did"),
-        title: row.get("title"),
-        description: row.get("description"),
-        tags: row.get("tags"),
-        visibility,
-        published_at: row
-            .get::<_, Option<chrono::DateTime<chrono::Utc>>>("published_at")
-            .map(|dt| dt.to_rfc3339()),
-        fork_of: fork_of.map(|u| u.to_string()),
-    };
-
-    Json(deck).into_response()
+    if let Some(at_uri) = deck_at_uri {
+        Json(json!({
+            "deck": deck,
+            "at_uri": at_uri
+        }))
+        .into_response()
+    } else {
+        Json(deck).into_response()
+    }
 }

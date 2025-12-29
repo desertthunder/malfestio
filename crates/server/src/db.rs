@@ -27,6 +27,17 @@ pub fn create_pool() -> Result<DbPool, Box<dyn std::error::Error>> {
     Ok(Pool::builder(mgr).max_size(16).build()?)
 }
 
+/// Create a mock pool for testing that won't actually connect
+#[cfg(test)]
+pub fn create_mock_pool() -> DbPool {
+    let config = "host=localhost user=test dbname=test"
+        .parse::<tokio_postgres::Config>()
+        .unwrap();
+    let mgr_config = ManagerConfig { recycling_method: RecyclingMethod::Fast };
+    let mgr = Manager::from_config(config, NoTls, mgr_config);
+    Pool::builder(mgr).max_size(1).build().unwrap()
+}
+
 /// Retry wrapper for getting database connections with exponential backoff
 pub async fn get_connection_with_retry(
     pool: &DbPool, max_retries: u32,

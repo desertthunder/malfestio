@@ -87,11 +87,13 @@ mod tests {
     use std::sync::Arc;
 
     fn create_test_state() -> SharedState {
-        let pool = crate::db::create_pool().unwrap_or_else(|_| panic!("For testing without DB, use mock pool"));
+        let pool = crate::db::create_mock_pool();
         let card_repo = Arc::new(MockCardRepository::new()) as Arc<dyn crate::repository::card::CardRepository>;
         let note_repo = Arc::new(crate::repository::note::mock::MockNoteRepository::new())
             as Arc<dyn crate::repository::note::NoteRepository>;
-        AppState::new_with_repos(pool, card_repo, note_repo)
+        let oauth_repo = Arc::new(crate::repository::oauth::mock::MockOAuthRepository::new())
+            as Arc<dyn crate::repository::oauth::OAuthRepository>;
+        AppState::new_with_repos(pool, card_repo, note_repo, oauth_repo)
     }
 
     #[tokio::test]
@@ -133,7 +135,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_list_cards_success() {
-        let pool = crate::db::create_pool().unwrap_or_else(|_| panic!("For testing without DB, use mock pool"));
+        let pool = crate::db::create_mock_pool();
 
         let test_deck_id = "550e8400-e29b-41d4-a716-446655440000".to_string();
         let test_cards = vec![
@@ -159,8 +161,10 @@ mod tests {
             Arc::new(MockCardRepository::with_cards(test_cards)) as Arc<dyn crate::repository::card::CardRepository>;
         let note_repo = Arc::new(crate::repository::note::mock::MockNoteRepository::new())
             as Arc<dyn crate::repository::note::NoteRepository>;
+        let oauth_repo = Arc::new(crate::repository::oauth::mock::MockOAuthRepository::new())
+            as Arc<dyn crate::repository::oauth::OAuthRepository>;
 
-        let state = AppState::new_with_repos(pool, card_repo, note_repo);
+        let state = AppState::new_with_repos(pool, card_repo, note_repo, oauth_repo);
 
         let response = list_cards(axum::extract::State(state), None, Path(test_deck_id))
             .await

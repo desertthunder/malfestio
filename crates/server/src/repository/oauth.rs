@@ -211,3 +211,101 @@ mod tests {
         assert!(err.to_string().contains("connection failed"));
     }
 }
+
+#[cfg(test)]
+pub mod mock {
+    use super::*;
+    use std::sync::{Arc, Mutex};
+
+    #[derive(Clone)]
+    pub struct MockOAuthRepository {
+        pub tokens: Arc<Mutex<Vec<StoredToken>>>,
+        pub should_fail: Arc<Mutex<bool>>,
+    }
+
+    impl MockOAuthRepository {
+        pub fn new() -> Self {
+            Self { tokens: Arc::new(Mutex::new(Vec::new())), should_fail: Arc::new(Mutex::new(false)) }
+        }
+
+        pub fn with_tokens(tokens: Vec<StoredToken>) -> Self {
+            Self { tokens: Arc::new(Mutex::new(tokens)), should_fail: Arc::new(Mutex::new(false)) }
+        }
+
+        pub fn set_should_fail(&self, should_fail: bool) {
+            *self.should_fail.lock().unwrap() = should_fail;
+        }
+    }
+
+    impl Default for MockOAuthRepository {
+        fn default() -> Self {
+            Self::new()
+        }
+    }
+
+    #[async_trait]
+    impl OAuthRepository for MockOAuthRepository {
+        async fn store_tokens(&self, req: StoreTokensRequest<'_>) -> Result<(), OAuthRepoError> {
+            if *self.should_fail.lock().unwrap() {
+                return Err(OAuthRepoError::DatabaseError("Mock failure".to_string()));
+            }
+
+            let token = StoredToken {
+                did: req.did.to_string(),
+                pds_url: req.pds_url.to_string(),
+                access_token: req.access_token.to_string(),
+                refresh_token: req.refresh_token.map(String::from),
+                token_type: req.token_type.to_string(),
+                expires_at: req.expires_at,
+                dpop_private_key: req.dpop_keypair.private_key_bytes(),
+                created_at: Utc::now(),
+                updated_at: Utc::now(),
+            };
+
+            self.tokens.lock().unwrap().push(token);
+            Ok(())
+        }
+
+        async fn get_tokens(&self, did: &str) -> Result<StoredToken, OAuthRepoError> {
+            if *self.should_fail.lock().unwrap() {
+                return Err(OAuthRepoError::DatabaseError("Mock failure".to_string()));
+            }
+
+            let tokens = self.tokens.lock().unwrap();
+            tokens
+                .iter()
+                .find(|t| t.did == did)
+                .cloned()
+                .ok_or_else(|| OAuthRepoError::NotFound(format!("No tokens for DID: {}", did)))
+        }
+
+        async fn update_tokens(
+            &self, did: &str, access_token: &str, refresh_token: Option<&str>, expires_at: Option<DateTime<Utc>>,
+        ) -> Result<(), OAuthRepoError> {
+            if *self.should_fail.lock().unwrap() {
+                return Err(OAuthRepoError::DatabaseError("Mock failure".to_string()));
+            }
+
+            let mut tokens = self.tokens.lock().unwrap();
+            if let Some(token) = tokens.iter_mut().find(|t| t.did == did) {
+                token.access_token = access_token.to_string();
+                token.refresh_token = refresh_token.map(String::from);
+                token.expires_at = expires_at;
+                token.updated_at = Utc::now();
+                Ok(())
+            } else {
+                Err(OAuthRepoError::NotFound(format!("No tokens for DID: {}", did)))
+            }
+        }
+
+        async fn delete_tokens(&self, did: &str) -> Result<(), OAuthRepoError> {
+            if *self.should_fail.lock().unwrap() {
+                return Err(OAuthRepoError::DatabaseError("Mock failure".to_string()));
+            }
+
+            let mut tokens = self.tokens.lock().unwrap();
+            tokens.retain(|t| t.did != did);
+            Ok(())
+        }
+    }
+}

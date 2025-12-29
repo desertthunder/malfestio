@@ -38,16 +38,18 @@
 ## Roadmap Milestones
 
 - **(Done) Milestone A**: Defined core user journeys, information architecture, and privacy rules for the platform.
-
 - **(Done) Milestone B**: Designed AT Protocol Lexicons for all core types and documented data model mapping + publishing pipeline.
-
 - **(Done) Milestone C**: Foundations: Repo, CI, Axum API Skeleton, Solid Shell.
     - Monorepo layout, CI, Axum/Solid skeletons implemented.
     - Backend running on 8080, Frontend on 3000.
-
 - **(Done) Milestone D**: Identity + Permissions + Publishing Model.
     - Auth MVP, Permission model (Private/Public/SharedWith), and basic Publishing flow implemented.
     - Backend API and Frontend Editor updated with tests covering permissions and publishing.
+- **(Done) Milestone F**: OAuth + PDS Record Publishing.
+    - OAuth 2.1 client flow (PKCE, DPoP, handle/DID resolution, token refresh).
+    - PDS client for `putRecord`, `deleteRecord`, `uploadBlob`.
+    - TID generation and AT-URI builder in core crate.
+    - Database migration for token storage and AT-URI columns.
 
 ### Milestone E - Content Authoring (Notes + Cards + Deck Builder)
 
@@ -66,23 +68,6 @@
 #### Acceptance
 
 - A creator can build a deck from an article and publish it.
-
-### Milestone F - OAuth + PDS Record Publishing
-
-#### Deliverables
-
-- OAuth 2.1 client flow (PKCE + DPoP)
-    - client_metadata.json endpoint
-    - handle/DID resolution
-    - token refresh
-- Record publishing to user's PDS
-    - putRecord for decks, cards, notes
-    - blob uploads for media attachments
-    - AT-URI generation for cross-references
-
-#### Acceptance
-
-- A user can authenticate via OAuth, create a deck, and see it in their PDS repository.
 
 ### Milestone G - Study Engine (SRS) + Daily Review UX
 
