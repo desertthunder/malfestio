@@ -1,6 +1,6 @@
 import { createRoot } from "solid-js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { toast, toasts } from "./toast";
+import { toast, toasts } from "../toast";
 
 describe("Toast Store", () => {
   beforeEach(() => {

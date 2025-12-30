@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen } from "@solidjs/testing-library";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { Menu, type MenuItem } from "./Menu";
+import { Menu, type MenuItem } from "../Menu";
 
 const items: MenuItem[] = [{ id: "edit", label: "Edit", shortcut: "⌘E" }, {
   id: "delete",

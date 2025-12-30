@@ -1,6 +1,6 @@
 import { cleanup, render } from "@solidjs/testing-library";
 import { afterEach, describe, expect, it } from "vitest";
-import { Skeleton, SkeletonAvatar, SkeletonText } from "./Skeleton";
+import { Skeleton, SkeletonAvatar, SkeletonText } from "../Skeleton";
 
 describe("Skeleton", () => {
   afterEach(cleanup);

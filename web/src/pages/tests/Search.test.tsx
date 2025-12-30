@@ -2,7 +2,7 @@ import { api } from "$lib/api";
 import { cleanup, render, screen, waitFor } from "@solidjs/testing-library";
 import { JSX } from "solid-js";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import Search from "./Search";
+import Search from "../Search";
 
 vi.mock("$lib/api", () => ({ api: { search: vi.fn() } }));
 

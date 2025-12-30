@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen } from "@solidjs/testing-library";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { Tag } from "./Tag";
+import { Tag } from "../Tag";
 
 describe("Tag", () => {
   afterEach(cleanup);

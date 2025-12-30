@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { asCard, asDeck, asNote, type SearchResult } from "./model";
+import { asCard, asDeck, asNote, type SearchResult } from "../model";
 
 describe("Type Guards", () => {
   const deckResult: SearchResult = {

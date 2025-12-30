@@ -3,7 +3,7 @@ import { toast } from "$lib/toast";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@solidjs/testing-library";
 import { JSX } from "solid-js";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import Feed from "./Feed";
+import Feed from "../Feed";
 
 const { mockNavigate } = vi.hoisted(() => ({ mockNavigate: vi.fn() }));
 

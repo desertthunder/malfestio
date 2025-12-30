@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen } from "@solidjs/testing-library";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { type TreeNode, TreeView } from "./TreeView";
+import { type TreeNode, TreeView } from "../TreeView";
 
 const sampleNodes: TreeNode[] = [{
   id: "1",

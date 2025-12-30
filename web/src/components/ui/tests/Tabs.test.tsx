@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen } from "@solidjs/testing-library";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { type Tab, Tabs } from "./Tabs";
+import { type Tab, Tabs } from "../Tabs";
 
 const tabs: Tab[] = [{ id: "tab1", label: "First" }, { id: "tab2", label: "Second" }, {
   id: "tab3",

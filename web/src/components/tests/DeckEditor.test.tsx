@@ -1,7 +1,7 @@
 import { api } from "$lib/api";
 import { cleanup, fireEvent, render, screen } from "@solidjs/testing-library";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { DeckEditor } from "./DeckEditor";
+import { DeckEditor } from "../DeckEditor";
 
 vi.mock(
   "$lib/api",

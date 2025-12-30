@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen } from "@solidjs/testing-library";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { SearchInput } from "./SearchInput";
+import { SearchInput } from "../SearchInput";
 
 const navigateMock = vi.fn();
 vi.mock("@solidjs/router", () => ({ useNavigate: () => navigateMock }));

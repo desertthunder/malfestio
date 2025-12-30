@@ -1,7 +1,7 @@
 import { MemoryRouter, Route } from "@solidjs/router";
 import { cleanup, render, screen } from "@solidjs/testing-library";
 import { afterEach, describe, expect, it } from "vitest";
-import Landing from "./Landing";
+import Landing from "../Landing";
 
 describe("Landing Page", () => {
   afterEach(cleanup);

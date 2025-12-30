@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen } from "@solidjs/testing-library";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { Button } from "./Button";
-import { Dialog } from "./Dialog";
+import { Button } from "../Button";
+import { Dialog } from "../Dialog";
 
 describe("Dialog", () => {
   afterEach(cleanup);

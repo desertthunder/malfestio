@@ -1,7 +1,7 @@
 import { MemoryRouter, Route } from "@solidjs/router";
 import { cleanup, render, screen } from "@solidjs/testing-library";
 import { afterEach, describe, expect, it } from "vitest";
-import { Footer } from "./Footer";
+import { Footer } from "../Footer";
 
 describe("Footer", () => {
   afterEach(cleanup);

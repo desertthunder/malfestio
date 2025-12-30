@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen } from "@solidjs/testing-library";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { type Column, DataTable } from "./DataTable";
+import { type Column, DataTable } from "../DataTable";
 
 type TestRow = { id: string; name: string; status: string };
 

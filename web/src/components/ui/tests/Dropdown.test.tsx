@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen } from "@solidjs/testing-library";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { Dropdown, type DropdownOption } from "./Dropdown";
+import { Dropdown, type DropdownOption } from "../Dropdown";
 
 const options: DropdownOption[] = [{ value: "a", label: "Option A" }, { value: "b", label: "Option B" }, {
   value: "c",
