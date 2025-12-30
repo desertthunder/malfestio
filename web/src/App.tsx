@@ -2,6 +2,7 @@ import { AppLayout } from "$components/layout/AppLayout";
 import { authStore } from "$lib/store";
 import DeckNew from "$pages/DeckNew";
 import DeckView from "$pages/DeckView";
+import Discovery from "$pages/Discovery";
 import Feed from "$pages/Feed";
 import Home from "$pages/Home";
 import Import from "$pages/Import";
@@ -11,6 +12,7 @@ import Login from "$pages/Login";
 import NoteNew from "$pages/NoteNew";
 import NotFound from "$pages/NotFound";
 import Review from "$pages/Review";
+import Search from "$pages/Search";
 import { Route, Router } from "@solidjs/router";
 import type { Component } from "solid-js";
 import { Show } from "solid-js";
@@ -39,6 +41,8 @@ const App: Component = () => {
       <Route path="/review" component={() => <ProtectedRoute component={Review} />} />
       <Route path="/review/:deckId" component={() => <ProtectedRoute component={Review} />} />
       <Route path="/feed" component={() => <ProtectedRoute component={Feed} />} />
+      <Route path="/search" component={() => <ProtectedRoute component={Search} />} />
+      <Route path="/discovery" component={() => <ProtectedRoute component={Discovery} />} />
       <Route path="*" component={() => <ProtectedRoute component={NotFound} />} />
     </Router>
   );

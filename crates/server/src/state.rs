@@ -5,6 +5,7 @@ use crate::repository::deck::DeckRepository;
 use crate::repository::note::NoteRepository;
 use crate::repository::oauth::OAuthRepository;
 use crate::repository::review::ReviewRepository;
+use crate::repository::search::SearchRepository;
 use crate::repository::social::SocialRepository;
 
 use std::collections::HashMap;
@@ -28,6 +29,7 @@ pub struct Repositories {
     pub note: Arc<dyn NoteRepository>,
     pub review: Arc<dyn ReviewRepository>,
     pub social: Arc<dyn SocialRepository>,
+    pub search: Arc<dyn SearchRepository>,
 }
 
 pub struct AppState {
@@ -38,6 +40,7 @@ pub struct AppState {
     pub oauth_repo: Arc<dyn OAuthRepository>,
     pub review_repo: Arc<dyn ReviewRepository>,
     pub social_repo: Arc<dyn SocialRepository>,
+    pub search_repo: Arc<dyn SearchRepository>,
     pub config: AppConfig,
     pub auth_cache: AuthCache,
 }
@@ -53,6 +56,7 @@ impl AppState {
             note_repo: repos.note,
             review_repo: repos.review,
             social_repo: repos.social,
+            search_repo: repos.search,
             config,
             auth_cache,
         })
@@ -66,6 +70,7 @@ impl AppState {
         use crate::repository;
         let review_repo = Arc::new(repository::review::mock::MockReviewRepository::new()) as Arc<dyn ReviewRepository>;
         let social_repo = Arc::new(repository::social::mock::MockSocialRepository::new()) as Arc<dyn SocialRepository>;
+        let search_repo = Arc::new(repository::search::mock::MockSearchRepository::new()) as Arc<dyn SearchRepository>;
         let deck_repo = Arc::new(repository::deck::mock::MockDeckRepository::new()) as Arc<dyn DeckRepository>;
         let config = AppConfig { pds_url: "https://bsky.social".to_string() };
 
@@ -75,6 +80,7 @@ impl AppState {
             oauth: oauth_repo,
             review: review_repo,
             social: social_repo,
+            search: search_repo,
             deck: deck_repo,
         };
 

@@ -69,3 +69,23 @@ export type Comment = {
 };
 
 export type CommentNode = { comment: Comment; children: CommentNode[] };
+
+export type FeedFollows = { decks: Deck[] };
+
+export type SearchResult = { item_type: "deck"; item_id: string; creator_did: string; data: Deck; rank: number } | {
+  item_type: "card";
+  item_id: string;
+  creator_did: string;
+  data: Card & { deck_id: string };
+  rank: number;
+} | {
+  item_type: "note";
+  item_id: string;
+  creator_did: string;
+  data: { id: string; title: string; owner_did: string };
+  rank: number;
+};
+
+export const asDeck = (r: SearchResult) => (r.item_type === "deck" ? r : undefined);
+export const asCard = (r: SearchResult) => (r.item_type === "card" ? r : undefined);
+export const asNote = (r: SearchResult) => (r.item_type === "note" ? r : undefined);

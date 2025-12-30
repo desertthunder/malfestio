@@ -17,6 +17,8 @@ export const Header: Component = () => {
         <nav class="hidden md:flex items-center gap-4 text-sm font-medium text-gray-400">
           <A href="/decks" activeClass="text-blue-500" class="hover:text-white transition-colors">Decks</A>
           <A href="/review" activeClass="text-blue-500" class="hover:text-white transition-colors">Review</A>
+          <A href="/discovery" activeClass="text-blue-500" class="hover:text-white transition-colors">Discovery</A>
+          <A href="/feed" activeClass="text-blue-500" class="hover:text-white transition-colors">Feed</A>
         </nav>
       </div>
       <div class="flex items-center gap-4">

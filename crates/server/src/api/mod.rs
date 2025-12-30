@@ -6,4 +6,5 @@ pub mod importer;
 pub mod note;
 pub mod oauth;
 pub mod review;
+pub mod search;
 pub mod social;

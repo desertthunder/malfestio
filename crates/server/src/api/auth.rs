@@ -18,7 +18,7 @@ pub struct LoginResponse {
     handle: String,
 }
 
-/// TODO: Make PDS URL configurable (bluesky users can use their own PDS)
+/// TODO: Find user's PDS URL
 pub async fn login(State(state): State<SharedState>, Json(payload): Json<LoginRequest>) -> impl IntoResponse {
     let client = reqwest::Client::new();
     let pds_url = &state.config.pds_url;

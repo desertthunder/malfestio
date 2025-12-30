@@ -54,21 +54,9 @@
 - **(Done) Milestone G**: Study Engine (SRS) + Daily Review UX.
     - SM-2 spaced repetition scheduler.
 - **(Done) Milestone H**: Social Layer v1: Follow graph, Feeds (Follows/Trending), Forking workflow, and Threaded comments.
-
-### Milestone I - Search + Discovery + Taxonomy
-
-#### Deliverables
-
-- Full-text search over:
-    - deck title/description, card text, note text, source metadata
-- Tag taxonomy:
-    - user tags + curator tags + system tags
-- Discovery pages:
-    - top tags, featured paths, editor picks
-
-#### Acceptance
-
-- Search is fast (<200ms typical) and results feel relevant.
+- **(Done) Milestone I**: Search + Discovery + Taxonomy.
+    - Full-text search with pg_trgm/unaccent, visibility filtering, and unified search index.
+    - Tag taxonomy and Discovery page with top tags.
 
 ### Milestone J - Moderation + Abuse Resistance
 

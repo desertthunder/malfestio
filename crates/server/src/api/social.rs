@@ -190,6 +190,8 @@ mod tests {
         let deck_repo = Arc::new(crate::repository::deck::mock::MockDeckRepository::new())
             as Arc<dyn crate::repository::deck::DeckRepository>;
         let config = crate::state::AppConfig { pds_url: "https://bsky.social".to_string() };
+        let search_repo = Arc::new(crate::repository::search::mock::MockSearchRepository::new())
+            as Arc<dyn crate::repository::search::SearchRepository>;
         let auth_cache = Arc::new(tokio::sync::RwLock::new(std::collections::HashMap::new()));
 
         Arc::new(AppState {
@@ -200,6 +202,7 @@ mod tests {
             review_repo,
             social_repo,
             deck_repo,
+            search_repo,
             config,
             auth_cache,
         })

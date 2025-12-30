@@ -154,6 +154,9 @@ mod tests {
             as Arc<dyn crate::repository::deck::DeckRepository>;
         let config = crate::state::AppConfig { pds_url: "https://bsky.social".to_string() };
 
+        let search_repo = Arc::new(crate::repository::search::mock::MockSearchRepository::new())
+            as Arc<dyn crate::repository::search::SearchRepository>;
+
         let repos = crate::state::Repositories {
             card: card_repo,
             note: note_repo,
@@ -161,6 +164,7 @@ mod tests {
             review: review_repo,
             social: social_repo,
             deck: deck_repo,
+            search: search_repo,
         };
 
         AppState::new(pool, repos, config)

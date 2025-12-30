@@ -50,6 +50,7 @@ pub async fn start() -> malfestio_core::Result<()> {
     let review_repo = std::sync::Arc::new(repository::review::DbReviewRepository::new(pool.clone()));
     let social_repo = std::sync::Arc::new(repository::social::DbSocialRepository::new(pool.clone()));
 
+    let search_repo = std::sync::Arc::new(repository::search::DbSearchRepository::new(pool.clone()));
     let pds_url = std::env::var("PDS_URL").unwrap_or_else(|_| "https://bsky.social".to_string());
     let config = state::AppConfig { pds_url };
 
@@ -60,6 +61,7 @@ pub async fn start() -> malfestio_core::Result<()> {
         note: note_repo,
         review: review_repo,
         social: social_repo,
+        search: search_repo,
     };
 
     let state = state::AppState::new(pool, repos, config);
@@ -94,6 +96,8 @@ pub async fn start() -> malfestio_core::Result<()> {
         .route("/social/following/{did}", get(api::social::get_following))
         .route("/decks/{id}/comments", get(api::social::get_comments))
         .route("/feeds/trending", get(api::feed::get_feed_trending))
+        .route("/search", get(api::search::search))
+        .route("/discovery", get(api::search::discovery))
         .layer(axum_middleware::from_fn_with_state(
             state.clone(),
             middleware::auth::optional_auth_middleware,

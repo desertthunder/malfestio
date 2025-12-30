@@ -34,14 +34,22 @@ export function CommentSection(props: CommentSectionProps) {
     return [];
   });
 
-  const [newComment, setNewComment] = createSignal("");
+  const [mainComment, setMainComment] = createSignal("");
+  const [replyComment, setReplyComment] = createSignal("");
   const [replyTo, setReplyTo] = createSignal<string | null>(null);
 
   const submitComment = async (parentId?: string) => {
-    if (!newComment().trim()) return;
-    await api.addComment(props.deckId, newComment(), parentId);
-    setNewComment("");
-    setReplyTo(null);
+    const content = parentId ? replyComment() : mainComment();
+    if (!content.trim()) return;
+
+    await api.addComment(props.deckId, content, parentId);
+
+    if (parentId) {
+      setReplyComment("");
+      setReplyTo(null);
+    } else {
+      setMainComment("");
+    }
     refetch();
   };
 
@@ -51,7 +59,14 @@ export function CommentSection(props: CommentSectionProps) {
       <div class="my-1">{node.node.comment.content}</div>
       <div class="text-xs text-gray-500 flex gap-2">
         <span>{new Date(node.node.comment.created_at).toLocaleString()}</span>
-        <button class="text-blue-500 hover:underline" onClick={() => setReplyTo(node.node.comment.id)}>Reply</button>
+        <button
+          class="text-blue-500 hover:underline"
+          onClick={() => {
+            setReplyTo(node.node.comment.id);
+            setReplyComment("");
+          }}>
+          Reply
+        </button>
       </div>
 
       <Show when={replyTo() === node.node.comment.id}>
@@ -59,8 +74,8 @@ export function CommentSection(props: CommentSectionProps) {
           <input
             type="text"
             class="border rounded p-1 flex-1 text-sm"
-            value={newComment()}
-            onInput={(e) => setNewComment(e.currentTarget.value)}
+            value={replyComment()}
+            onInput={(e) => setReplyComment(e.currentTarget.value)}
             placeholder="Write a reply..." />
           <Button size="sm" onClick={() => submitComment(node.node.comment.id)}>Post</Button>
           <Button size="sm" variant="ghost" onClick={() => setReplyTo(null)}>Cancel</Button>
@@ -81,13 +96,10 @@ export function CommentSection(props: CommentSectionProps) {
             class="border rounded p-2 flex-1 w-full"
             rows={2}
             placeholder="Add a comment..."
-            // TODO: separate state
-            value={replyTo() ? "" : newComment()}
-            onInput={(e) => {
-              if (!replyTo()) setNewComment(e.currentTarget.value);
-            }} />
+            value={mainComment()}
+            onInput={(e) => setMainComment(e.currentTarget.value)} />
           <div class="flex flex-col justify-end">
-            <Button onClick={() => submitComment()} disabled={!!replyTo()}>Post</Button>
+            <Button onClick={() => submitComment()} disabled={false}>Post</Button>
           </div>
         </div>
       </Show>
