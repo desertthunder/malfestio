@@ -1,6 +1,7 @@
-import { fetchDueCards, fetchStudyStats, ReviewStats } from "$components/ReviewStats";
+import { ReviewStats } from "$components/ReviewStats";
 import { StudySession } from "$components/StudySession";
 import { fadeIn } from "$lib/animations";
+import { api } from "$lib/api";
 import type { ReviewCard, StudyStats as StudyStatsType } from "$lib/model";
 import { Button } from "$ui/Button";
 import { Skeleton } from "$ui/Skeleton";
@@ -19,9 +20,9 @@ const Review: Component = () => {
   const [sessionComplete, setSessionComplete] = createSignal(false);
 
   onMount(async () => {
-    const [statsData, cardsData] = await Promise.all([fetchStudyStats(), fetchDueCards(params.deckId)]);
-    setStats(statsData);
-    setCards(cardsData);
+    const [statsRes, cardsRes] = await Promise.all([api.getStats(), api.getDueCards(params.deckId)]);
+    if (statsRes.ok) setStats(await statsRes.json());
+    if (cardsRes.ok) setCards(await cardsRes.json());
     setLoading(false);
   });
 
@@ -35,8 +36,8 @@ const Review: Component = () => {
   const handleComplete = async () => {
     setSessionActive(false);
     setSessionComplete(true);
-    const newStats = await fetchStudyStats();
-    setStats(newStats);
+    const res = await api.getStats();
+    if (res.ok) setStats(await res.json());
   };
 
   const handleExit = () => {

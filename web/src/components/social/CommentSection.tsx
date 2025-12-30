@@ -1,17 +1,8 @@
 import { api } from "$lib/api";
+import type { Comment } from "$lib/model";
 import { authStore } from "$lib/store";
 import { Button } from "$ui/Button";
 import { createResource, createSignal, For, Show } from "solid-js";
-
-// TODO: move to model.ts
-type Comment = {
-  id: string;
-  deck_id: string;
-  author_did: string;
-  content: string;
-  parent_id: string | null;
-  created_at: string;
-};
 
 type CommentNode = { comment: Comment; children: CommentNode[] };
 

@@ -1,6 +1,6 @@
 import { DeckEditor } from "$components/DeckEditor";
 import { api } from "$lib/api";
-import type { Card, CreateDeckPayload } from "$lib/model";
+import type { CreateDeckPayload } from "$lib/model";
 import { toast } from "$lib/toast";
 import { useNavigate } from "@solidjs/router";
 import type { Component } from "solid-js";
@@ -9,22 +9,10 @@ const DeckNew: Component = () => {
   const navigate = useNavigate();
 
   const handleSave = async (data: CreateDeckPayload) => {
-    // TODO: some of this can be in api.ts
     try {
-      const { cards, ...deckPayload } = data;
-      const res = await api.post("/decks", deckPayload);
-
+      const res = await api.createDeck(data);
       if (res.ok) {
         const deck = await res.json();
-
-        if (cards && cards.length > 0) {
-          await Promise.all(
-            cards.map((c: Card) =>
-              api.post("/cards", { deck_id: deck.id, front: c.front, back: c.back, media_url: c.mediaUrl })
-            ),
-          );
-        }
-
         toast.success("Deck created successfully");
         navigate(`/decks/${deck.id}`);
       } else {

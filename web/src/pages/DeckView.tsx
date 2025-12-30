@@ -7,24 +7,16 @@ import { A, useParams } from "@solidjs/router";
 import type { Component } from "solid-js";
 import { createResource, For, Show } from "solid-js";
 
-// TODO: use api.ts
-const fetchDeck = async (id: string): Promise<Deck | null> => {
-  const res = await api.get(`/decks/${id}`);
-  if (!res.ok) return null;
-  return res.json();
-};
-
-// TODO: use api.ts
-const fetchCards = async (id: string): Promise<Card[]> => {
-  const res = await api.get(`/decks/${id}/cards`);
-  if (!res.ok) return [];
-  return res.json();
-};
-
 const DeckView: Component = () => {
   const params = useParams();
-  const [deck] = createResource(() => params.id, fetchDeck);
-  const [cards] = createResource(() => params.id, fetchCards);
+  const [deck] = createResource(() => params.id, async (id) => {
+    const res = await api.getDeck(id);
+    return res.ok ? (await res.json() as Deck) : null;
+  });
+  const [cards] = createResource(() => params.id, async (id) => {
+    const res = await api.getDeckCards(id);
+    return res.ok ? (await res.json() as Card[]) : [];
+  });
 
   const handleFork = async () => {
     if (!deck()) return;

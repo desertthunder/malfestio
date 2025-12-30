@@ -58,3 +58,14 @@ export type StudyStats = {
 };
 
 export type ReviewResponse = { ease_factor: number; interval_days: number; repetitions: number; due_at: string };
+
+export type Comment = {
+  id: string;
+  deck_id: string;
+  author_did: string;
+  content: string;
+  parent_id: string | null;
+  created_at: string;
+};
+
+export type CommentNode = { comment: Comment; children: CommentNode[] };

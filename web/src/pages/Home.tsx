@@ -4,13 +4,6 @@ import { A } from "@solidjs/router";
 import type { Component } from "solid-js";
 import { createResource, For, Show } from "solid-js";
 
-// TODO: use api.ts
-const fetchDecks = async (): Promise<Deck[]> => {
-  const res = await api.get("/decks");
-  if (!res.ok) return [];
-  return res.json();
-};
-
 const DeckCard: Component<{ deck: Deck }> = (props) => (
   <div class="bg-[#262626] border border-[#393939] p-4 hover:border-[#0F62FE] transition-colors group relative h-full flex flex-col">
     <div class="flex justify-between items-start mb-2">
@@ -42,7 +35,10 @@ const DeckCard: Component<{ deck: Deck }> = (props) => (
 );
 
 const Home: Component = () => {
-  const [decks] = createResource(fetchDecks);
+  const [decks] = createResource(async () => {
+    const res = await api.getDecks();
+    return res.ok ? (await res.json() as Deck[]) : [];
+  });
 
   return (
     <div class="max-w-7xl mx-auto px-0 py-8">
