@@ -1,15 +1,19 @@
+import { fadeIn, scaleIn } from "$lib/animations";
 import { api } from "$lib/api";
-import type { Card, CardType, CreateDeckPayload, Visibility } from "$lib/store";
+import type { Card, CardType, CreateDeckPayload, Visibility } from "$lib/model";
 import { toast } from "$lib/toast";
 import { Button } from "$ui/Button";
 import { createSignal, For, Show } from "solid-js";
+import { Motion } from "solid-motionone";
 import { CardEditor } from "./CardEditor";
+
+type CardData = Card & { hints: string[]; cardType: CardType };
 
 export function DeckEditor(props: { onSave?: (deck: CreateDeckPayload) => void }) {
   const [title, setTitle] = createSignal("");
   const [description, setDescription] = createSignal("");
   const [tags, setTags] = createSignal("");
-  const [visibilityType, setVisibilityType] = createSignal<string>("Private");
+  const [visibilityType, setVisibilityType] = createSignal<Visibility["type"]>("Private");
   const [sharedWith, setSharedWith] = createSignal("");
 
   const [cards, setCards] = createSignal<Card[]>([]);
@@ -22,7 +26,7 @@ export function DeckEditor(props: { onSave?: (deck: CreateDeckPayload) => void }
     if (visibilityType() === "SharedWith") {
       visibility = { type: "SharedWith", content: sharedWith().split(",").map(s => s.trim()).filter(s => s) };
     } else {
-      visibility = { type: visibilityType() as "Private" | "Unlisted" | "Public" };
+      visibility = { type: visibilityType() as Exclude<Visibility["type"], "SharedWith"> };
     }
 
     const tagsArray = tags().split(",").map(t => t.trim()).filter(t => t);
@@ -45,9 +49,7 @@ export function DeckEditor(props: { onSave?: (deck: CreateDeckPayload) => void }
     }
   };
 
-  const addCard = (
-    cardData: { front: string; back: string; mediaUrl?: string; cardType: CardType; hints: string[] },
-  ) => {
+  const addCard = (cardData: CardData) => {
     const card: Card = {
       front: cardData.front,
       back: cardData.back,
@@ -59,9 +61,7 @@ export function DeckEditor(props: { onSave?: (deck: CreateDeckPayload) => void }
     setShowCardEditor(false);
   };
 
-  const removeCard = (index: number) => {
-    setCards(cards().filter((_, i) => i !== index));
-  };
+  const removeCard = (index: number) => setCards(cards().filter((_, i) => i !== index));
 
   const moveCard = (from: number, to: number) => {
     if (to < 0 || to >= cards().length) return;
@@ -113,7 +113,7 @@ export function DeckEditor(props: { onSave?: (deck: CreateDeckPayload) => void }
             <select
               id="visibility"
               value={visibilityType()}
-              onChange={(e) => setVisibilityType(e.target.value)}
+              onChange={(e) => setVisibilityType(e.target.value as Visibility["type"])}
               class="w-full bg-gray-800 border-gray-700 text-white rounded p-2 focus:ring-blue-500 focus:border-blue-500"
               aria-label="Visibility">
               <option value="Private">Private</option>
@@ -124,7 +124,7 @@ export function DeckEditor(props: { onSave?: (deck: CreateDeckPayload) => void }
           </div>
 
           <Show when={visibilityType() === "SharedWith"}>
-            <div>
+            <Motion.div {...fadeIn}>
               <label class="block text-sm font-medium text-gray-400 mb-1">Share with DIDs (comma separated)</label>
               <input
                 type="text"
@@ -132,7 +132,7 @@ export function DeckEditor(props: { onSave?: (deck: CreateDeckPayload) => void }
                 onInput={(e) => setSharedWith(e.target.value)}
                 class="w-full bg-gray-800 border-gray-700 text-white rounded p-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="did:plc:..., did:plc:..." />
-            </div>
+            </Motion.div>
           </Show>
         </div>
 
@@ -191,7 +191,9 @@ export function DeckEditor(props: { onSave?: (deck: CreateDeckPayload) => void }
                 Add Card
               </Button>
             }>
-            <CardEditor onSave={addCard} onCancel={() => setShowCardEditor(false)} />
+            <Motion.div {...scaleIn}>
+              <CardEditor onSave={addCard} onCancel={() => setShowCardEditor(false)} />
+            </Motion.div>
           </Show>
         </div>
 

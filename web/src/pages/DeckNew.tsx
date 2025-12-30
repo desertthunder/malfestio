@@ -1,6 +1,6 @@
 import { DeckEditor } from "$components/DeckEditor";
 import { api } from "$lib/api";
-import type { Card, CreateDeckPayload } from "$lib/store";
+import type { Card, CreateDeckPayload } from "$lib/model";
 import { toast } from "$lib/toast";
 import { useNavigate } from "@solidjs/router";
 import type { Component } from "solid-js";
@@ -9,6 +9,7 @@ const DeckNew: Component = () => {
   const navigate = useNavigate();
 
   const handleSave = async (data: CreateDeckPayload) => {
+    // TODO: some of this can be in api.ts
     try {
       const { cards, ...deckPayload } = data;
       const res = await api.post("/decks", deckPayload);

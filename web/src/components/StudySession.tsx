@@ -1,6 +1,6 @@
 import { scaleIn, slideInUp } from "$lib/animations";
 import { api } from "$lib/api";
-import type { Grade, ReviewCard } from "$lib/store";
+import type { Grade, ReviewCard } from "$lib/model";
 import { Button } from "$ui/Button";
 import { Dialog } from "$ui/Dialog";
 import { ProgressBar } from "$ui/ProgressBar";
@@ -27,12 +27,7 @@ export const StudySession: Component<StudySessionProps> = (props) => {
   const currentCard = () => props.cards[currentIndex()];
   const progress = () => ((currentIndex() + 1) / props.cards.length) * 100;
   const isComplete = () => currentIndex() >= props.cards.length;
-
-  const handleFlip = () => {
-    if (!isFlipped()) {
-      setIsFlipped(true);
-    }
-  };
+  const handleFlip = () => !isFlipped() ? setIsFlipped(true) : void 0;
 
   const handleGrade = async (grade: Grade) => {
     const card = currentCard();
@@ -94,7 +89,6 @@ export const StudySession: Component<StudySessionProps> = (props) => {
     window.removeEventListener("keydown", handleKeyDown);
   });
 
-  // Check for completion
   createEffect(() => {
     if (isComplete()) {
       props.onComplete();
@@ -114,7 +108,6 @@ export const StudySession: Component<StudySessionProps> = (props) => {
         <ProgressBar value={progress()} color="green" size="md" />
       </div>
 
-      {/* Card */}
       <Show when={currentCard()}>
         {(card) => (
           <Motion.div {...scaleIn} class="w-full max-w-2xl">
@@ -122,7 +115,6 @@ export const StudySession: Component<StudySessionProps> = (props) => {
               onClick={handleFlip}
               class="relative min-h-[400px] rounded-2xl cursor-pointer perspective-1000"
               style={{ "transform-style": "preserve-3d" }}>
-              {/* Front */}
               <div
                 class={`absolute inset-0 rounded-2xl bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 p-8 flex flex-col items-center justify-center backface-hidden transition-transform duration-400 ${
                   isFlipped() ? "rotate-y-180" : ""
@@ -135,7 +127,6 @@ export const StudySession: Component<StudySessionProps> = (props) => {
                 </Show>
               </div>
 
-              {/* Back */}
               <div
                 class={`absolute inset-0 rounded-2xl bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 p-8 flex flex-col items-center justify-center backface-hidden transition-transform duration-400 ${
                   isFlipped() ? "" : "rotate-y-180"
@@ -154,7 +145,6 @@ export const StudySession: Component<StudySessionProps> = (props) => {
         )}
       </Show>
 
-      {/* Grade Buttons */}
       <Show when={isFlipped()}>
         <Motion.div {...slideInUp} class="w-full max-w-2xl mt-8">
           <p class="text-center text-gray-400 text-sm mb-4">How well did you know this?</p>
@@ -176,7 +166,6 @@ export const StudySession: Component<StudySessionProps> = (props) => {
         </Motion.div>
       </Show>
 
-      {/* Keyboard Hints */}
       <div class="fixed bottom-4 left-1/2 -translate-x-1/2 text-gray-600 text-xs flex gap-4">
         <span>Space: Flip</span>
         <span>1-5: Grade</span>
@@ -184,7 +173,6 @@ export const StudySession: Component<StudySessionProps> = (props) => {
         <span>Esc: Exit</span>
       </div>
 
-      {/* Edit Dialog */}
       <Dialog open={showEditDialog()} onClose={() => setShowEditDialog(false)} title="Edit Card">
         <Show when={currentCard()}>
           {(card) => (

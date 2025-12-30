@@ -1,7 +1,7 @@
 import { api } from "$lib/api";
 import { authStore } from "$lib/store";
 import { Button } from "$ui/Button";
-import { createSignal, onMount } from "solid-js";
+import { createSignal, onMount, Show } from "solid-js";
 
 type FollowButtonProps = { did: string; initialIsFollowing?: boolean };
 
@@ -45,7 +45,7 @@ export function FollowButton(props: FollowButtonProps) {
 
   return (
     <Button onClick={toggle} disabled={loading()} variant={isFollowing() ? "secondary" : undefined}>
-      {isFollowing() ? "Unfollow" : "Follow"}
+      <Show when={isFollowing()} fallback="Follow">Unfollow</Show>
     </Button>
   );
 }

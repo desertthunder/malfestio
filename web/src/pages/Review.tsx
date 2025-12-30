@@ -1,7 +1,7 @@
 import { fetchDueCards, fetchStudyStats, ReviewStats } from "$components/ReviewStats";
 import { StudySession } from "$components/StudySession";
 import { fadeIn } from "$lib/animations";
-import type { ReviewCard, StudyStats as StudyStatsType } from "$lib/store";
+import type { ReviewCard, StudyStats as StudyStatsType } from "$lib/model";
 import { Button } from "$ui/Button";
 import { Skeleton } from "$ui/Skeleton";
 import { useNavigate, useParams } from "@solidjs/router";
@@ -66,15 +66,21 @@ const Review: Component = () => {
               when={cards().length > 0}
               fallback={
                 <div class="text-center py-8">
+                  {/* TODO: replace with an icon */}
                   <p class="text-4xl mb-4">🎉</p>
-                  <h2 class="text-xl font-semibold text-white mb-2">
-                    {sessionComplete() ? "Session Complete!" : "All Caught Up!"}
-                  </h2>
-                  <p class="text-gray-400 mb-6">
-                    {sessionComplete()
-                      ? "Great job! You've reviewed all your due cards."
-                      : "You have no cards due for review right now."}
-                  </p>
+                  <Show
+                    when={sessionComplete()}
+                    fallback={
+                      <>
+                        <h2 class="text-xl font-semibold text-white mb-2">All Caught Up!</h2>
+                        <p class="text-gray-400 mb-6">You have no cards due for review right now.</p>
+                      </>
+                    }>
+                    <>
+                      <h2 class="text-xl font-semibold text-white mb-2">Session Complete!</h2>
+                      <p class="text-gray-400 mb-6">Great job! You've reviewed all your due cards.</p>
+                    </>
+                  </Show>
                   <Button onClick={() => navigate("/")} variant="secondary">Back to Library</Button>
                 </div>
               }>
@@ -89,7 +95,7 @@ const Review: Component = () => {
           </Show>
         </div>
 
-        <div class="mt-8 bg-gray-900/50 rounded-xl p-6 border border-gray-800/50">
+        <Motion.div {...fadeIn} class="mt-8 bg-gray-900/50 rounded-xl p-6 border border-gray-800/50">
           <h3 class="text-sm font-semibold text-gray-400 mb-4">Keyboard Shortcuts</h3>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             <div class="flex items-center gap-2">
@@ -109,7 +115,7 @@ const Review: Component = () => {
               <span class="text-gray-400">Exit session</span>
             </div>
           </div>
-        </div>
+        </Motion.div>
       </Motion.div>
     </Show>
   );

@@ -3,6 +3,7 @@ import { authStore } from "$lib/store";
 import { Button } from "$ui/Button";
 import { createResource, createSignal, For, Show } from "solid-js";
 
+// TODO: move to model.ts
 type Comment = {
   id: string;
   deck_id: string;
@@ -90,7 +91,8 @@ export function CommentSection(props: CommentSectionProps) {
             class="border rounded p-2 flex-1 w-full"
             rows={2}
             placeholder="Add a comment..."
-            value={replyTo() ? "" : newComment()} // Clear if replying elsewhere, actually separate state might be better but simple for now
+            // TODO: separate state
+            value={replyTo() ? "" : newComment()}
             onInput={(e) => {
               if (!replyTo()) setNewComment(e.currentTarget.value);
             }} />

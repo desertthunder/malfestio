@@ -1,4 +1,4 @@
-import type { CardType } from "$lib/store";
+import type { CardType } from "$lib/model";
 import { Button } from "$ui/Button";
 import { createEffect, createSignal, Show } from "solid-js";
 

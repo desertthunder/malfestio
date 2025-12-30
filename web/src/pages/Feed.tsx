@@ -3,10 +3,9 @@ import { Button } from "$components/ui/Button";
 import { Card } from "$components/ui/Card";
 import { Tabs } from "$components/ui/Tabs";
 import { api } from "$lib/api";
+import type { Deck } from "$lib/model";
 import { A } from "@solidjs/router";
 import { createResource, For, Match, Show, Switch } from "solid-js";
-
-type Deck = { id: string; title: string; description: string; owner_did: string; published_at: string; tags: string[] };
 
 export default function Feed() {
   const [followsFeed] = createResource(async () => {
@@ -25,7 +24,10 @@ export default function Feed() {
         <div>
           <h3 class="text-xl font-bold mb-1">{props.deck.title}</h3>
           <p class="text-sm text-gray-400 mb-2">
-            By {props.deck.owner_did} • {new Date(props.deck.published_at).toLocaleDateString()}
+            By {props.deck.owner_did} •{" "}
+            <Show when={props.deck.published_at} fallback="Draft">
+              {published_at => new Date(published_at()).toLocaleDateString()}
+            </Show>
           </p>
           <p class="mb-3">{props.deck.description}</p>
           <div class="flex gap-2 mb-3">
@@ -67,18 +69,24 @@ export default function Feed() {
               <div class="mt-4">
                 <Show when={followsFeed()}>
                   {feed => (
-                    <Show
-                      when={feed().length > 0}
+                    <For
+                      each={feed()}
                       fallback={<div class="text-gray-500 py-8 text-center">No updates from followed users.</div>}>
-                      <For each={feed()}>{(deck) => <DeckItem deck={deck} />}</For>
-                    </Show>
+                      {(deck) => <DeckItem deck={deck} />}
+                    </For>
                   )}
                 </Show>
               </div>
             </Match>
             <Match when={activeTab() === "trending"}>
               <div class="mt-4">
-                <For each={valuableFeed()}>{(deck) => <DeckItem deck={deck} />}</For>
+                <Show when={valuableFeed()}>
+                  {feed => (
+                    <For each={feed()} fallback={<div class="text-gray-500 py-8 text-center">No trending decks.</div>}>
+                      {(deck) => <DeckItem deck={deck} />}
+                    </For>
+                  )}
+                </Show>
               </div>
             </Match>
           </Switch>
