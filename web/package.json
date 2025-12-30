@@ -12,8 +12,8 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@fontsource-variable/alegreya": "^5.2.8",
-    "@fontsource-variable/lora": "^5.2.8",
+    "@fontsource-variable/figtree": "^5.2.8",
+    "@fontsource-variable/source-serif-4": "^5.2.8",
     "@solidjs/meta": "^0.29.4",
     "@solidjs/router": "^0.15.4",
     "@tailwindcss/vite": "^4.1.18",

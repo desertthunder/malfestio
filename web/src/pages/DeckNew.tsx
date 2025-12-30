@@ -4,6 +4,7 @@ import type { CreateDeckPayload } from "$lib/model";
 import { toast } from "$lib/toast";
 import { useNavigate } from "@solidjs/router";
 import type { Component } from "solid-js";
+import { Motion } from "solid-motionone";
 
 const DeckNew: Component = () => {
   const navigate = useNavigate();
@@ -26,13 +27,26 @@ const DeckNew: Component = () => {
   };
 
   return (
-    <div class="max-w-3xl mx-auto">
-      <div class="mb-8">
-        <h1 class="text-3xl font-light text-[#F4F4F4] mb-2 tracking-tight">Create New Deck</h1>
+    <Motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+      class="max-w-3xl mx-auto">
+      <Motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        class="mb-8">
+        <h1 class="text-4xl text-[#F4F4F4] mb-2 tracking-tight">Create New Deck</h1>
         <p class="text-[#C6C6C6] font-light">Start a new collection of flashcards.</p>
-      </div>
-      <DeckEditor onSave={handleSave} />
-    </div>
+      </Motion.div>
+      <Motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.1 }}>
+        <DeckEditor onSave={handleSave} />
+      </Motion.div>
+    </Motion.div>
   );
 };
 

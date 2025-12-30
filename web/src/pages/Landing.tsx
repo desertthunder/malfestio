@@ -44,7 +44,7 @@ const steps = [{ title: "Import", desc: "Create cards from articles, lectures, o
 const Feature: Component<{ title: string; desc: string; icon: JSX.Element }> = (props) => (
   <div class="border border-neutral-800 p-6 hover:border-blue-600 transition-colors group h-full bg-neutral-900/50 backdrop-blur-sm">
     <div class="w-10 h-10 mb-4 text-blue-500 group-hover:text-blue-400 transition-colors">{props.icon}</div>
-    <h3 class="text-xl font-light text-white mb-2 group-hover:text-blue-400 transition-colors">{props.title}</h3>
+    <h3 class="text-xl text-white mb-2 group-hover:text-blue-400 transition-colors">{props.title}</h3>
     <p class="text-neutral-400 font-light leading-relaxed">{props.desc}</p>
   </div>
 );
@@ -134,9 +134,9 @@ const Landing: Component = () => (
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
-              class="text-5xl md:text-7xl font-light tracking-tight mb-8 leading-[1.1]">
+              class="text-7xl md:text-8xl font-medium tracking-tight mb-8 leading-[1.1]">
               Learning on <br />
-              <span class="text-neutral-500">the AT Protocol.</span>
+              <h1 class="text-neutral-500">the AT Protocol.</h1>
             </Motion.h1>
             <Motion.p
               initial={{ opacity: 0, y: 20 }}

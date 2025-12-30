@@ -2,8 +2,8 @@
 @plugin "@egoist/tailwindcss-icons";
 
 @theme {
-    --font-display: "Lora Variable", serif;
-    --font-body: "Alegreya Variable", serif;
+    --font-display: "Source Serif 4 Variable", serif;
+    --font-body: "Figtree Variable", serif;
 }
 
 * {
