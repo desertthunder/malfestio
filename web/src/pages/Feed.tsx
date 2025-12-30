@@ -1,13 +1,18 @@
 import { FollowButton } from "$components/social/FollowButton";
 import { Button } from "$components/ui/Button";
 import { Card } from "$components/ui/Card";
+import { Dialog } from "$components/ui/Dialog";
 import { Tabs } from "$components/ui/Tabs";
 import { api } from "$lib/api";
 import type { Deck } from "$lib/model";
-import { A } from "@solidjs/router";
-import { createResource, For, Match, Show, Switch } from "solid-js";
+import { toast } from "$lib/toast";
+import { A, useNavigate } from "@solidjs/router";
+import { createResource, createSignal, For, Match, Show, Switch } from "solid-js";
 
 export default function Feed() {
+  const navigate = useNavigate();
+  const [forkDialogDeck, setForkDialogDeck] = createSignal<Deck | null>(null);
+
   const [followsFeed] = createResource(async () => {
     const res = await api.getFeedFollows();
     return res.ok ? (await res.json() as Deck[]) : [];
@@ -17,6 +22,26 @@ export default function Feed() {
     const res = await api.getFeedTrending();
     return res.ok ? (await res.json() as Deck[]) : [];
   });
+
+  const handleFork = async () => {
+    const deck = forkDialogDeck();
+    if (!deck) return;
+    try {
+      const res = await api.forkDeck(deck.id);
+      if (res.ok) {
+        const newDeck = await res.json();
+        toast.success("Deck forked successfully!");
+        navigate(`/decks/${newDeck.id}`);
+      } else {
+        toast.error("Failed to fork deck.");
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error("Error forking deck.");
+    } finally {
+      setForkDialogDeck(null);
+    }
+  };
 
   const DeckItem = (props: { deck: Deck }) => (
     <Card class="mb-4">
@@ -44,17 +69,7 @@ export default function Feed() {
         <A href={`/decks/${props.deck.id}`} class="no-underline">
           <Button variant="secondary" size="sm">View</Button>
         </A>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => {
-            // TODO: use modal or toast
-            if (confirm("Fork this deck?")) {
-              api.forkDeck(props.deck.id).then(() => alert("Forked successfully!"));
-            }
-          }}>
-          Fork
-        </Button>
+        <Button variant="ghost" size="sm" onClick={() => setForkDialogDeck(props.deck)}>Fork</Button>
       </div>
     </Card>
   );
@@ -92,6 +107,20 @@ export default function Feed() {
           </Switch>
         )}
       </Tabs>
+
+      <Dialog
+        open={!!forkDialogDeck()}
+        onClose={() => setForkDialogDeck(null)}
+        title="Fork Deck"
+        actions={
+          <>
+            <Button variant="ghost" onClick={() => setForkDialogDeck(null)}>Cancel</Button>
+            <Button variant="primary" onClick={handleFork}>Fork Deck</Button>
+          </>
+        }>
+        <p>Are you sure you want to fork "{forkDialogDeck()?.title}"?</p>
+        <p class="text-sm text-gray-400 mt-2">This will create a copy of this deck in your library.</p>
+      </Dialog>
     </div>
   );
 }

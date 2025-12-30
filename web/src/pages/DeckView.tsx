@@ -1,14 +1,18 @@
 import { CommentSection } from "$components/social/CommentSection";
 import { FollowButton } from "$components/social/FollowButton";
 import { Button } from "$components/ui/Button";
+import { Dialog } from "$components/ui/Dialog";
 import { api } from "$lib/api";
 import type { Card, Deck } from "$lib/model";
-import { A, useParams } from "@solidjs/router";
+import { toast } from "$lib/toast";
+import { A, useNavigate, useParams } from "@solidjs/router";
 import type { Component } from "solid-js";
-import { createResource, For, Show } from "solid-js";
+import { createResource, createSignal, For, Show } from "solid-js";
 
 const DeckView: Component = () => {
   const params = useParams();
+  const navigate = useNavigate();
+  const [showForkDialog, setShowForkDialog] = createSignal(false);
   const [deck] = createResource(() => params.id, async (id) => {
     const res = await api.getDeck(id);
     return res.ok ? (await res.json() as Deck) : null;
@@ -19,26 +23,21 @@ const DeckView: Component = () => {
   });
 
   const handleFork = async () => {
-    if (!deck()) return;
-    // TODO: use modal
-    if (confirm(`Fork "${deck()?.title}"?`)) {
+    if (deck()) {
       try {
         const res = await api.forkDeck(deck()!.id);
         if (res.ok) {
           const newDeck = await res.json();
-          // TODO: use toast
-          alert("Deck forked successfully!");
-          // TODO: useNavigate
-          // navigate(`/decks/${newDeck.id}`);
-          window.location.href = `/decks/${newDeck.id}`;
+          toast.success("Deck forked successfully!");
+          navigate(`/decks/${newDeck.id}`);
         } else {
-          // TODO: use toast
-          alert("Failed to fork deck.");
+          toast.error("Failed to fork deck.");
         }
       } catch (e) {
         console.error(e);
-        // TODO: use toast
-        alert("Error forking deck.");
+        toast.error("Error forking deck.");
+      } finally {
+        setShowForkDialog(false);
       }
     }
   };
@@ -89,7 +88,7 @@ const DeckView: Component = () => {
                     Study Deck (Coming Soon)
                   </button>
                   <Button
-                    onClick={handleFork}
+                    onClick={() => setShowForkDialog(true)}
                     variant="secondary"
                     class="border border-[#393939] text-[#F4F4F4] hover:bg-[#262626] px-6 py-3 font-medium text-sm transition-colors">
                     Fork Deck
@@ -147,6 +146,22 @@ const DeckView: Component = () => {
           )}
         </Show>
       </Show>
+
+      <Dialog
+        open={showForkDialog()}
+        onClose={() => setShowForkDialog(false)}
+        title="Fork Deck"
+        actions={
+          <>
+            <Button variant="ghost" onClick={() => setShowForkDialog(false)}>Cancel</Button>
+            <Button variant="primary" onClick={handleFork}>Fork Deck</Button>
+          </>
+        }>
+        <p>Are you sure you want to fork "{deck()?.title}"?</p>
+        <p class="text-sm text-gray-400 mt-2">
+          This will create a copy of this deck in your library that you can study and edit.
+        </p>
+      </Dialog>
     </div>
   );
 };

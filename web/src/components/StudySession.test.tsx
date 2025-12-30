@@ -1,4 +1,4 @@
-import type { ReviewCard } from "$lib/store";
+import type { ReviewCard } from "$lib/model";
 import { cleanup, fireEvent, render, screen } from "@solidjs/testing-library";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { StudySession } from "./StudySession";

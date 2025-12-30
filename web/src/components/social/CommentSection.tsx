@@ -11,7 +11,6 @@ type CommentSectionProps = { deckId: string };
 function buildTree(comments: Comment[]): CommentNode[] {
   const map = new Map<string, CommentNode>();
   const roots: CommentNode[] = [];
-
   for (const c of comments) {
     map.set(c.id, { comment: c, children: [] });
   }
@@ -95,7 +94,7 @@ export function CommentSection(props: CommentSectionProps) {
 
       <Show when={comments()} fallback={<div class="animate-pulse">Loading comments...</div>}>
         {(data) => {
-          const list = data as unknown as Comment[];
+          const list = (Array.isArray(data) ? data : []) as Comment[];
           return (
             <div class="space-y-4">
               <For each={buildTree(list)}>{(node) => <CommentItem node={node} />}</For>
