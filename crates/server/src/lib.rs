@@ -48,11 +48,16 @@ pub async fn start() -> malfestio_core::Result<()> {
         .route("/me", get(api::auth::me))
         .route("/decks", post(api::deck::create_deck))
         .route("/decks/{id}/publish", post(api::deck::publish_deck))
+        .route("/decks/{id}/fork", post(api::deck::fork_deck))
         .route("/notes", post(api::note::create_note))
         .route("/cards", post(api::card::create_card))
         .route("/review/due", get(api::review::get_due_cards))
         .route("/review/submit", post(api::review::submit_review))
         .route("/review/stats", get(api::review::get_stats))
+        .route("/social/follow/{did}", post(api::social::follow))
+        .route("/social/unfollow/{did}", post(api::social::unfollow))
+        .route("/decks/{id}/comments", post(api::social::add_comment))
+        .route("/feeds/follows", get(api::feed::get_feed_follows))
         .layer(axum_middleware::from_fn(middleware::auth::auth_middleware));
 
     let optional_auth_routes = Router::new()
@@ -61,6 +66,10 @@ pub async fn start() -> malfestio_core::Result<()> {
         .route("/decks/{id}/cards", get(api::card::list_cards))
         .route("/notes", get(api::note::list_notes))
         .route("/notes/{id}", get(api::note::get_note))
+        .route("/social/followers/{did}", get(api::social::get_followers))
+        .route("/social/following/{did}", get(api::social::get_following))
+        .route("/decks/{id}/comments", get(api::social::get_comments))
+        .route("/feeds/trending", get(api::feed::get_feed_trending))
         .layer(axum_middleware::from_fn(middleware::auth::optional_auth_middleware));
 
     let oauth_routes = Router::new()

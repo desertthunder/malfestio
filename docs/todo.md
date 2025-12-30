@@ -49,32 +49,11 @@
     - OAuth 2.1 client flow (PKCE, DPoP, handle/DID resolution, token refresh).
     - PDS client for `putRecord`, `deleteRecord`, `uploadBlob`.
     - TID generation and AT-URI builder in core crate.
-    - Database migration for token storage and AT-URI columns.
 - **(Done) Milestone E**: Internal component library/UI Foundation + Animations.
 - **(Done) Milestone F**: Content Authoring (Notes + Cards + Deck Builder).
-
 - **(Done) Milestone G**: Study Engine (SRS) + Daily Review UX.
     - SM-2 spaced repetition scheduler.
-    - Review repository with due card queries and stats tracking.
-    - API endpoints: `/review/due`, `/review/submit`, `/review/stats`.
-    - StudySession component with keyboard-first review.
-    - ReviewStats component for progress display.
-
-### Milestone H - Social Layer v1 (Follow, Feed, Fork, Comments)
-
-#### Deliverables
-
-- Follow graph + notifications
-- Feeds:
-    - "New decks from follows"
-    - "Trending this week" (simple scoring)
-- Forking workflow:
-    - fork deck -> edit -> republish
-- Threaded comments on decks/cards
-
-#### Acceptance
-
-- A user can follow a curator and see new published decks in a feed.
+- **(Done) Milestone H**: Social Layer v1: Follow graph, Feeds (Follows/Trending), Forking workflow, and Threaded comments.
 
 ### Milestone I - Search + Discovery + Taxonomy
 
@@ -95,6 +74,7 @@
 
 #### Deliverables
 
+- Look into [Ozone](https://github.com/bluesky-social/ozone)
 - Reporting pipeline + review queue
 - Rate limits + spam heuristics
 - Takedown/visibility states (shadowed, removed, quarantined)
@@ -132,14 +112,6 @@
 - Backups + restore drills
 - Load test targets (study session + feed + search)
 - Beta program + feedback loop + roadmap iteration
-
-#### Acceptance
-
-- You can run this as a real product with confidence.
-
-## Lexicon Definitions
-
-Authoritative Lexicon definitions are located in the [`lexicons/`](../lexicons) directory.
 
 ## Open Questions (Parked Decisions)
 

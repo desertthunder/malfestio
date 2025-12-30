@@ -182,7 +182,6 @@ pub async fn get_deck(
     State(state): State<SharedState>, ctx: Option<axum::Extension<UserContext>>, Path(id): Path<String>,
 ) -> impl IntoResponse {
     let user_did = ctx.map(|Extension(u)| u.did);
-
     let pool = &state.pool;
     let client = match pool.get().await {
         Ok(client) => client,
@@ -428,7 +427,6 @@ pub async fn publish_deck(
             }
         }
     } else {
-        // Unpublish - just update local visibility
         let (new_visibility, published_at) = (
             serde_json::to_value(&Visibility::Private).unwrap(),
             None::<chrono::DateTime<chrono::Utc>>,
@@ -460,4 +458,174 @@ pub async fn publish_deck(
     } else {
         Json(deck).into_response()
     }
+}
+
+pub async fn fork_deck(
+    State(state): State<SharedState>, ctx: Option<axum::Extension<UserContext>>, Path(id): Path<String>,
+) -> impl IntoResponse {
+    let user = match ctx {
+        Some(axum::Extension(user)) => user,
+        None => return (StatusCode::UNAUTHORIZED, Json(json!({"error": "Unauthorized"}))).into_response(),
+    };
+
+    let pool = &state.pool;
+    let mut client = match pool.get().await {
+        Ok(client) => client,
+        Err(e) => {
+            tracing::error!("Failed to get database connection: {}", e);
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": "Database connection failed"})),
+            )
+                .into_response();
+        }
+    };
+
+    let original_deck_uuid = match uuid::Uuid::parse_str(&id) {
+        Ok(uuid) => uuid,
+        Err(_) => return (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid deck ID"}))).into_response(),
+    };
+
+    let transaction = match client.transaction().await {
+        Ok(tx) => tx,
+        Err(e) => {
+            tracing::error!("Failed to start transaction: {}", e);
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": "Database error"})),
+            )
+                .into_response();
+        }
+    };
+
+    let original_deck_row = match transaction
+        .query_opt(
+            "SELECT owner_did, title, description, tags, visibility FROM decks WHERE id = $1",
+            &[&original_deck_uuid],
+        )
+        .await
+    {
+        Ok(Some(row)) => row,
+        Ok(None) => return (StatusCode::NOT_FOUND, Json(json!({"error": "Deck not found"}))).into_response(),
+        Err(e) => {
+            tracing::error!("Failed to query deck: {}", e);
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": "Failed to retrieve deck"})),
+            )
+                .into_response();
+        }
+    };
+
+    let visibility_json: serde_json::Value = original_deck_row.get("visibility");
+    let visibility: Visibility = serde_json::from_value(visibility_json).unwrap_or(Visibility::Private);
+
+    let can_fork = match visibility {
+        Visibility::Public | Visibility::Unlisted => true,
+        Visibility::SharedWith(dids) => dids.contains(&user.did),
+        Visibility::Private => {
+            let owner: String = original_deck_row.get("owner_did");
+            owner == user.did
+        }
+    };
+
+    if !can_fork {
+        return (
+            StatusCode::FORBIDDEN,
+            Json(json!({"error": "Cannot fork private deck"})),
+        )
+            .into_response();
+    }
+
+    let new_deck_id = uuid::Uuid::new_v4();
+    let title: String = original_deck_row.get("title");
+    let description: String = original_deck_row.get("description");
+    let tags: Vec<String> = original_deck_row.get("tags");
+
+    if let Err(e) = transaction
+        .execute(
+            "INSERT INTO decks (id, owner_did, title, description, tags, visibility, fork_of)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)",
+            &[
+                &new_deck_id,
+                &user.did,
+                &format!("Fork of {}", title),
+                &description,
+                &tags,
+                &serde_json::to_value(&Visibility::Private).unwrap(),
+                &original_deck_uuid,
+            ],
+        )
+        .await
+    {
+        tracing::error!("Failed to create forked deck: {}", e);
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({"error": "Failed to create deck"})),
+        )
+            .into_response();
+    }
+
+    let original_cards = match transaction
+        .query(
+            "SELECT front, back, media_url FROM cards WHERE deck_id = $1",
+            &[&original_deck_uuid],
+        )
+        .await
+    {
+        Ok(rows) => rows,
+        Err(e) => {
+            tracing::error!("Failed to fetch original cards: {}", e);
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": "Failed to fetch cards"})),
+            )
+                .into_response();
+        }
+    };
+
+    for row in original_cards {
+        let card_id = uuid::Uuid::new_v4();
+        let front: String = row.get("front");
+        let back: String = row.get("back");
+        let media_url: Option<String> = row.get("media_url");
+
+        if let Err(e) = transaction
+            .execute(
+                "INSERT INTO cards (id, owner_did, deck_id, front, back, media_url)
+                 VALUES ($1, $2, $3, $4, $5, $6)",
+                &[&card_id, &user.did, &new_deck_id, &front, &back, &media_url],
+            )
+            .await
+        {
+            tracing::error!("Failed to fork card: {}", e);
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": "Failed to fork cards"})),
+            )
+                .into_response();
+        }
+    }
+
+    if let Err(e) = transaction.commit().await {
+        tracing::error!("Failed to commit transaction: {}", e);
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({"error": "Transaction failed"})),
+        )
+            .into_response();
+    }
+
+    let deck = Deck {
+        id: new_deck_id.to_string(),
+        owner_did: user.did,
+        title: format!("Fork of {}", title),
+        description,
+        tags,
+        visibility: Visibility::Private,
+        published_at: None,
+        fork_of: Some(id),
+    };
+
+    (StatusCode::CREATED, Json(deck)).into_response()
 }

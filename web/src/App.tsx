@@ -2,6 +2,7 @@ import { AppLayout } from "$components/layout/AppLayout";
 import { authStore } from "$lib/store";
 import DeckNew from "$pages/DeckNew";
 import DeckView from "$pages/DeckView";
+import Feed from "$pages/Feed";
 import Home from "$pages/Home";
 import Import from "$pages/Import";
 import Landing from "$pages/Landing";
@@ -37,6 +38,7 @@ const App: Component = () => {
       <Route path="/import/lecture" component={() => <ProtectedRoute component={LectureImport} />} />
       <Route path="/review" component={() => <ProtectedRoute component={Review} />} />
       <Route path="/review/:deckId" component={() => <ProtectedRoute component={Review} />} />
+      <Route path="/feed" component={() => <ProtectedRoute component={Feed} />} />
       <Route path="*" component={() => <ProtectedRoute component={NotFound} />} />
     </Router>
   );

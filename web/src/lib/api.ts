@@ -35,4 +35,14 @@ export const api = {
   submitReview: (cardId: string, grade: number) =>
     apiFetch("/review/submit", { method: "POST", body: JSON.stringify({ card_id: cardId, grade }) }),
   getStats: () => apiFetch("/review/stats", { method: "GET" }),
+  follow: (did: string) => apiFetch(`/social/follow/${did}`, { method: "POST" }),
+  unfollow: (did: string) => apiFetch(`/social/unfollow/${did}`, { method: "POST" }),
+  getFollowers: (did: string) => apiFetch(`/social/followers/${did}`, { method: "GET" }),
+  getFollowing: (did: string) => apiFetch(`/social/following/${did}`, { method: "GET" }),
+  addComment: (deckId: string, content: string, parentId?: string) =>
+    apiFetch(`/decks/${deckId}/comments`, { method: "POST", body: JSON.stringify({ content, parent_id: parentId }) }),
+  getComments: (deckId: string) => apiFetch(`/decks/${deckId}/comments`, { method: "GET" }),
+  getFeedFollows: () => apiFetch("/feeds/follows", { method: "GET" }),
+  getFeedTrending: () => apiFetch("/feeds/trending", { method: "GET" }),
+  forkDeck: (deckId: string) => apiFetch(`/decks/${deckId}/fork`, { method: "POST" }),
 };

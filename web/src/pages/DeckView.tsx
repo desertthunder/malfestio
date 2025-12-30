@@ -1,3 +1,6 @@
+import { CommentSection } from "$components/social/CommentSection";
+import { FollowButton } from "$components/social/FollowButton";
+import { Button } from "$components/ui/Button";
 import { api } from "$lib/api";
 import type { Visibility } from "$lib/store";
 import { A, useParams } from "@solidjs/router";
@@ -15,12 +18,14 @@ type Deck = {
 
 type Card = { id: string; front: string; back?: string };
 
+// TODO: use api.ts
 const fetchDeck = async (id: string): Promise<Deck | null> => {
   const res = await api.get(`/decks/${id}`);
   if (!res.ok) return null;
   return res.json();
 };
 
+// TODO: use api.ts
 const fetchCards = async (id: string): Promise<Card[]> => {
   const res = await api.get(`/decks/${id}/cards`);
   if (!res.ok) return [];
@@ -29,9 +34,33 @@ const fetchCards = async (id: string): Promise<Card[]> => {
 
 const DeckView: Component = () => {
   const params = useParams();
-
   const [deck] = createResource(() => params.id, fetchDeck);
   const [cards] = createResource(() => params.id, fetchCards);
+
+  const handleFork = async () => {
+    if (!deck()) return;
+    // TODO: use modal
+    if (confirm(`Fork "${deck()?.title}"?`)) {
+      try {
+        const res = await api.forkDeck(deck()!.id);
+        if (res.ok) {
+          const newDeck = await res.json();
+          // TODO: use toast
+          alert("Deck forked successfully!");
+          // TODO: useNavigate
+          // navigate(`/decks/${newDeck.id}`);
+          window.location.href = `/decks/${newDeck.id}`;
+        } else {
+          // TODO: use toast
+          alert("Failed to fork deck.");
+        }
+      } catch (e) {
+        console.error(e);
+        // TODO: use toast
+        alert("Error forking deck.");
+      }
+    }
+  };
 
   return (
     <div class="max-w-4xl mx-auto px-6 py-12">
@@ -56,6 +85,11 @@ const DeckView: Component = () => {
             </Show>
           </div>
 
+          <div class="flex items-center gap-4 mb-6">
+            <div class="text-[#C6C6C6] font-light">By {deck()?.owner_did}</div>
+            <FollowButton did={deck()?.owner_did || ""} />
+          </div>
+
           <p class="text-[#C6C6C6] mb-6 font-light">{deck()?.description}</p>
 
           <div class="flex gap-2 mb-8">
@@ -67,10 +101,15 @@ const DeckView: Component = () => {
           </div>
 
           <div class="flex gap-4 border-t border-[#393939] pt-6">
-            {/* Placeholder for Study Action */}
             <button class="bg-[#0F62FE] hover:bg-[#0353E9] text-white px-6 py-3 font-medium text-sm transition-colors">
               Study Deck (Coming Soon)
             </button>
+            <Button
+              onClick={handleFork}
+              variant="secondary"
+              class="border border-[#393939] text-[#F4F4F4] hover:bg-[#262626] px-6 py-3 font-medium text-sm transition-colors">
+              Fork Deck
+            </Button>
             <A
               href="/"
               class="px-6 py-3 border border-[#393939] text-[#F4F4F4] hover:bg-[#262626] font-medium text-sm transition-colors">
@@ -115,6 +154,10 @@ const DeckView: Component = () => {
               </div>
             </Show>
           </div>
+        </div>
+
+        <div class="mt-12 pt-8 border-t border-[#393939]">
+          <CommentSection deckId={deck()!.id} />
         </div>
       </Show>
     </div>

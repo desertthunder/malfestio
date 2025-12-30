@@ -147,8 +147,10 @@ mod tests {
         let card_repo = Arc::new(MockCardRepository::new()) as Arc<dyn crate::repository::card::CardRepository>;
         let note_repo = Arc::new(MockNoteRepository::new()) as Arc<dyn crate::repository::note::NoteRepository>;
         let oauth_repo = Arc::new(MockOAuthRepository::new()) as Arc<dyn crate::repository::oauth::OAuthRepository>;
+        let social_repo = Arc::new(crate::repository::social::mock::MockSocialRepository::new())
+            as Arc<dyn crate::repository::social::SocialRepository>;
 
-        Arc::new(AppState { pool, card_repo, note_repo, oauth_repo, review_repo })
+        Arc::new(AppState { pool, card_repo, note_repo, oauth_repo, review_repo, social_repo })
     }
 
     #[tokio::test]

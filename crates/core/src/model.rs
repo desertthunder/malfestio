@@ -55,3 +55,20 @@ pub struct Deck {
     pub published_at: Option<String>,
     pub fork_of: Option<String>,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Comment {
+    pub id: String,
+    pub deck_id: String,
+    pub author_did: String,
+    pub content: String,
+    pub parent_id: Option<String>,
+    pub created_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Follow {
+    pub follower_did: String,
+    pub subject_did: String,
+    pub created_at: String,
+}
