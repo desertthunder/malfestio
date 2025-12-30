@@ -22,8 +22,10 @@ export const ReviewStats: Component<ReviewStatsProps> = (props) => (
           <div class="space-y-4">
             <div class="flex items-center justify-between">
               <h3 class="text-lg font-semibold text-white">Study Progress</h3>
-              {/* TODO: fire icon */}
-              <span class="text-2xl">🔥 {stats().current_streak} day streak</span>
+              <span class="text-2xl flex items-center gap-2">
+                <i class="i-bi-fire" />
+                <span>{stats().current_streak} day streak</span>
+              </span>
             </div>
 
             <div class="grid grid-cols-3 gap-4 text-center">

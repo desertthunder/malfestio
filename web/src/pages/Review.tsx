@@ -67,8 +67,9 @@ const Review: Component = () => {
               when={cards().length > 0}
               fallback={
                 <div class="text-center py-8">
-                  {/* TODO: replace with an icon */}
-                  <p class="text-4xl mb-4">🎉</p>
+                  <p class="text-4xl mb-4 flex items-center gap-2">
+                    <i class="i-bi-star-fill text-yellow-400" />
+                  </p>
                   <Show
                     when={sessionComplete()}
                     fallback={
