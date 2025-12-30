@@ -50,6 +50,9 @@ pub async fn start() -> malfestio_core::Result<()> {
         .route("/decks/{id}/publish", post(api::deck::publish_deck))
         .route("/notes", post(api::note::create_note))
         .route("/cards", post(api::card::create_card))
+        .route("/review/due", get(api::review::get_due_cards))
+        .route("/review/submit", post(api::review::submit_review))
+        .route("/review/stats", get(api::review::get_stats))
         .layer(axum_middleware::from_fn(middleware::auth::auth_middleware));
 
     let optional_auth_routes = Router::new()

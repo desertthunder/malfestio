@@ -53,26 +53,12 @@
 - **(Done) Milestone E**: Internal component library/UI Foundation + Animations.
 - **(Done) Milestone F**: Content Authoring (Notes + Cards + Deck Builder).
 
-### Milestone G - Study Engine (SRS) + Daily Review UX
-
-#### Deliverables
-
-- SRS scheduler (SM-2 baseline)
-    - grade 0–5, EF, interval, repetition count
-- Review queue generation rules
-- Study session UI:
-    - keyboard-first review loop
-    - quick edit card during review
-- Progress views (private):
-    - due count, retention proxy, streaks
-
-#### Acceptance
-
-- 30-day simulated study test produces stable, believable intervals.
-
-#### Notes
-
-- SM-2 reference behavior is well documented; start there and iterate.
+- **(Done) Milestone G**: Study Engine (SRS) + Daily Review UX.
+    - SM-2 spaced repetition scheduler.
+    - Review repository with due card queries and stats tracking.
+    - API endpoints: `/review/due`, `/review/submit`, `/review/stats`.
+    - StudySession component with keyboard-first review.
+    - ReviewStats component for progress display.
 
 ### Milestone H - Social Layer v1 (Follow, Feed, Fork, Comments)
 

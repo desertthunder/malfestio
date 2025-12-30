@@ -75,3 +75,27 @@ export type CreateDeckPayload = {
   visibility: Visibility;
   cards: Card[];
 };
+
+export type Grade = 0 | 1 | 2 | 3 | 4 | 5;
+
+export type ReviewCard = {
+  review_id: string;
+  card_id: string;
+  deck_id: string;
+  deck_title: string;
+  front: string;
+  back: string;
+  media_url?: string;
+  hints: string[];
+  due_at: string;
+};
+
+export type StudyStats = {
+  due_count: number;
+  current_streak: number;
+  longest_streak: number;
+  reviewed_today: number;
+  total_reviews: number;
+};
+
+export type ReviewResponse = { ease_factor: number; interval_days: number; repetitions: number; due_at: string };

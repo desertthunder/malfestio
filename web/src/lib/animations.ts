@@ -50,3 +50,24 @@ export const scaleOut: MotionOptions = {
 
 /** Stagger delay for list items */
 export const staggerDelay = (index: number, baseDelay = 0.05) => index * baseDelay;
+
+/** Card flip animation (3D) */
+export const cardFlip: MotionOptions = {
+  initial: { rotateY: 0 },
+  animate: { rotateY: 180 },
+  transition: { duration: 0.4, easing: easeOut },
+};
+
+/** Slide out left (for card dismissal) */
+export const slideOutLeft: MotionOptions = {
+  initial: { opacity: 1, x: 0 },
+  animate: { opacity: 0, x: -100 },
+  transition: { duration: 0.25, easing: easeOut },
+};
+
+/** Bounce in (for success feedback) */
+export const bounceIn: MotionOptions = {
+  initial: { opacity: 0, scale: 0.8 },
+  animate: { opacity: 1, scale: 1 },
+  transition: { duration: 0.3, easing: [0.34, 1.56, 0.64, 1] },
+};

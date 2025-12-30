@@ -27,4 +27,12 @@ export async function apiFetch(path: string, options: RequestInit = {}) {
 export const api = {
   get: (path: string) => apiFetch(path, { method: "GET" }),
   post: (path: string, body: unknown) => apiFetch(path, { method: "POST", body: JSON.stringify(body) }),
+  getDueCards: (deckId?: string, limit = 20) => {
+    const params = new URLSearchParams({ limit: String(limit) });
+    if (deckId) params.set("deck_id", deckId);
+    return apiFetch(`/review/due?${params}`, { method: "GET" });
+  },
+  submitReview: (cardId: string, grade: number) =>
+    apiFetch("/review/submit", { method: "POST", body: JSON.stringify({ card_id: cardId, grade }) }),
+  getStats: () => apiFetch("/review/stats", { method: "GET" }),
 };
