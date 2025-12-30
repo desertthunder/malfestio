@@ -252,7 +252,13 @@ mod tests {
             .into_response();
 
         assert_eq!(response.status(), StatusCode::OK);
-        // TODO: parse body to verify content
+
+        let body_bytes = axum::body::to_bytes(response.into_body(), usize::MAX).await.unwrap();
+        let followers: Vec<String> = serde_json::from_slice(&body_bytes).unwrap();
+
+        assert_eq!(followers.len(), 2);
+        assert!(followers.contains(&"did:plc:1".to_string()));
+        assert!(followers.contains(&"did:plc:2".to_string()));
     }
 
     #[tokio::test]

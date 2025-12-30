@@ -25,7 +25,6 @@ pub struct PublishDeckRequest {
     pub published: bool,
 }
 
-// TODO: add tests
 pub async fn create_deck(
     State(state): State<SharedState>, ctx: Option<axum::Extension<UserContext>>, Json(payload): Json<CreateDeckRequest>,
 ) -> impl IntoResponse {
@@ -80,7 +79,6 @@ pub async fn get_deck(
 
     match state.deck_repo.get(&id).await {
         Ok(deck) => {
-            // Access control check
             let is_owner = user_did.as_ref() == Some(&deck.owner_did);
             let has_access = match &deck.visibility {
                 Visibility::Public | Visibility::Unlisted => true,
@@ -245,5 +243,73 @@ pub async fn fork_deck(
             )
                 .into_response()
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::middleware::auth::UserContext;
+    use crate::state::AppState;
+    use axum::extract::{Extension, State};
+    use axum::http::StatusCode;
+    use axum::response::IntoResponse;
+    use malfestio_core::model::Visibility;
+    use std::sync::Arc;
+
+    #[tokio::test]
+    async fn test_create_deck_success() {
+        let pool = crate::db::create_pool("postgres://postgres:postgres@localhost:5432/malfestio").unwrap();
+
+        let state = AppState::new_with_repos(
+            pool,
+            Arc::new(crate::repository::card::mock::MockCardRepository::new()),
+            Arc::new(crate::repository::note::mock::MockNoteRepository::new()),
+            Arc::new(crate::repository::oauth::mock::MockOAuthRepository::new()),
+        );
+
+        let user = UserContext { did: "did:plc:alice".to_string(), handle: "alice.bsky.social".to_string() };
+
+        let payload = CreateDeckRequest {
+            title: "My New Deck".to_string(),
+            description: "A test deck".to_string(),
+            tags: vec!["rust".to_string()],
+            visibility: Visibility::Public,
+        };
+
+        let response = create_deck(State(state), Some(Extension(user)), Json(payload))
+            .await
+            .into_response();
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+
+        let body_bytes = axum::body::to_bytes(response.into_body(), usize::MAX).await.unwrap();
+        let body_json: serde_json::Value = serde_json::from_slice(&body_bytes).unwrap();
+
+        assert_eq!(body_json["title"], "My New Deck");
+        assert_eq!(body_json["owner_did"], "did:plc:alice");
+        assert_eq!(body_json["visibility"]["type"], "Public");
+    }
+
+    #[tokio::test]
+    async fn test_create_deck_unauthorized() {
+        let pool = crate::db::create_pool("postgres://postgres:postgres@localhost:5432/malfestio").unwrap();
+        let state = AppState::new_with_repos(
+            pool,
+            Arc::new(crate::repository::card::mock::MockCardRepository::new()),
+            Arc::new(crate::repository::note::mock::MockNoteRepository::new()),
+            Arc::new(crate::repository::oauth::mock::MockOAuthRepository::new()),
+        );
+
+        let payload = CreateDeckRequest {
+            title: "My New Deck".to_string(),
+            description: "A test deck".to_string(),
+            tags: vec![],
+            visibility: Visibility::Public,
+        };
+
+        let response = create_deck(State(state), None, Json(payload)).await.into_response();
+
+        assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
     }
 }

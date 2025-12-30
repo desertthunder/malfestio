@@ -62,7 +62,17 @@ pub async fn login(State(state): State<SharedState>, Json(payload): Json<LoginRe
     }
 }
 
-/// TODO: replace with middleware
-pub async fn me() -> impl IntoResponse {
-    Json(json!({ "status": "authenticated" }))
+pub async fn me(ctx: Option<axum::Extension<crate::middleware::auth::UserContext>>) -> impl IntoResponse {
+    match ctx {
+        Some(axum::Extension(user)) => (
+            StatusCode::OK,
+            Json(json!({
+                "status": "authenticated",
+                "did": user.did,
+                "handle": user.handle
+            })),
+        )
+            .into_response(),
+        None => (StatusCode::UNAUTHORIZED, Json(json!({ "error": "Unauthorized" }))).into_response(),
+    }
 }

@@ -1,4 +1,5 @@
 use crate::state::SharedState;
+
 use axum::{
     extract::{Request, State},
     http::{self},
@@ -14,10 +15,17 @@ pub struct UserContext {
     pub handle: String,
 }
 
-/// Cache expiry time
-const CACHE_TTL: Duration = Duration::from_secs(300); // 5 minutes
+/// Cache expiry time (5 minutes)
+const CACHE_TTL: Duration = Duration::from_secs(300);
 
-/// TODO: Cache or use signature verification for performance
+/// Delegated Authentication Strategy:
+///
+/// We verify the token by calling the PDS `getSession` endpoint.
+/// To improve performance, we cache the result for a short duration (TTL).
+/// This avoids validating the JWT signature locally, which simplifies key management
+/// (no need to fetch/rotate PDS public keys) while maintaining security via the PDS.
+///
+/// NOTE: This assumes the PDS is trusted.
 pub async fn auth_middleware(State(state): State<SharedState>, mut req: Request, next: Next) -> Response {
     let auth_header = req.headers().get(http::header::AUTHORIZATION);
 
@@ -56,10 +64,8 @@ pub async fn auth_middleware(State(state): State<SharedState>, mut req: Request,
             let body: serde_json::Value = response.json().await.unwrap_or_default();
             let did = body["did"].as_str().unwrap_or("").to_string();
             let handle = body["handle"].as_str().unwrap_or("").to_string();
-
             let user_ctx = UserContext { did, handle };
 
-            // Update cache
             {
                 let mut cache = state.auth_cache.write().await;
                 cache.insert(token.to_string(), (user_ctx.clone(), Instant::now()));
