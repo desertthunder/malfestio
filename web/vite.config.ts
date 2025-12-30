@@ -9,6 +9,6 @@ export default defineConfig({
     environment: "jsdom",
     ui: false,
     watch: false,
-    server: { deps: { inline: ["@solidjs/router", "solid-js"] } },
+    server: { deps: { inline: [/@solidjs/, /solid-js/, /solid-motionone/, /motion/] } },
   },
 });

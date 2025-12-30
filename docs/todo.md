@@ -50,8 +50,9 @@
     - PDS client for `putRecord`, `deleteRecord`, `uploadBlob`.
     - TID generation and AT-URI builder in core crate.
     - Database migration for token storage and AT-URI columns.
+- **(Done) Milestone E**: Internal component library/UI Foundation + Animations.
 
-### Milestone E - Content Authoring (Notes + Cards + Deck Builder)
+### Milestone F - Content Authoring (Notes + Cards + Deck Builder)
 
 #### Deliverables
 

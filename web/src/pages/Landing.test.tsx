@@ -16,8 +16,8 @@ describe("Landing Page", () => {
   it("renders hero text correctly", () => {
     renderLanding();
 
-    expect(screen.getByText(/A Learning OS/i)).toBeInTheDocument();
-    expect(screen.getByText(/for daily study/i)).toBeInTheDocument();
+    expect(screen.getByText(/Learning on/i)).toBeInTheDocument();
+    expect(screen.getByText(/the AT Protocol/i)).toBeInTheDocument();
     expect(screen.getByText(/Master complex topics/i)).toBeInTheDocument();
   });
 

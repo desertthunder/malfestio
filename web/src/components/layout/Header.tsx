@@ -1,6 +1,7 @@
 import { A } from "@solidjs/router";
 import { type Component, Show } from "solid-js";
 import { authStore } from "../../lib/store";
+import { Avatar } from "../ui/Avatar";
 
 const Login: Component = () => (
   <A href="/login" class="px-4 py-2 bg-white text-gray-900 text-sm font-medium hover:bg-gray-100 transition-colors">
@@ -27,9 +28,7 @@ export const Header: Component = () => {
               class="text-xs text-red-400 hover:text-red-300 transition-colors">
               Logout
             </button>
-            <div class="w-8 h-8 rounded-full bg-blue-900/50 border border-blue-500/30 flex items-center justify-center text-blue-400 text-xs font-bold">
-              {authStore.user()?.handle.slice(0, 2).toUpperCase()}
-            </div>
+            <Avatar name={authStore.user()?.handle} size="sm" />
           </div>
         </Show>
       </div>
