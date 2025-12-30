@@ -90,16 +90,18 @@ mod tests {
         let review_repo = Arc::new(MockReviewRepository::new()) as Arc<dyn crate::repository::review::ReviewRepository>;
         let social_repo = Arc::new(MockSocialRepository::new()) as Arc<dyn crate::repository::social::SocialRepository>;
         let deck_repo = Arc::new(MockDeckRepository::new()) as Arc<dyn crate::repository::deck::DeckRepository>;
-
         let config = crate::state::AppConfig { pds_url: "https://bsky.social".to_string() };
         let auth_cache = Arc::new(tokio::sync::RwLock::new(std::collections::HashMap::new()));
         let search_repo_trait = search_repo.clone() as Arc<dyn SearchRepository>;
+        let prefs_repo = Arc::new(crate::repository::preferences::mock::MockPreferencesRepository::new())
+            as Arc<dyn crate::repository::preferences::PreferencesRepository>;
 
         Arc::new(AppState {
             pool,
             card_repo,
             note_repo,
             oauth_repo,
+            prefs_repo,
             review_repo,
             social_repo,
             deck_repo,

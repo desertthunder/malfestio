@@ -11,9 +11,9 @@ This document outlines the core user journeys and detailed user flows for Malfes
 1. **Import**: User inputs a URL (Article) or pastes text.
 2. **Generate**: System extracts metadata (and optionally snapshots content).
 3. **Authoring**:
-    * User highlights key sections in the source.
-    * User creates **Notes** linked to highlights.
-    * User generates **Cards** (Flashcards) from Notes or directly from source.
+    - User highlights key sections in the source.
+    - User creates **Notes** linked to highlights.
+    - User generates **Cards** (Flashcards) from Notes or directly from source.
 4. **Assembly**: User organizes Cards into a **Deck**.
 5. **Publish**: User sets visibility (e.g., Public) and publishes the Deck.
 6. **Result**: The Deck is now a shareable Artifact (ATProto record).
@@ -74,13 +74,13 @@ This document outlines the core user journeys and detailed user flows for Malfes
 1. **Session Start**: User opens the app/daily study mode.
 2. **Review Queue**: System presents cards due for review based on SRS algorithm (e.g., SM-2).
 3. **Interaction**:
-    * User sees **Front** of card.
-    * User attempts recall.
-    * User reveals **Back**.
+    - User sees **Front** of card.
+    - User attempts recall.
+    - User reveals **Back**.
 4. **Grading**: User self-grades (e.g., 0-5).
 5. **Update**: System schedules next review interval.
 6. **Progress**: User sees feedback (cards done, streak incremented).
-    * *Note: All grading/progress data is strictly private.*
+    - *Note: All grading/progress data is strictly private.*
 
 ### Detailed Flows
 
@@ -103,11 +103,11 @@ This document outlines the core user journeys and detailed user flows for Malfes
 
 #### Progress Tracking
 
-* **Due count**: Cards needing review today
+- **Due count**: Cards needing review today
 
-* **Streak**: Consecutive days studied
-* **Reviewed today**: Cards completed this session
-* **Interval growth**: SM-2 algorithm increases intervals for mastered cards
+- **Streak**: Consecutive days studied
+- **Reviewed today**: Cards completed this session
+- **Interval growth**: SM-2 algorithm increases intervals for mastered cards
 
 #### Keyboard Shortcuts
 
@@ -129,14 +129,14 @@ This document outlines the core user journeys and detailed user flows for Malfes
 ### High-Level Workflow
 
 1. **Discovery**:
-    * User follows a Curator.
-    * User sees a new Deck in their "New from Follows" feed.
+    - User follows a Curator.
+    - User sees a new Deck in their "New from Follows" feed.
 2. **Acquisition**: User saves/pins the Deck to their library.
 3. **Contribution (Forking)**:
-    * User identifies a gap or error in the Deck.
-    * User **Forks** the Deck.
-    * User edits cards or adds new ones.
-    * User republishes the modified Deck (referencing the original).
+    - User identifies a gap or error in the Deck.
+    - User **Forks** the Deck.
+    - User edits cards or adds new ones.
+    - User republishes the modified Deck (referencing the original).
 4. **Loop**: Original author (or others) can see the fork and potentially merge changes (future scope) or users can switch to the better fork.
 
 ## 4. Discussion & Moderation
@@ -148,10 +148,10 @@ This document outlines the core user journeys and detailed user flows for Malfes
 1. **Context**: A User is viewing a public Card or Deck.
 2. **Discuss**: User adds a **Comment** (threaded) asking for clarification.
 3. **Report** (Unhappy Path):
-    * User encounters abusive content/spam.
-    * User triggers **Report** flow.
-    * Moderation system receives report.
-    * Content may be hidden/labeled based on moderation actions.
+    - User encounters abusive content/spam.
+    - User triggers **Report** flow.
+    - Moderation system receives report.
+    - Content may be hidden/labeled based on moderation actions.
 
 ## 5. Lecture Study Workflow
 
@@ -161,11 +161,11 @@ This document outlines the core user journeys and detailed user flows for Malfes
 
 1. **Import**: User provides a Lecture URL (e.g., YouTube/Video).
 2. **Structure**:
-    * User creates an **Outline** of the lecture.
-    * User adds **Timestamps** to segment the content.
+    - User creates an **Outline** of the lecture.
+    - User adds **Timestamps** to segment the content.
 3. **Link**:
-    * User creates Cards specific to timestamped segments.
-    * Clicking context on a Card jumps video to the specific timestamp.
+    - User creates Cards specific to timestamped segments.
+    - Clicking context on a Card jumps video to the specific timestamp.
 
 ## Authentication
 
@@ -179,3 +179,58 @@ This document outlines the core user journeys and detailed user flows for Malfes
 
 1. Click avatar in header → "Logout"
 2. → redirected to Landing page
+
+## 6. Onboarding & Personalization
+
+**Goal**: New users get a personalized experience based on their learning goals.
+
+### High-Level Workflow
+
+1. **First Login**: User authenticates for the first time.
+2. **Persona Selection**: User sees onboarding dialog with persona options:
+   - **Learner**: Focus on studying existing content
+   - **Creator**: Focus on building and sharing decks
+   - **Curator**: Focus on discovering and organizing content
+3. **Personalized Experience**: Empty states and tips adapt to chosen persona.
+4. **Progress**: User preferences stored in backend for consistency across sessions.
+
+### Detailed Flows
+
+#### First-Time Onboarding
+
+1. User logs in successfully
+2. System fetches preferences from `/api/preferences`
+3. If `onboarding_completed_at` is null, show OnboardingDialog
+4. User selects persona → Submit
+5. Backend stores persona and marks onboarding complete
+6. Dialog closes, user sees personalized empty states
+
+#### Persona-Aware Empty States
+
+- **Home (Library)**: Tips and actions tailored to persona
+    - Learners: "Browse Discovery" and "Fork decks you like"
+    - Creators: "Create New Deck" and "Import from Article"
+    - Curators: "View Feed" and "Follow creators"
+
+- **Review**: First-timer guidance explaining SRS for users with no reviews
+
+## 7. Help & Support
+
+**Goal**: Users can find answers to common questions.
+
+### Detailed Flows
+
+#### Accessing Help
+
+1. Footer → "Help" link, or navigate to `/help`
+2. View FAQ organized by category:
+   - Getting Started
+   - Spaced Repetition
+   - AT Protocol & Privacy
+   - Community & Sharing
+3. Click questions to expand accordion answers
+
+#### Beta Notice
+
+- Help page displays prominent notice that Malfestio is in active development
+- Links to Bluesky and GitHub for community support

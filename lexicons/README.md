@@ -2,6 +2,36 @@
 
 This directory contains the Lexicon definitions for the malfestio's public records.
 
+## Protocol + Lexicon Strategy
+
+- "Artifacts" are publishable records (ATProto Lexicon).
+- "Learning state" is private (local DB + your backend sync; not public records).
+- Records are distributed and hard to migrate globally; keep mutable/private state out.
+- Lexicon evolution rules strongly encourage forward-compatible extensibility.
+
+### Namespace + NSID conventions
+
+- `app.malfestio.note`
+- `app.malfestio.card`
+- `app.malfestio.deck`
+- `app.malfestio.source.article`
+- `app.malfestio.source.lecture`
+- `app.malfestio.collection`
+- `app.malfestio.thread.comment`
+
+### Lexicon basics
+
+- Lexicon defines record types + XRPC endpoints; JSON-schema-like constraints.
+- Use "optional fields" heavily; avoid enums that will calcify the product too early.
+- Versioning: add fields, don't rename; never rely on being able to rewrite history.
+
+### Schema boundaries (important)
+
+- **Public share layer**:
+    - decks, cards, notes, collections, comments
+- **Private layer**:
+    - review schedule, lapses, grades, per-card performance, streaks
+
 ## Evolution Rules
 
 1. **Additive Changes Only**: You can add new optional fields to existing records.

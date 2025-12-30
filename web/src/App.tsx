@@ -1,10 +1,13 @@
 import { AppLayout } from "$components/layout/AppLayout";
-import { authStore } from "$lib/store";
+import { OnboardingDialog } from "$components/OnboardingDialog";
+import type { Persona } from "$lib/model";
+import { authStore, preferencesStore } from "$lib/store";
 import About from "$pages/About";
 import DeckNew from "$pages/DeckNew";
 import DeckView from "$pages/DeckView";
 import Discovery from "$pages/Discovery";
 import Feed from "$pages/Feed";
+import Help from "$pages/Help";
 import Home from "$pages/Home";
 import Import from "$pages/Import";
 import Landing from "$pages/Landing";
@@ -16,14 +19,34 @@ import Review from "$pages/Review";
 import Search from "$pages/Search";
 import { Route, Router } from "@solidjs/router";
 import type { Component } from "solid-js";
-import { Show } from "solid-js";
+import { createEffect, createSignal, onMount, Show } from "solid-js";
 
 const ProtectedRoute: Component<{ component: Component }> = (props) => {
+  const [showOnboarding, setShowOnboarding] = createSignal(false);
+
+  onMount(async () => {
+    if (authStore.isAuthenticated()) {
+      await preferencesStore.fetchPreferences();
+    }
+  });
+
+  createEffect(() => {
+    if (preferencesStore.needsOnboarding()) {
+      setShowOnboarding(true);
+    }
+  });
+
+  const handleOnboardingComplete = (_persona: Persona) => {
+    setShowOnboarding(false);
+    preferencesStore.fetchPreferences();
+  };
+
   return (
     <Show when={authStore.isAuthenticated()} fallback={<Landing />}>
       <AppLayout>
         <props.component />
       </AppLayout>
+      <OnboardingDialog open={showOnboarding()} onComplete={handleOnboardingComplete} />
     </Show>
   );
 };
@@ -33,6 +56,7 @@ const App: Component = () => {
     <Router>
       <Route path="/login" component={Login} />
       <Route path="/about" component={About} />
+      <Route path="/help" component={Help} />
       <Route path="/" component={() => <ProtectedRoute component={Home} />} />
       <Route path="/decks" component={() => <ProtectedRoute component={Home} />} />
       <Route path="/decks/new" component={() => <ProtectedRoute component={DeckNew} />} />

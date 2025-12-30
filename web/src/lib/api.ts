@@ -40,6 +40,7 @@ export const api = {
   getDecks: () => apiFetch("/decks", { method: "GET" }),
   getDeck: (id: string) => apiFetch(`/decks/${id}`, { method: "GET" }),
   getDeckCards: (id: string) => apiFetch(`/decks/${id}/cards`, { method: "GET" }),
+  getPreferences: () => apiFetch("/preferences", { method: "GET" }),
   getDiscovery: () => apiFetch("/discovery", { method: "GET" }),
   createDeck: async (payload: CreateDeckPayload) => {
     const { cards, ...deckPayload } = payload;
@@ -75,5 +76,8 @@ export const api = {
   },
   submitReview: (cardId: string, grade: number) => {
     return apiFetch("/review/submit", { method: "POST", body: JSON.stringify({ card_id: cardId, grade }) });
+  },
+  updatePreferences: (updates: import("./model").UpdatePreferencesPayload) => {
+    return apiFetch("/preferences", { method: "PUT", body: JSON.stringify(updates) });
   },
 };

@@ -9,6 +9,62 @@ import { useNavigate, useParams } from "@solidjs/router";
 import { type Component, createSignal, onMount, Show } from "solid-js";
 import { Motion } from "solid-motionone";
 
+const AllCaughtUp: Component<{ stats: StudyStatsType | null }> = (props) => (
+  <>
+    <p class="text-4xl mb-4 flex items-center gap-2 justify-center">
+      <i class="i-bi-star-fill text-yellow-400" />
+    </p>
+    <h2 class="text-xl font-semibold text-white mb-2">All Caught Up!</h2>
+    <p class="text-gray-400 mb-6">You have no cards due for review right now.</p>
+    <Show when={props.stats?.total_reviews === 0}>
+      <div class="my-6 p-4 bg-blue-900/20 rounded-lg border border-blue-800/30 text-left max-w-md mx-auto">
+        <h4 class="text-sm font-medium text-blue-400 mb-2 flex items-center gap-2">
+          <span class="i-bi-info-circle" /> New to Spaced Repetition?
+        </h4>
+        <p class="text-sm text-gray-400 mb-3">
+          Cards appear for review based on how well you remember them. The better you know a card, the longer until you
+          see it again.
+        </p>
+        <p class="text-sm text-gray-400">Add cards to a deck, and they'll show up here when they're due for review!</p>
+      </div>
+    </Show>
+  </>
+);
+
+const SessionComplete: Component = () => (
+  <>
+    <p class="text-4xl mb-4 flex items-center gap-2 justify-center">
+      <i class="i-bi-trophy-fill text-yellow-400" />
+    </p>
+    <h2 class="text-xl font-semibold text-white mb-2">Session Complete!</h2>
+    <p class="text-gray-400 mb-6">Great job! You've reviewed all your due cards.</p>
+  </>
+);
+
+const KbShortcuts: Component = () => (
+  <Motion.div {...fadeIn} class="mt-8 bg-gray-900/50 rounded-xl p-6 border border-gray-800/50">
+    <h3 class="text-sm font-semibold text-gray-400 mb-4">Keyboard Shortcuts</h3>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+      <div class="flex items-center gap-2">
+        <kbd class="px-2 py-1 bg-gray-800 rounded text-gray-300">Space</kbd>
+        <span class="text-gray-400">Flip card</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <kbd class="px-2 py-1 bg-gray-800 rounded text-gray-300">1-5</kbd>
+        <span class="text-gray-400">Grade answer</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <kbd class="px-2 py-1 bg-gray-800 rounded text-gray-300">E</kbd>
+        <span class="text-gray-400">Edit card</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <kbd class="px-2 py-1 bg-gray-800 rounded text-gray-300">Esc</kbd>
+        <span class="text-gray-400">Exit session</span>
+      </div>
+    </div>
+  </Motion.div>
+);
+
 const Review: Component = () => {
   const params = useParams<{ deckId?: string }>();
   const navigate = useNavigate();
@@ -50,10 +106,10 @@ const Review: Component = () => {
       when={!sessionActive()}
       fallback={<StudySession cards={cards()} onComplete={handleComplete} onExit={handleExit} />}>
       <Motion.div {...fadeIn} class="max-w-4xl mx-auto py-8 px-4">
-        <h1 class="text-3xl font-bold text-white mb-8">{params.deckId ? "Deck Review" : "Daily Review"}</h1>
-
+        <h1 class="text-3xl font-bold text-white mb-8">
+          <Show when={params.deckId} fallback="Daily Review">Deck Review</Show>
+        </h1>
         <ReviewStats stats={stats()} loading={loading()} />
-
         <div class="mt-8 bg-gray-900 rounded-xl p-6 border border-gray-800">
           <Show
             when={!loading()}
@@ -67,21 +123,8 @@ const Review: Component = () => {
               when={cards().length > 0}
               fallback={
                 <div class="text-center py-8">
-                  <p class="text-4xl mb-4 flex items-center gap-2">
-                    <i class="i-bi-star-fill text-yellow-400" />
-                  </p>
-                  <Show
-                    when={sessionComplete()}
-                    fallback={
-                      <>
-                        <h2 class="text-xl font-semibold text-white mb-2">All Caught Up!</h2>
-                        <p class="text-gray-400 mb-6">You have no cards due for review right now.</p>
-                      </>
-                    }>
-                    <>
-                      <h2 class="text-xl font-semibold text-white mb-2">Session Complete!</h2>
-                      <p class="text-gray-400 mb-6">Great job! You've reviewed all your due cards.</p>
-                    </>
+                  <Show when={sessionComplete()} fallback={<AllCaughtUp stats={stats()} />}>
+                    <SessionComplete />
                   </Show>
                   <Button onClick={() => navigate("/")} variant="secondary">Back to Library</Button>
                 </div>
@@ -96,28 +139,7 @@ const Review: Component = () => {
             </Show>
           </Show>
         </div>
-
-        <Motion.div {...fadeIn} class="mt-8 bg-gray-900/50 rounded-xl p-6 border border-gray-800/50">
-          <h3 class="text-sm font-semibold text-gray-400 mb-4">Keyboard Shortcuts</h3>
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-            <div class="flex items-center gap-2">
-              <kbd class="px-2 py-1 bg-gray-800 rounded text-gray-300">Space</kbd>
-              <span class="text-gray-400">Flip card</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <kbd class="px-2 py-1 bg-gray-800 rounded text-gray-300">1-5</kbd>
-              <span class="text-gray-400">Grade answer</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <kbd class="px-2 py-1 bg-gray-800 rounded text-gray-300">E</kbd>
-              <span class="text-gray-400">Edit card</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <kbd class="px-2 py-1 bg-gray-800 rounded text-gray-300">Esc</kbd>
-              <span class="text-gray-400">Exit session</span>
-            </div>
-          </div>
-        </Motion.div>
+        <KbShortcuts />
       </Motion.div>
     </Show>
   );

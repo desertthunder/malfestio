@@ -4,6 +4,7 @@ use crate::repository::card::CardRepository;
 use crate::repository::deck::DeckRepository;
 use crate::repository::note::NoteRepository;
 use crate::repository::oauth::OAuthRepository;
+use crate::repository::preferences::PreferencesRepository;
 use crate::repository::review::ReviewRepository;
 use crate::repository::search::SearchRepository;
 use crate::repository::social::SocialRepository;
@@ -27,6 +28,7 @@ pub struct Repositories {
     pub deck: Arc<dyn DeckRepository>,
     pub card: Arc<dyn CardRepository>,
     pub note: Arc<dyn NoteRepository>,
+    pub prefs: Arc<dyn PreferencesRepository>,
     pub review: Arc<dyn ReviewRepository>,
     pub social: Arc<dyn SocialRepository>,
     pub search: Arc<dyn SearchRepository>,
@@ -38,6 +40,7 @@ pub struct AppState {
     pub deck_repo: Arc<dyn DeckRepository>,
     pub note_repo: Arc<dyn NoteRepository>,
     pub oauth_repo: Arc<dyn OAuthRepository>,
+    pub prefs_repo: Arc<dyn PreferencesRepository>,
     pub review_repo: Arc<dyn ReviewRepository>,
     pub social_repo: Arc<dyn SocialRepository>,
     pub search_repo: Arc<dyn SearchRepository>,
@@ -54,6 +57,7 @@ impl AppState {
             deck_repo: repos.deck,
             card_repo: repos.card,
             note_repo: repos.note,
+            prefs_repo: repos.prefs,
             review_repo: repos.review,
             social_repo: repos.social,
             search_repo: repos.search,
@@ -68,16 +72,20 @@ impl AppState {
         oauth_repo: Arc<dyn OAuthRepository>,
     ) -> SharedState {
         use crate::repository;
+
         let review_repo = Arc::new(repository::review::mock::MockReviewRepository::new()) as Arc<dyn ReviewRepository>;
         let social_repo = Arc::new(repository::social::mock::MockSocialRepository::new()) as Arc<dyn SocialRepository>;
         let search_repo = Arc::new(repository::search::mock::MockSearchRepository::new()) as Arc<dyn SearchRepository>;
         let deck_repo = Arc::new(repository::deck::mock::MockDeckRepository::new()) as Arc<dyn DeckRepository>;
         let config = AppConfig { pds_url: "https://bsky.social".to_string() };
+        let prefs_repo =
+            Arc::new(repository::preferences::mock::MockPreferencesRepository::new()) as Arc<dyn PreferencesRepository>;
 
         let repos = Repositories {
             card: card_repo,
             note: note_repo,
             oauth: oauth_repo,
+            prefs: prefs_repo,
             review: review_repo,
             social: social_repo,
             search: search_repo,

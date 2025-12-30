@@ -89,3 +89,18 @@ export type SearchResult = { item_type: "deck"; item_id: string; creator_did: st
 export const asDeck = (r: SearchResult) => (r.item_type === "deck" ? r : undefined);
 export const asCard = (r: SearchResult) => (r.item_type === "card" ? r : undefined);
 export const asNote = (r: SearchResult) => (r.item_type === "note" ? r : undefined);
+
+export type Persona = "learner" | "creator" | "curator";
+
+export type UserPreferences = {
+  user_did: string;
+  persona: Persona | null;
+  onboarding_completed_at: string | null;
+  tutorial_deck_completed: boolean;
+};
+
+export type UpdatePreferencesPayload = {
+  persona?: Persona;
+  complete_onboarding?: boolean;
+  tutorial_deck_completed?: boolean;
+};

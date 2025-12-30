@@ -24,6 +24,7 @@ export const Footer: Component = () => (
       </p>
       <div class="flex items-center gap-6">
         <A href="/about" class="hover:text-[#F4F4F4] transition-colors">About</A>
+        <A href="/help" class="hover:text-[#F4F4F4] transition-colors">Help</A>
         <a
           href="https://tangled.org/desertthunder.dev/malfestio"
           target="_blank"

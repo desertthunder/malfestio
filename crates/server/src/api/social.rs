@@ -185,6 +185,8 @@ mod tests {
         let card_repo = Arc::new(MockCardRepository::new()) as Arc<dyn crate::repository::card::CardRepository>;
         let note_repo = Arc::new(MockNoteRepository::new()) as Arc<dyn crate::repository::note::NoteRepository>;
         let oauth_repo = Arc::new(MockOAuthRepository::new()) as Arc<dyn crate::repository::oauth::OAuthRepository>;
+        let preferences_repo = Arc::new(crate::repository::preferences::mock::MockPreferencesRepository::new())
+            as Arc<dyn crate::repository::preferences::PreferencesRepository>;
         let review_repo = Arc::new(MockReviewRepository::new()) as Arc<dyn crate::repository::review::ReviewRepository>;
 
         let deck_repo = Arc::new(crate::repository::deck::mock::MockDeckRepository::new())
@@ -199,6 +201,7 @@ mod tests {
             card_repo,
             note_repo,
             oauth_repo,
+            prefs_repo: preferences_repo,
             review_repo,
             social_repo,
             deck_repo,

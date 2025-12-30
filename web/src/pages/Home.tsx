@@ -3,11 +3,12 @@ import { EmptyState } from "$components/ui/EmptyState";
 import { Skeleton } from "$components/ui/Skeleton";
 import { Tag } from "$components/ui/Tag";
 import { api } from "$lib/api";
-import type { Deck } from "$lib/model";
+import type { Deck, Persona } from "$lib/model";
+import { preferencesStore } from "$lib/store";
 import { Button } from "$ui/Button";
 import { A } from "@solidjs/router";
-import type { Component } from "solid-js";
-import { createResource, For, Index, Show } from "solid-js";
+import type { Component, JSX } from "solid-js";
+import { createMemo, createResource, For, Index, Show } from "solid-js";
 import { Motion } from "solid-motionone";
 
 const DeckCard: Component<{ deck: Deck; index: number }> = (props) => (
@@ -60,10 +61,92 @@ const DeckCardSkeleton: Component = () => (
   </Card>
 );
 
+type PersonaTip = { title: string; description: string; icon: JSX.Element; action: JSX.Element; tips: string[] };
+
+const personaTips: Record<Persona, PersonaTip> = {
+  learner: {
+    title: "Ready to start learning?",
+    description: "Find decks from the community or create your own study materials.",
+    icon: <span class="i-bi-book text-4xl text-[#0F62FE]" />,
+    action: (
+      <div class="flex gap-3 flex-wrap justify-center">
+        <A href="/discovery">
+          <Button variant="secondary">Browse Discovery</Button>
+        </A>
+        <A href="/decks/new">
+          <Button>Create First Deck</Button>
+        </A>
+      </div>
+    ),
+    tips: [
+      "Start by exploring public decks in Discovery",
+      "Fork decks you like to customize them",
+      "Review cards daily for best retention",
+    ],
+  },
+  creator: {
+    title: "Create your first deck!",
+    description: "Share your knowledge with the community through flashcards.",
+    icon: <span class="i-bi-pencil text-4xl text-[#0F62FE]" />,
+    action: (
+      <div class="flex gap-3 flex-wrap justify-center">
+        <A href="/decks/new">
+          <Button>Create New Deck</Button>
+        </A>
+        <A href="/import">
+          <Button variant="secondary">Import from Article</Button>
+        </A>
+      </div>
+    ),
+    tips: [
+      "Import articles to auto-generate flashcards",
+      "Use cloze deletions for key terms",
+      "Add hints to help learners remember",
+    ],
+  },
+  curator: {
+    title: "Build your collection",
+    description: "Discover and organize the best learning content for others.",
+    icon: <span class="i-bi-collection text-4xl text-[#0F62FE]" />,
+    action: (
+      <div class="flex gap-3 flex-wrap justify-center">
+        <A href="/feed">
+          <Button variant="secondary">View Feed</Button>
+        </A>
+        <A href="/discovery">
+          <Button>Explore Discovery</Button>
+        </A>
+      </div>
+    ),
+    tips: [
+      "Follow creators whose content you enjoy",
+      "Fork and improve existing decks",
+      "Use tags to organize by topic",
+    ],
+  },
+};
+
+const defaultTip: PersonaTip = {
+  title: "No decks found",
+  description: "Create your first deck to get started with spaced repetition learning.",
+  icon: <span class="i-bi-collection text-4xl text-[#525252]" />,
+  action: (
+    <A href="/decks/new">
+      <Button>Create Your First Deck</Button>
+    </A>
+  ),
+  tips: [],
+};
+
 const Home: Component = () => {
   const [decks] = createResource(async () => {
     const res = await api.getDecks();
     return res.ok ? ((await res.json()) as Deck[]) : [];
+  });
+
+  const currentTip = createMemo(() => {
+    const persona = preferencesStore.persona();
+    return persona ? personaTips[persona] : defaultTip;
   });
 
   return (
@@ -95,14 +178,25 @@ const Home: Component = () => {
             fallback={
               <div class="col-span-full">
                 <EmptyState
-                  title="No decks found"
-                  description="Create your first deck to get started with spaced repetition learning."
-                  icon={<span class="i-bi-collection text-4xl text-[#525252]" />}
-                  action={
-                    <A href="/decks/new">
-                      <Button>Create Your First Deck</Button>
-                    </A>
-                  } />
+                  title={currentTip().title}
+                  description={currentTip().description}
+                  icon={currentTip().icon}
+                  action={currentTip().action} />
+                <Show when={currentTip().tips.length > 0}>
+                  <div class="mt-8 p-6 bg-[#1E1E1E] rounded-lg border border-[#262626] max-w-lg mx-auto">
+                    <h4 class="text-sm font-medium text-[#F4F4F4] mb-3">Quick Tips</h4>
+                    <ul class="space-y-2">
+                      <For each={currentTip().tips}>
+                        {(tip) => (
+                          <li class="flex items-start gap-2 text-sm text-[#C6C6C6]">
+                            <span class="i-bi-lightbulb text-[#0F62FE] mt-0.5 shrink-0" />
+                            {tip}
+                          </li>
+                        )}
+                      </For>
+                    </ul>
+                  </div>
+                </Show>
               </div>
             }>
             {(deck, i) => <DeckCard deck={deck} index={i()} />}

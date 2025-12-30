@@ -47,6 +47,7 @@ pub async fn start() -> malfestio_core::Result<()> {
     let deck_repo = std::sync::Arc::new(repository::deck::DbDeckRepository::new(pool.clone()));
     let card_repo = std::sync::Arc::new(repository::card::DbCardRepository::new(pool.clone()));
     let note_repo = std::sync::Arc::new(repository::note::DbNoteRepository::new(pool.clone()));
+    let prefs_repo = std::sync::Arc::new(repository::preferences::DbPreferencesRepository::new(pool.clone()));
     let review_repo = std::sync::Arc::new(repository::review::DbReviewRepository::new(pool.clone()));
     let social_repo = std::sync::Arc::new(repository::social::DbSocialRepository::new(pool.clone()));
 
@@ -59,6 +60,7 @@ pub async fn start() -> malfestio_core::Result<()> {
         deck: deck_repo,
         card: card_repo,
         note: note_repo,
+        prefs: prefs_repo,
         review: review_repo,
         social: social_repo,
         search: search_repo,
@@ -81,6 +83,8 @@ pub async fn start() -> malfestio_core::Result<()> {
         .route("/social/unfollow/{did}", post(api::social::unfollow))
         .route("/decks/{id}/comments", post(api::social::add_comment))
         .route("/feeds/follows", get(api::feed::get_feed_follows))
+        .route("/preferences", get(api::preferences::get_preferences))
+        .route("/preferences", axum::routing::put(api::preferences::update_preferences))
         .layer(axum_middleware::from_fn_with_state(
             state.clone(),
             middleware::auth::auth_middleware,

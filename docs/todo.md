@@ -1,36 +1,6 @@
 # Product + Technical Roadmap
 
-## Protocol + Lexicon Strategy
-
-- "Artifacts" are publishable records (ATProto Lexicon).
-- "Learning state" is private (local DB + your backend sync; not public records).
-- Records are distributed and hard to migrate globally; keep mutable/private state out.
-- Lexicon evolution rules strongly encourage forward-compatible extensibility.
-
-### Namespace + NSID conventions
-
-- `app.malfestio.note`
-- `app.malfestio.card`
-- `app.malfestio.deck`
-- `app.malfestio.source.article`
-- `app.malfestio.source.lecture`
-- `app.malfestio.collection`
-- `app.malfestio.thread.comment`
-
-### Lexicon basics
-
-- Lexicon defines record types + XRPC endpoints; JSON-schema-like constraints.
-- Use "optional fields" heavily; avoid enums that will calcify the product too early.
-- Versioning: add fields, don't rename; never rely on being able to rewrite history.
-
-### Schema boundaries (important)
-
-- **Public share layer**:
-    - decks, cards, notes, collections, comments
-- **Private layer**:
-    - review schedule, lapses, grades, per-card performance, streaks
-
-### Auth direction
+## Auth direction
 
 - ATProto is moving toward OAuth for client↔PDS authorization.
 - Plan for OAuth support even if MVP starts centralized.
@@ -71,10 +41,10 @@
 
 **App Vision Content:**
 
-- [ ] Onboarding flow with persona selection (Learner/Creator/Curator)
-- [ ] Empty states with helpful prompts for new users
+- [x] Onboarding flow with persona selection (Learner/Creator/Curator)
+- [x] Empty states with helpful prompts for new users
+- [x] Help center/FAQ section (with beta development notice)
 - [ ] Tutorial/walkthrough for first deck creation
-- [ ] Help center or FAQ section -> Should mention that the app is still in development and subject to change.
 
 **SEO & Meta:**
 
@@ -123,6 +93,7 @@
 
 - [ ] OAuth login directly to user's PDS (vs. local-only auth)
 - [ ] Handle resolution via DNS TXT or `/.well-known/atproto-did`
+    - <https://malfestio.stormlightlabs.org>
 - [ ] DPoP token binding for secure API calls
 
 **Sync & Conflict Resolution:**

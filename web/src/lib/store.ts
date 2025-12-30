@@ -1,5 +1,6 @@
 import { createRoot, createSignal } from "solid-js";
-import type { User } from "./model";
+import { api } from "./api";
+import type { Persona, User, UserPreferences } from "./model";
 
 export type AuthState = {
   user: User | null;
@@ -39,3 +40,45 @@ function createAuthStore() {
 }
 
 export const authStore = createRoot(createAuthStore);
+
+function createPreferencesStore() {
+  const [preferences, setPreferences] = createSignal<UserPreferences | null>(null);
+  const [loading, setLoading] = createSignal(false);
+
+  const fetchPreferences = async () => {
+    if (!authStore.isAuthenticated()) return;
+    setLoading(true);
+    try {
+      const res = await api.getPreferences();
+      if (res.ok) {
+        setPreferences(await res.json());
+      }
+    } catch (e) {
+      console.error("Failed to fetch preferences:", e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updatePreferences = async (updates: { persona?: Persona; complete_onboarding?: boolean }) => {
+    try {
+      const res = await api.updatePreferences(updates);
+      if (res.ok) {
+        setPreferences(await res.json());
+      }
+    } catch (e) {
+      console.error("Failed to update preferences:", e);
+    }
+  };
+
+  const needsOnboarding = () => {
+    const prefs = preferences();
+    return prefs !== null && prefs.onboarding_completed_at === null;
+  };
+
+  const persona = () => preferences()?.persona ?? null;
+
+  return { preferences, loading, fetchPreferences, updatePreferences, needsOnboarding, persona };
+}
+
+export const preferencesStore = createRoot(createPreferencesStore);
