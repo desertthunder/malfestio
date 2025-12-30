@@ -8,6 +8,7 @@ use axum::{
     http::StatusCode,
     response::IntoResponse,
 };
+use malfestio_core::model::CardType;
 use serde::Deserialize;
 use serde_json::json;
 
@@ -17,6 +18,10 @@ pub struct CreateCardRequest {
     front: String,
     back: String,
     media_url: Option<String>,
+    #[serde(default)]
+    card_type: CardType,
+    #[serde(default)]
+    hints: Vec<String>,
 }
 
 pub async fn create_card(
@@ -29,13 +34,15 @@ pub async fn create_card(
 
     let result = state
         .card_repo
-        .create(
-            &user.did,
-            &payload.deck_id,
-            &payload.front,
-            &payload.back,
-            payload.media_url.as_deref(),
-        )
+        .create(crate::repository::card::CreateCardParams {
+            owner_did: user.did.clone(),
+            deck_id: payload.deck_id,
+            front: payload.front,
+            back: payload.back,
+            media_url: payload.media_url,
+            card_type: payload.card_type,
+            hints: payload.hints,
+        })
         .await;
 
     match result {
@@ -83,7 +90,7 @@ mod tests {
     use crate::middleware::auth::UserContext;
     use crate::repository::card::mock::MockCardRepository;
     use crate::state::AppState;
-    use malfestio_core::model::Card;
+    use malfestio_core::model::{Card, CardType};
     use std::sync::Arc;
 
     fn create_test_state() -> SharedState {
@@ -106,6 +113,8 @@ mod tests {
             front: "Question".to_string(),
             back: "Answer".to_string(),
             media_url: None,
+            card_type: CardType::default(),
+            hints: vec![],
         };
 
         let response = create_card(axum::extract::State(state), Some(Extension(user)), Json(payload))
@@ -124,6 +133,8 @@ mod tests {
             front: "Question".to_string(),
             back: "Answer".to_string(),
             media_url: None,
+            card_type: CardType::default(),
+            hints: vec![],
         };
 
         let response = create_card(axum::extract::State(state), None, Json(payload))
@@ -146,6 +157,8 @@ mod tests {
                 front: "Q1".to_string(),
                 back: "A1".to_string(),
                 media_url: None,
+                card_type: CardType::default(),
+                hints: vec![],
             },
             Card {
                 id: "card-2".to_string(),
@@ -154,6 +167,8 @@ mod tests {
                 front: "Q2".to_string(),
                 back: "A2".to_string(),
                 media_url: None,
+                card_type: CardType::default(),
+                hints: vec![],
             },
         ];
 

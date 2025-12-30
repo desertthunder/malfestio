@@ -198,6 +198,8 @@ mod tests {
             front: "What is the capital of France?".to_string(),
             back: "Paris".to_string(),
             media_url: None,
+            card_type: malfestio_core::model::CardType::default(),
+            hints: vec![],
         }
     }
 

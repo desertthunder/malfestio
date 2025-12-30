@@ -46,7 +46,16 @@ export type Visibility = { type: "Private" } | { type: "Unlisted" } | { type: "P
   content: string[];
 };
 
-export type Card = { id?: string; front: string; back: string; mediaUrl?: string };
+export type CardType = "basic" | "cloze";
+
+export type Card = {
+  id?: string;
+  front: string;
+  back: string;
+  mediaUrl?: string;
+  cardType?: CardType;
+  hints?: string[];
+};
 
 export type Deck = {
   id: string;

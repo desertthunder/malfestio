@@ -5,6 +5,7 @@ import DeckView from "$pages/DeckView";
 import Home from "$pages/Home";
 import Import from "$pages/Import";
 import Landing from "$pages/Landing";
+import LectureImport from "$pages/LectureImport";
 import Login from "$pages/Login";
 import NoteNew from "$pages/NoteNew";
 import NotFound from "$pages/NotFound";
@@ -32,6 +33,7 @@ const App: Component = () => {
       <Route path="/notes/new" component={() => <ProtectedRoute component={NoteNew} />} />
       <Route path="/decks/:id" component={() => <ProtectedRoute component={DeckView} />} />
       <Route path="/import" component={() => <ProtectedRoute component={Import} />} />
+      <Route path="/import/lecture" component={() => <ProtectedRoute component={LectureImport} />} />
       <Route path="*" component={() => <ProtectedRoute component={NotFound} />} />
     </Router>
   );

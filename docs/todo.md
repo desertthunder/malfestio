@@ -51,24 +51,7 @@
     - TID generation and AT-URI builder in core crate.
     - Database migration for token storage and AT-URI columns.
 - **(Done) Milestone E**: Internal component library/UI Foundation + Animations.
-
-### Milestone F - Content Authoring (Notes + Cards + Deck Builder)
-
-#### Deliverables
-
-- Note editor (markdown + attachments + backlinks)
-- Card editor:
-    - basic front/back + cloze
-    - images/audio attachments
-- Deck builder:
-    - tags, ordering, sections
-- Importers:
-    - article URL -> extracted snapshot + highlights
-    - lecture URL -> outline + timestamps (manual entry initially)
-
-#### Acceptance
-
-- A creator can build a deck from an article and publish it.
+- **(Done) Milestone F**: Content Authoring (Notes + Cards + Deck Builder).
 
 ### Milestone G - Study Engine (SRS) + Daily Review UX
 

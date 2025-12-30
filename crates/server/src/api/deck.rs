@@ -379,6 +379,8 @@ pub async fn publish_deck(
                     front: row.get("front"),
                     back: row.get("back"),
                     media_url: row.get("media_url"),
+                    card_type: malfestio_core::model::CardType::default(),
+                    hints: vec![],
                 }
             })
             .collect();

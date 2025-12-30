@@ -13,6 +13,14 @@ pub struct Note {
     pub links: Vec<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum CardType {
+    #[default]
+    Basic,
+    Cloze,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Card {
     pub id: String,
@@ -21,6 +29,10 @@ pub struct Card {
     pub front: String,
     pub back: String,
     pub media_url: Option<String>,
+    #[serde(default)]
+    pub card_type: CardType,
+    #[serde(default)]
+    pub hints: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]

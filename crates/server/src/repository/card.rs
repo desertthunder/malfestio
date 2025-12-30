@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use malfestio_core::model::Card;
+use malfestio_core::model::{Card, CardType};
 
 #[derive(Debug)]
 pub enum CardRepoError {
@@ -8,11 +8,21 @@ pub enum CardRepoError {
     InvalidArgument(String),
 }
 
+/// Parameters for creating a new card
+#[derive(Debug)]
+pub struct CreateCardParams {
+    pub owner_did: String,
+    pub deck_id: String,
+    pub front: String,
+    pub back: String,
+    pub media_url: Option<String>,
+    pub card_type: CardType,
+    pub hints: Vec<String>,
+}
+
 #[async_trait]
 pub trait CardRepository: Send + Sync {
-    async fn create(
-        &self, owner_did: &str, deck_id: &str, front: &str, back: &str, media_url: Option<&str>,
-    ) -> Result<Card, CardRepoError>;
+    async fn create(&self, params: CreateCardParams) -> Result<Card, CardRepoError>;
 
     async fn list_by_deck(&self, deck_id: &str) -> Result<Vec<Card>, CardRepoError>;
 
@@ -31,19 +41,16 @@ impl DbCardRepository {
 
 #[async_trait]
 impl CardRepository for DbCardRepository {
-    async fn create(
-        &self, owner_did: &str, deck_id: &str, front: &str, back: &str, media_url: Option<&str>,
-    ) -> Result<Card, CardRepoError> {
+    async fn create(&self, params: CreateCardParams) -> Result<Card, CardRepoError> {
         let client = self
             .pool
             .get()
             .await
             .map_err(|e| CardRepoError::DatabaseError(format!("Failed to get connection: {}", e)))?;
 
-        let deck_uuid = uuid::Uuid::parse_str(deck_id)
+        let deck_uuid = uuid::Uuid::parse_str(&params.deck_id)
             .map_err(|_| CardRepoError::InvalidArgument("Invalid deck ID".to_string()))?;
 
-        // Verify deck exists and user owns it
         let deck_row = client
             .query_opt("SELECT owner_did FROM decks WHERE id = $1", &[&deck_uuid])
             .await
@@ -51,7 +58,7 @@ impl CardRepository for DbCardRepository {
             .ok_or_else(|| CardRepoError::NotFound("Deck not found".to_string()))?;
 
         let deck_owner: String = deck_row.get("owner_did");
-        if deck_owner != owner_did {
+        if deck_owner != params.owner_did {
             return Err(CardRepoError::InvalidArgument(
                 "Only deck owner can add cards".to_string(),
             ));
@@ -62,18 +69,27 @@ impl CardRepository for DbCardRepository {
             .execute(
                 "INSERT INTO cards (id, owner_did, deck_id, front, back, media_url)
                  VALUES ($1, $2, $3, $4, $5, $6)",
-                &[&card_id, &owner_did, &deck_uuid, &front, &back, &media_url],
+                &[
+                    &card_id,
+                    &params.owner_did,
+                    &deck_uuid,
+                    &params.front,
+                    &params.back,
+                    &params.media_url,
+                ],
             )
             .await
             .map_err(|e| CardRepoError::DatabaseError(format!("Failed to insert card: {}", e)))?;
 
         Ok(Card {
             id: card_id.to_string(),
-            owner_did: owner_did.to_string(),
-            deck_id: deck_id.to_string(),
-            front: front.to_string(),
-            back: back.to_string(),
-            media_url: media_url.map(String::from),
+            owner_did: params.owner_did,
+            deck_id: params.deck_id,
+            front: params.front,
+            back: params.back,
+            media_url: params.media_url,
+            card_type: params.card_type,
+            hints: params.hints,
         })
     }
 
@@ -87,7 +103,6 @@ impl CardRepository for DbCardRepository {
         let deck_uuid = uuid::Uuid::parse_str(deck_id)
             .map_err(|_| CardRepoError::InvalidArgument("Invalid deck ID".to_string()))?;
 
-        // Verify deck exists
         let deck_exists = client
             .query_opt("SELECT id FROM decks WHERE id = $1", &[&deck_uuid])
             .await
@@ -121,6 +136,8 @@ impl CardRepository for DbCardRepository {
                 front: row.get("front"),
                 back: row.get("back"),
                 media_url: row.get("media_url"),
+                card_type: CardType::default(),
+                hints: vec![],
             });
         }
 
@@ -185,20 +202,20 @@ pub mod mock {
 
     #[async_trait]
     impl CardRepository for MockCardRepository {
-        async fn create(
-            &self, owner_did: &str, deck_id: &str, front: &str, back: &str, media_url: Option<&str>,
-        ) -> Result<Card, CardRepoError> {
+        async fn create(&self, params: CreateCardParams) -> Result<Card, CardRepoError> {
             if *self.should_fail.lock().unwrap() {
                 return Err(CardRepoError::DatabaseError("Mock failure".to_string()));
             }
 
             let card = Card {
                 id: uuid::Uuid::new_v4().to_string(),
-                owner_did: owner_did.to_string(),
-                deck_id: deck_id.to_string(),
-                front: front.to_string(),
-                back: back.to_string(),
-                media_url: media_url.map(String::from),
+                owner_did: params.owner_did,
+                deck_id: params.deck_id,
+                front: params.front,
+                back: params.back,
+                media_url: params.media_url,
+                card_type: params.card_type,
+                hints: params.hints,
             };
 
             self.cards.lock().unwrap().push(card.clone());

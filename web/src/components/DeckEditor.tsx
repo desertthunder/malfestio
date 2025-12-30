@@ -1,5 +1,5 @@
 import { api } from "$lib/api";
-import type { Card, CreateDeckPayload, Visibility } from "$lib/store";
+import type { Card, CardType, CreateDeckPayload, Visibility } from "$lib/store";
 import { toast } from "$lib/toast";
 import { Button } from "$ui/Button";
 import { createSignal, For, Show } from "solid-js";
@@ -8,6 +8,7 @@ import { CardEditor } from "./CardEditor";
 export function DeckEditor(props: { onSave?: (deck: CreateDeckPayload) => void }) {
   const [title, setTitle] = createSignal("");
   const [description, setDescription] = createSignal("");
+  const [tags, setTags] = createSignal("");
   const [visibilityType, setVisibilityType] = createSignal<string>("Private");
   const [sharedWith, setSharedWith] = createSignal("");
 
@@ -24,7 +25,8 @@ export function DeckEditor(props: { onSave?: (deck: CreateDeckPayload) => void }
       visibility = { type: visibilityType() as "Private" | "Unlisted" | "Public" };
     }
 
-    const payload = { title: title(), description: description(), tags: [], visibility, cards: cards() };
+    const tagsArray = tags().split(",").map(t => t.trim()).filter(t => t);
+    const payload = { title: title(), description: description(), tags: tagsArray, visibility, cards: cards() };
 
     if (props.onSave) {
       props.onSave(payload);
@@ -43,9 +45,30 @@ export function DeckEditor(props: { onSave?: (deck: CreateDeckPayload) => void }
     }
   };
 
-  const addCard = (cardData: Card) => {
-    setCards([...cards(), cardData]);
+  const addCard = (
+    cardData: { front: string; back: string; mediaUrl?: string; cardType: CardType; hints: string[] },
+  ) => {
+    const card: Card = {
+      front: cardData.front,
+      back: cardData.back,
+      mediaUrl: cardData.mediaUrl,
+      cardType: cardData.cardType,
+      hints: cardData.hints,
+    };
+    setCards([...cards(), card]);
     setShowCardEditor(false);
+  };
+
+  const removeCard = (index: number) => {
+    setCards(cards().filter((_, i) => i !== index));
+  };
+
+  const moveCard = (from: number, to: number) => {
+    if (to < 0 || to >= cards().length) return;
+    const newCards = [...cards()];
+    const [moved] = newCards.splice(from, 1);
+    newCards.splice(to, 0, moved);
+    setCards(newCards);
   };
 
   return (
@@ -72,6 +95,17 @@ export function DeckEditor(props: { onSave?: (deck: CreateDeckPayload) => void }
               value={description()}
               onInput={(e) => setDescription(e.target.value)}
               class="w-full bg-gray-800 border-gray-700 text-white rounded p-2 focus:ring-blue-500 focus:border-blue-500" />
+          </div>
+
+          <div>
+            <label for="tags" class="block text-sm font-medium text-gray-400 mb-1">Tags (comma separated)</label>
+            <input
+              id="tags"
+              type="text"
+              value={tags()}
+              onInput={(e) => setTags(e.target.value)}
+              class="w-full bg-gray-800 border-gray-700 text-white rounded p-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="language, vocabulary, spanish..." />
           </div>
 
           <div>
@@ -105,12 +139,46 @@ export function DeckEditor(props: { onSave?: (deck: CreateDeckPayload) => void }
         <div class="pt-4 border-t border-gray-800">
           <h3 class="text-lg font-medium text-white mb-4">Cards ({cards().length})</h3>
 
-          <div class="space-y-4 mb-4">
+          <div class="space-y-2 mb-4">
             <For each={cards()}>
               {(card, i) => (
-                <div class="p-4 border border-gray-800 rounded bg-gray-900 flex justify-between items-center">
-                  <div class="truncate pr-4 font-mono text-sm text-gray-300">{card.front}</div>
-                  <div class="text-gray-500 text-xs">Card {i() + 1}</div>
+                <div class="p-4 border border-gray-800 rounded bg-gray-900 flex justify-between items-center group">
+                  <div class="flex items-center gap-3 flex-1 min-w-0">
+                    <div class="flex flex-col gap-1">
+                      <button
+                        type="button"
+                        onClick={() => moveCard(i(), i() - 1)}
+                        disabled={i() === 0}
+                        class="text-gray-500 hover:text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed p-1">
+                        ▲
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => moveCard(i(), i() + 1)}
+                        disabled={i() === cards().length - 1}
+                        class="text-gray-500 hover:text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed p-1">
+                        ▼
+                      </button>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <div class="truncate font-mono text-sm text-gray-300">{card.front}</div>
+                      <div class="text-xs text-gray-500 flex gap-2 mt-1">
+                        <span class="uppercase">{card.cardType || "basic"}</span>
+                        <Show when={card.hints && card.hints.length > 0}>
+                          <span>• {card.hints?.length} hint(s)</span>
+                        </Show>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-gray-500 text-xs">#{i() + 1}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeCard(i())}
+                      class="text-red-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity p-1">
+                      ✕
+                    </button>
+                  </div>
                 </div>
               )}
             </For>
