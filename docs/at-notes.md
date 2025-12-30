@@ -1,5 +1,7 @@
 # AT Protocol Research Notes
 
+Reference material for AT Protocol integration. For implementation details, see [todo.md](todo.md).
+
 ## OAuth 2.1 Specification
 
 AT Protocol uses a specific profile of OAuth 2.1 for client↔PDS authorization.
@@ -44,27 +46,68 @@ Format: `at://<did>/<collection>/<rkey>`
 
 Example: `at://did:plc:abc123/app.malfestio.deck/3k5abc123`
 
-## Firehose Consumption
+## Firehose / Jetstream
 
-For social features (trending, discovery, feeds):
+### Raw Firehose
 
-- **WebSocket Connection**: Subscribe to `com.atproto.sync.subscribeRepos` from a Relay
-- **CBOR Decoding**: Parse incoming events (or use Jetstream for JSON)
+- **WebSocket**: Subscribe to `com.atproto.sync.subscribeRepos` from a Relay
+- **CBOR Decoding**: Parse incoming events
 - **Cursor Management**: Track position for reconnection
 
-## AppView Pattern
+### Jetstream (Recommended)
 
-Index network-wide records to power discovery features:
+Bluesky's simplified JSON firehose:
 
-- Index `app.malfestio.*` records from firehose
-- Implement `getFeedSkeleton` for custom algorithmic feeds
-- Hydration service combines skeletons with full content from PDSes
+- JSON format (no CBOR decoding)
+- Reduced bandwidth (zstd compression)
+- Collection/repo filtering at source
+- Simpler reconnection with cursors
 
 ## Well-Known Endpoints
 
 - `/.well-known/atproto-did` — Domain verification for handle claims
 - `/.well-known/oauth-protected-resource` — PDS OAuth metadata
 - `/.well-known/oauth-authorization-server` — Auth server metadata
+
+## Labelers
+
+**Architecture:**
+
+1. Labels = metadata (source DID + subject AT-URI + value string)
+2. User Subscription = users subscribe to labelers; clients include in API requests
+3. Label Interpretation = per-user config to hide, warn, or ignore content
+
+**Structure:**
+
+```json
+{
+  "src": "did:plc:labeler",
+  "uri": "at://did:user/app.bsky.feed.post/123",
+  "val": "spam",
+  "cts": "2026-01-01T00:00:00Z"
+}
+```
+
+## Feeds
+
+**Core Flow**:
+
+1. User requests feed via at-uri of declared feed
+2. PDS resolves at-uri → Feed Generator's DID doc
+3. PDS sends `getFeedSkeleton` to service endpoint (authenticated by user's JWT)
+4. Feed Generator returns skeleton (list of post URIs + cursor)
+5. PDS hydrates skeleton with full content (via AppView)
+6. Hydrated feed returned to user
+
+## AppView
+
+**Responsibilities**:
+
+1. Record Processing & Indexing - consume firehose, build indices for likes, threads, follows
+2. Moderation Enforcement - apply labels from subscribed labelers
+3. Query Interface - expose XRPC API (proxied through PDS)
+4. Media CDN - fetch/cache blobs from upstream PDSes, generate thumbnails
+5. Search & Discovery - full-text search, type-ahead, content ranking
 
 ## Patterns from Real AT Protocol Apps
 
@@ -73,13 +116,11 @@ Index network-wide records to power discovery features:
 - OAuth 2.1 via `@atproto/oauth-client` library
 - Records synced to PDS: tracks, likes, playlists
 - Separate moderation service (Rust labeler)
-- Data ownership: "tracks, likes, playlists synced to your PDS as ATProto records"
 
 ### leaflet.pub (Writing)
 
 - React/Next.js frontend with Supabase + Replicache for sync
 - Bluesky integration via dedicated `lexicons/` and `appview/` directories
-- Publications posted to Bluesky
 
 ### wisp.place (Static Sites)
 
@@ -101,3 +142,6 @@ Index network-wide records to power discovery features:
 - [Repository & XRPC](https://atproto.com/specs/xrpc)
 - [Feed Generator Starter Kit](https://github.com/bluesky-social/feed-generator)
 - [atproto TypeScript SDK](https://github.com/bluesky-social/atproto)
+- [Ozone Moderation Service](https://github.com/bluesky-social/ozone)
+- [Jetstream Firehose](https://docs.bsky.app/blog/jetstream)
+- [Labels and Moderation Guide](https://docs.bsky.app/docs/advanced-guides/moderation)
