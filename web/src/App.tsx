@@ -1,5 +1,6 @@
 import { AppLayout } from "$components/layout/AppLayout";
 import { authStore } from "$lib/store";
+import About from "$pages/About";
 import DeckNew from "$pages/DeckNew";
 import DeckView from "$pages/DeckView";
 import Discovery from "$pages/Discovery";
@@ -31,6 +32,7 @@ const App: Component = () => {
   return (
     <Router>
       <Route path="/login" component={Login} />
+      <Route path="/about" component={About} />
       <Route path="/" component={() => <ProtectedRoute component={Home} />} />
       <Route path="/decks" component={() => <ProtectedRoute component={Home} />} />
       <Route path="/decks/new" component={() => <ProtectedRoute component={DeckNew} />} />

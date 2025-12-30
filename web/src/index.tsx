@@ -1,4 +1,6 @@
 /* @refresh reload */
+import "@fontsource-variable/alegreya";
+import "@fontsource-variable/lora";
 import { render } from "solid-js/web";
 import "./index.css";
 import App from "./App.tsx";

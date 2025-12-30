@@ -63,11 +63,11 @@
 
 **Marketing/Static Site:**
 
-- [ ] Landing page with hero section, feature highlights, social proof
-    - Hero should have a graph paper/grid background
-    - Floating flash cards, notes
-- [ ] "How it works" section with study flow visualization
-- [ ] About page with team/mission
+- [x] Landing page with hero section, feature highlights
+    - Hero has graph paper/grid background
+    - Floating flash cards, notes animations
+- [x] "How it works" section with study flow visualization
+- [x] About page with team/mission
 
 **App Vision Content:**
 

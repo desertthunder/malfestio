@@ -17,7 +17,7 @@ describe("Landing Page", () => {
     renderLanding();
 
     expect(screen.getByText(/Learning on/i)).toBeInTheDocument();
-    expect(screen.getByText(/the AT Protocol/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/the AT Protocol/i).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText(/Master complex topics/i)).toBeInTheDocument();
   });
 
@@ -35,5 +35,14 @@ describe("Landing Page", () => {
     expect(screen.getByText("Flashcards")).toBeInTheDocument();
     expect(screen.getByText("Linked Notes")).toBeInTheDocument();
     expect(screen.getByText("Social Learning")).toBeInTheDocument();
+  });
+
+  it("renders 'How it works' section", () => {
+    renderLanding();
+
+    expect(screen.getByText("How it works")).toBeInTheDocument();
+    expect(screen.getByText("Import")).toBeInTheDocument();
+    expect(screen.getByText("Study")).toBeInTheDocument();
+    expect(screen.getByText("Share")).toBeInTheDocument();
   });
 });

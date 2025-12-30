@@ -1,2 +1,30 @@
 @import "tailwindcss";
 @plugin "@egoist/tailwindcss-icons";
+
+@theme {
+    --font-display: "Lora Variable", serif;
+    --font-body: "Alegreya Variable", serif;
+}
+
+* {
+    @apply font-body;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    @apply font-display;
+}
+
+.grid-pattern {
+    background-size: 32px 32px;
+    background-image: linear-gradient(
+            to right,
+            rgba(85, 85, 85, 0.3) 1px,
+            transparent 1px
+        ),
+        linear-gradient(to bottom, rgba(85, 85, 85, 0.3) 1px, transparent 1px);
+}
