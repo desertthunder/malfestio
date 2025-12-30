@@ -1,4 +1,7 @@
 /* eslint-disable solid/no-innerhtml */
+import { api } from "$lib/api";
+import { toast } from "$lib/toast";
+import { Button } from "$ui/Button";
 import rehypeExternalLinks from "rehype-external-links";
 import rehypeSanitize from "rehype-sanitize";
 import rehypeStringify from "rehype-stringify";
@@ -6,9 +9,6 @@ import remarkParse from "remark-parse";
 import remarkRehype from "remark-rehype";
 import { createEffect, createSignal, Show } from "solid-js";
 import { unified } from "unified";
-import { api } from "../lib/api";
-import { toast } from "../lib/toast";
-import { Button } from "./ui/Button";
 
 type NoteEditorProps = { noteId?: string; initialTitle?: string; initialContent?: string };
 

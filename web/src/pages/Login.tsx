@@ -1,8 +1,8 @@
+import { api } from "$lib/api";
+import { authStore } from "$lib/store";
 import { useNavigate } from "@solidjs/router";
 import type { Component } from "solid-js";
 import { createSignal } from "solid-js";
-import { api } from "../lib/api";
-import { authStore } from "../lib/store";
 
 const Login: Component = () => {
   const [identifier, setIdentifier] = createSignal("");

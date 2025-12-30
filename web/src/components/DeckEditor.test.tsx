@@ -1,10 +1,10 @@
+import { api } from "$lib/api";
 import { cleanup, fireEvent, render, screen } from "@solidjs/testing-library";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { api } from "../lib/api";
 import { DeckEditor } from "./DeckEditor";
 
 vi.mock(
-  "../lib/api",
+  "$lib/api",
   () => ({ api: { post: vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({}) }) } }),
 );
 

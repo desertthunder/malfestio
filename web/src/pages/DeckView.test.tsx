@@ -1,10 +1,10 @@
+import { api } from "$lib/api";
 import { cleanup, render, screen, waitFor } from "@solidjs/testing-library";
 import { JSX } from "solid-js";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { api } from "../lib/api";
 import DeckView from "./DeckView";
 
-vi.mock("../lib/api", () => ({ api: { get: vi.fn() } }));
+vi.mock("$lib/api", () => ({ api: { get: vi.fn() } }));
 
 vi.mock(
   "@solidjs/router",

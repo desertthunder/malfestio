@@ -1,7 +1,7 @@
+import { authStore } from "$lib/store";
+import { Avatar } from "$ui/Avatar";
 import { A } from "@solidjs/router";
 import { type Component, Show } from "solid-js";
-import { authStore } from "../../lib/store";
-import { Avatar } from "../ui/Avatar";
 
 const Login: Component = () => (
   <A href="/login" class="px-4 py-2 bg-white text-gray-900 text-sm font-medium hover:bg-gray-100 transition-colors">

@@ -1,7 +1,3 @@
-/**
- * Animation presets for solid-motionone
- * @module animations
- */
 import type { Options as MotionOptions } from "solid-motionone";
 
 /** Spring animation config for natural bounce */

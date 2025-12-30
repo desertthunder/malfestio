@@ -1,8 +1,8 @@
+import { NoteEditor } from "$components/NoteEditor";
+import { api } from "$lib/api";
+import { toast } from "$lib/toast";
+import { Button } from "$ui/Button";
 import { createSignal, Show } from "solid-js";
-import { NoteEditor } from "../components/NoteEditor";
-import { Button } from "../components/ui/Button";
-import { api } from "../lib/api";
-import { toast } from "../lib/toast";
 
 export default function Import() {
   const [url, setUrl] = createSignal("");

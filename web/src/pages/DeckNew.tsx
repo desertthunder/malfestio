@@ -1,9 +1,9 @@
+import { DeckEditor } from "$components/DeckEditor";
+import { api } from "$lib/api";
+import type { Card, CreateDeckPayload } from "$lib/store";
+import { toast } from "$lib/toast";
 import { useNavigate } from "@solidjs/router";
 import type { Component } from "solid-js";
-import { DeckEditor } from "../components/DeckEditor";
-import { api } from "../lib/api";
-import type { Card, CreateDeckPayload } from "../lib/store";
-import { toast } from "../lib/toast";
 
 const DeckNew: Component = () => {
   const navigate = useNavigate();

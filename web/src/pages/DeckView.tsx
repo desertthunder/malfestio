@@ -1,8 +1,8 @@
+import { api } from "$lib/api";
+import type { Visibility } from "$lib/store";
 import { A, useParams } from "@solidjs/router";
 import type { Component } from "solid-js";
 import { createResource, For, Show } from "solid-js";
-import { api } from "../lib/api";
-import type { Visibility } from "../lib/store";
 
 type Deck = {
   id: string;

@@ -1,5 +1,5 @@
+import { Button } from "$ui/Button";
 import { createEffect, createSignal, Show } from "solid-js";
-import { Button } from "./ui/Button";
 
 type CardEditorProps = {
   front?: string;

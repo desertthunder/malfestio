@@ -1,5 +1,5 @@
+import { Toaster } from "$ui/Toast";
 import type { Component, JSX } from "solid-js";
-import { Toaster } from "../ui/Toast";
 import { Header } from "./Header";
 
 type AppLayoutProps = { children?: JSX.Element };

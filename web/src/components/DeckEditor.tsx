@@ -1,9 +1,9 @@
+import { api } from "$lib/api";
+import type { Card, CreateDeckPayload, Visibility } from "$lib/store";
+import { toast } from "$lib/toast";
+import { Button } from "$ui/Button";
 import { createSignal, For, Show } from "solid-js";
-import { api } from "../lib/api";
-import type { Card, CreateDeckPayload, Visibility } from "../lib/store";
-import { toast } from "../lib/toast";
 import { CardEditor } from "./CardEditor";
-import { Button } from "./ui/Button";
 
 export function DeckEditor(props: { onSave?: (deck: CreateDeckPayload) => void }) {
   const [title, setTitle] = createSignal("");
