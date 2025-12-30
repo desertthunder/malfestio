@@ -1,4 +1,5 @@
-use axum::{Json, http::StatusCode, response::IntoResponse};
+use crate::state::SharedState;
+use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
 
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -18,9 +19,9 @@ pub struct LoginResponse {
 }
 
 /// TODO: Make PDS URL configurable (bluesky users can use their own PDS)
-pub async fn login(Json(payload): Json<LoginRequest>) -> impl IntoResponse {
+pub async fn login(State(state): State<SharedState>, Json(payload): Json<LoginRequest>) -> impl IntoResponse {
     let client = reqwest::Client::new();
-    let pds_url = std::env::var("PDS_URL").unwrap_or_else(|_| "https://bsky.social".to_string());
+    let pds_url = &state.config.pds_url;
 
     let resp = client
         .post(format!("{}/xrpc/com.atproto.server.createSession", pds_url))

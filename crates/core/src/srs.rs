@@ -75,9 +75,7 @@ impl ReviewState {
     pub fn schedule(&self, grade: Grade, config: &Sm2Config) -> Self {
         let q = grade.0 as f32;
 
-        // TODO: move to separate fn
-        // EF' = EF + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02))
-        let new_ease = self.ease_factor + (0.1 - (5.0 - q) * (0.08 + (5.0 - q) * 0.02));
+        let new_ease = calculate_next_ease(self.ease_factor, q);
         let new_ease = new_ease.max(config.min_ease);
 
         if grade.is_passing() {
@@ -100,6 +98,10 @@ impl ReviewState {
             Self { ease_factor: new_ease, interval_days: 0, repetitions: 0, due_at: Utc::now() + Duration::minutes(10) }
         }
     }
+}
+
+fn calculate_next_ease(current_ease: f32, quality: f32) -> f32 {
+    current_ease + (0.1 - (5.0 - quality) * (0.08 + (5.0 - quality) * 0.02))
 }
 
 #[cfg(test)]

@@ -87,6 +87,7 @@ impl ReviewRepository for DbReviewRepository {
                         c.front,
                         c.back,
                         c.media_url,
+                        c.hints,
                         cr.due_at
                     FROM cards c
                     JOIN decks d ON c.deck_id = d.id
@@ -111,6 +112,7 @@ impl ReviewRepository for DbReviewRepository {
                         c.front,
                         c.back,
                         c.media_url,
+                        c.hints,
                         cr.due_at
                     FROM cards c
                     JOIN decks d ON c.deck_id = d.id
@@ -142,8 +144,7 @@ impl ReviewRepository for DbReviewRepository {
                 front: row.get("front"),
                 back: row.get("back"),
                 media_url: row.get("media_url"),
-                // TODO: Load hints when stored in DB
-                hints: vec![],
+                hints: row.get("hints"),
                 due_at: due_at.unwrap_or_else(Utc::now),
             });
         }

@@ -1,5 +1,4 @@
 use crate::middleware::auth::UserContext;
-use crate::repository::social::SocialRepoError;
 use crate::state::SharedState;
 
 use axum::{
@@ -29,7 +28,7 @@ pub async fn follow(
 
     match result {
         Ok(_) => (StatusCode::OK, Json(json!({"status": "followed"}))).into_response(),
-        Err(SocialRepoError::DatabaseError(msg)) => {
+        Err(malfestio_core::Error::Database(msg)) => {
             tracing::error!("Database error: {}", msg);
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
@@ -57,7 +56,7 @@ pub async fn unfollow(
 
     match result {
         Ok(_) => (StatusCode::OK, Json(json!({"status": "unfollowed"}))).into_response(),
-        Err(SocialRepoError::DatabaseError(msg)) => {
+        Err(malfestio_core::Error::Database(msg)) => {
             tracing::error!("Database error: {}", msg);
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
@@ -78,7 +77,7 @@ pub async fn get_followers(State(state): State<SharedState>, Path(did): Path<Str
 
     match result {
         Ok(followers) => Json(followers).into_response(),
-        Err(SocialRepoError::DatabaseError(msg)) => {
+        Err(malfestio_core::Error::Database(msg)) => {
             tracing::error!("Database error: {}", msg);
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
@@ -99,7 +98,7 @@ pub async fn get_following(State(state): State<SharedState>, Path(did): Path<Str
 
     match result {
         Ok(following) => Json(following).into_response(),
-        Err(SocialRepoError::DatabaseError(msg)) => {
+        Err(malfestio_core::Error::Database(msg)) => {
             tracing::error!("Database error: {}", msg);
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
@@ -131,7 +130,7 @@ pub async fn add_comment(
 
     match result {
         Ok(comment) => (StatusCode::CREATED, Json(comment)).into_response(),
-        Err(SocialRepoError::DatabaseError(msg)) => {
+        Err(malfestio_core::Error::Database(msg)) => {
             tracing::error!("Database error: {}", msg);
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
@@ -152,7 +151,7 @@ pub async fn get_comments(State(state): State<SharedState>, Path(deck_id): Path<
 
     match result {
         Ok(comments) => Json(comments).into_response(),
-        Err(SocialRepoError::DatabaseError(msg)) => {
+        Err(malfestio_core::Error::Database(msg)) => {
             tracing::error!("Database error: {}", msg);
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
@@ -188,7 +187,22 @@ mod tests {
         let oauth_repo = Arc::new(MockOAuthRepository::new()) as Arc<dyn crate::repository::oauth::OAuthRepository>;
         let review_repo = Arc::new(MockReviewRepository::new()) as Arc<dyn crate::repository::review::ReviewRepository>;
 
-        Arc::new(AppState { pool, card_repo, note_repo, oauth_repo, review_repo, social_repo })
+        let deck_repo = Arc::new(crate::repository::deck::mock::MockDeckRepository::new())
+            as Arc<dyn crate::repository::deck::DeckRepository>;
+        let config = crate::state::AppConfig { pds_url: "https://bsky.social".to_string() };
+        let auth_cache = Arc::new(tokio::sync::RwLock::new(std::collections::HashMap::new()));
+
+        Arc::new(AppState {
+            pool,
+            card_repo,
+            note_repo,
+            oauth_repo,
+            review_repo,
+            social_repo,
+            deck_repo,
+            config,
+            auth_cache,
+        })
     }
 
     #[tokio::test]

@@ -1,13 +1,14 @@
 use crate::middleware::auth::UserContext;
 use crate::state::SharedState;
 
+use crate::repository::deck::{CreateDeckParams, DeckRepoError, UpdateDeckParams};
 use axum::{
     Json,
     extract::{Extension, Path, State},
     http::StatusCode,
     response::IntoResponse,
 };
-use malfestio_core::model::{Deck, Visibility};
+use malfestio_core::model::Visibility;
 use serde::Deserialize;
 use serde_json::json;
 
@@ -24,6 +25,7 @@ pub struct PublishDeckRequest {
     pub published: bool,
 }
 
+// TODO: add tests
 pub async fn create_deck(
     State(state): State<SharedState>, ctx: Option<axum::Extension<UserContext>>, Json(payload): Json<CreateDeckRequest>,
 ) -> impl IntoResponse {
@@ -32,68 +34,25 @@ pub async fn create_deck(
         None => return (StatusCode::UNAUTHORIZED, Json(json!({"error": "Unauthorized"}))).into_response(),
     };
 
-    let pool = &state.pool;
-    let client = match pool.get().await {
-        Ok(client) => client,
-        Err(e) => {
-            tracing::error!("Failed to get database connection: {}", e);
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({"error": "Database connection failed"})),
-            )
-                .into_response();
-        }
-    };
-
-    let deck_id = uuid::Uuid::new_v4();
-    let visibility_json = match serde_json::to_value(&payload.visibility) {
-        Ok(v) => v,
-        Err(e) => {
-            tracing::error!("Failed to serialize visibility: {}", e);
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({"error": "Failed to serialize visibility"})),
-            )
-                .into_response();
-        }
-    };
-
-    let result = client
-        .execute(
-            "INSERT INTO decks (id, owner_did, title, description, tags, visibility)
-             VALUES ($1, $2, $3, $4, $5, $6)",
-            &[
-                &deck_id,
-                &user.did,
-                &payload.title,
-                &payload.description,
-                &payload.tags,
-                &visibility_json,
-            ],
-        )
-        .await;
-
-    if let Err(e) = result {
-        tracing::error!("Failed to insert deck: {}", e);
-        return (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({"error": "Failed to create deck"})),
-        )
-            .into_response();
-    }
-
-    let new_deck = Deck {
-        id: deck_id.to_string(),
+    let params = CreateDeckParams {
         owner_did: user.did,
         title: payload.title,
         description: payload.description,
         tags: payload.tags,
         visibility: payload.visibility,
-        published_at: None,
-        fork_of: None,
     };
 
-    (StatusCode::CREATED, Json(new_deck)).into_response()
+    match state.deck_repo.create(params).await {
+        Ok(deck) => (StatusCode::CREATED, Json(deck)).into_response(),
+        Err(e) => {
+            tracing::error!("Failed to create deck: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": "Failed to create deck"})),
+            )
+                .into_response()
+        }
+    }
 }
 
 pub async fn list_decks(
@@ -101,168 +60,54 @@ pub async fn list_decks(
 ) -> impl IntoResponse {
     let user_did = ctx.map(|Extension(u)| u.did);
 
-    let pool = &state.pool;
-    let client = match pool.get().await {
-        Ok(client) => client,
+    match state.deck_repo.list_visible(user_did.as_deref()).await {
+        Ok(decks) => Json(decks).into_response(),
         Err(e) => {
-            tracing::error!("Failed to get database connection: {}", e);
-            return (
+            tracing::error!("Failed to list decks: {:?}", e);
+            (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({"error": "Database connection failed"})),
+                Json(json!({"error": "Failed to list decks"})),
             )
-                .into_response();
+                .into_response()
         }
-    };
-
-    let query = if let Some(ref _did) = user_did {
-        "SELECT id, owner_did, title, description, tags, visibility, published_at, fork_of, created_at, updated_at
-         FROM decks
-         WHERE owner_did = $1
-            OR visibility->>'type' = 'Public'
-            OR visibility->>'type' = 'Unlisted'
-            OR (visibility->>'type' = 'SharedWith' AND visibility->'content' ? $1)
-         ORDER BY created_at DESC"
-    } else {
-        "SELECT id, owner_did, title, description, tags, visibility, published_at, fork_of, created_at, updated_at
-         FROM decks
-         WHERE visibility->>'type' IN ('Public', 'Unlisted')
-         ORDER BY created_at DESC"
-    };
-
-    let rows = if let Some(ref did) = user_did {
-        client.query(query, &[did]).await
-    } else {
-        client.query(query, &[]).await
-    };
-
-    let rows = match rows {
-        Ok(rows) => rows,
-        Err(e) => {
-            tracing::error!("Failed to query decks: {}", e);
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({"error": "Failed to retrieve decks"})),
-            )
-                .into_response();
-        }
-    };
-
-    let mut decks = Vec::new();
-    for row in rows {
-        let visibility_json: serde_json::Value = row.get("visibility");
-        let visibility: Visibility = match serde_json::from_value(visibility_json) {
-            Ok(v) => v,
-            Err(e) => {
-                tracing::error!("Failed to deserialize visibility: {}", e);
-                continue;
-            }
-        };
-
-        let id: uuid::Uuid = row.get("id");
-        let fork_of: Option<uuid::Uuid> = row.get("fork_of");
-
-        decks.push(Deck {
-            id: id.to_string(),
-            owner_did: row.get("owner_did"),
-            title: row.get("title"),
-            description: row.get("description"),
-            tags: row.get("tags"),
-            visibility,
-            published_at: row
-                .get::<_, Option<chrono::DateTime<chrono::Utc>>>("published_at")
-                .map(|dt| dt.to_rfc3339()),
-            fork_of: fork_of.map(|u| u.to_string()),
-        });
     }
-
-    Json(decks).into_response()
 }
 
 pub async fn get_deck(
     State(state): State<SharedState>, ctx: Option<axum::Extension<UserContext>>, Path(id): Path<String>,
 ) -> impl IntoResponse {
     let user_did = ctx.map(|Extension(u)| u.did);
-    let pool = &state.pool;
-    let client = match pool.get().await {
-        Ok(client) => client,
-        Err(e) => {
-            tracing::error!("Failed to get database connection: {}", e);
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({"error": "Database connection failed"})),
-            )
-                .into_response();
+
+    match state.deck_repo.get(&id).await {
+        Ok(deck) => {
+            // Access control check
+            let is_owner = user_did.as_ref() == Some(&deck.owner_did);
+            let has_access = match &deck.visibility {
+                Visibility::Public | Visibility::Unlisted => true,
+                Visibility::Private => is_owner,
+                Visibility::SharedWith(dids) => {
+                    is_owner || user_did.as_ref().map(|did| dids.contains(did)).unwrap_or(false)
+                }
+            };
+
+            if !has_access {
+                return (StatusCode::FORBIDDEN, Json(json!({"error": "Access denied"}))).into_response();
+            }
+
+            Json(deck).into_response()
         }
-    };
-
-    let deck_id = match uuid::Uuid::parse_str(&id) {
-        Ok(uuid) => uuid,
-        Err(_) => return (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid deck ID"}))).into_response(),
-    };
-
-    let row = match client
-        .query_opt(
-            "SELECT id, owner_did, title, description, tags, visibility, published_at, fork_of, created_at, updated_at
-             FROM decks WHERE id = $1",
-            &[&deck_id],
-        )
-        .await
-    {
-        Ok(Some(row)) => row,
-        Ok(None) => return (StatusCode::NOT_FOUND, Json(json!({"error": "Deck not found"}))).into_response(),
+        Err(crate::repository::deck::DeckRepoError::NotFound(_)) => {
+            (StatusCode::NOT_FOUND, Json(json!({"error": "Deck not found"}))).into_response()
+        }
         Err(e) => {
-            tracing::error!("Failed to query deck: {}", e);
-            return (
+            tracing::error!("Failed to get deck: {:?}", e);
+            (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(json!({"error": "Failed to retrieve deck"})),
             )
-                .into_response();
+                .into_response()
         }
-    };
-
-    let visibility_json: serde_json::Value = row.get("visibility");
-    let visibility: Visibility = match serde_json::from_value(visibility_json) {
-        Ok(v) => v,
-        Err(e) => {
-            tracing::error!("Failed to deserialize visibility: {}", e);
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({"error": "Failed to parse deck visibility"})),
-            )
-                .into_response();
-        }
-    };
-
-    let owner_did: String = row.get("owner_did");
-    let is_owner = user_did.as_ref() == Some(&owner_did);
-
-    let has_access = match &visibility {
-        Visibility::Public | Visibility::Unlisted => true,
-        Visibility::Private => is_owner,
-        Visibility::SharedWith(dids) => is_owner || user_did.as_ref().map(|did| dids.contains(did)).unwrap_or(false),
-    };
-
-    if !has_access {
-        return (StatusCode::FORBIDDEN, Json(json!({"error": "Access denied"}))).into_response();
     }
-
-    let uuid_id: uuid::Uuid = row.get("id");
-    let fork_of: Option<uuid::Uuid> = row.get("fork_of");
-
-    let deck = Deck {
-        id: uuid_id.to_string(),
-        owner_did,
-        title: row.get("title"),
-        description: row.get("description"),
-        tags: row.get("tags"),
-        visibility,
-        published_at: row
-            .get::<_, Option<chrono::DateTime<chrono::Utc>>>("published_at")
-            .map(|dt| dt.to_rfc3339()),
-        fork_of: fork_of.map(|u| u.to_string()),
-    };
-
-    Json(deck).into_response()
 }
 
 pub async fn publish_deck(
@@ -274,90 +119,33 @@ pub async fn publish_deck(
         None => return (StatusCode::UNAUTHORIZED, Json(json!({"error": "Unauthorized"}))).into_response(),
     };
 
-    let pool = &state.pool;
-    let client = match pool.get().await {
-        Ok(client) => client,
+    let deck = match state.deck_repo.get(&id).await {
+        Ok(d) => d,
+        Err(DeckRepoError::NotFound(_)) => {
+            return (StatusCode::NOT_FOUND, Json(json!({"error": "Deck not found"}))).into_response();
+        }
         Err(e) => {
-            tracing::error!("Failed to get database connection: {}", e);
+            tracing::error!("Failed to get deck: {:?}", e);
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({"error": "Database connection failed"})),
+                Json(json!({"error": "Failed to fetch deck"})),
             )
                 .into_response();
         }
     };
 
-    let deck_id = match uuid::Uuid::parse_str(&id) {
-        Ok(uuid) => uuid,
-        Err(_) => return (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid deck ID"}))).into_response(),
-    };
-
-    let deck_row = match client
-        .query_opt(
-            "SELECT id, owner_did, title, description, tags, visibility, published_at, fork_of
-             FROM decks WHERE id = $1",
-            &[&deck_id],
-        )
-        .await
-    {
-        Ok(Some(row)) => row,
-        Ok(None) => return (StatusCode::NOT_FOUND, Json(json!({"error": "Deck not found"}))).into_response(),
-        Err(e) => {
-            tracing::error!("Failed to query deck: {}", e);
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({"error": "Database error"})),
-            )
-                .into_response();
-        }
-    };
-
-    let owner_did: String = deck_row.get("owner_did");
-    if owner_did != user.did {
+    if deck.owner_did != user.did {
         return (StatusCode::FORBIDDEN, Json(json!({"error": "Only owner can publish"}))).into_response();
     }
 
-    let visibility_json: serde_json::Value = deck_row.get("visibility");
-    let visibility: Visibility = match serde_json::from_value(visibility_json) {
-        Ok(v) => v,
-        Err(e) => {
-            tracing::error!("Failed to parse visibility: {}", e);
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({"error": "Invalid deck data"})),
-            )
-                .into_response();
-        }
-    };
-
-    let fork_of: Option<uuid::Uuid> = deck_row.get("fork_of");
-    let mut deck = Deck {
-        id: deck_id.to_string(),
-        owner_did: owner_did.clone(),
-        title: deck_row.get("title"),
-        description: deck_row.get("description"),
-        tags: deck_row.get("tags"),
-        visibility: visibility.clone(),
-        published_at: deck_row
-            .get::<_, Option<chrono::DateTime<chrono::Utc>>>("published_at")
-            .map(|dt| dt.to_rfc3339()),
-        fork_of: fork_of.map(|u| u.to_string()),
-    };
-
-    let mut deck_at_uri: Option<String> = None;
+    let mut updated_deck = deck.clone();
+    let mut deck_at_uri = None;
 
     if payload.published {
-        let card_rows = match client
-            .query(
-                "SELECT id, owner_did, deck_id, front, back, media_url
-                 FROM cards WHERE deck_id = $1 ORDER BY created_at ASC",
-                &[&deck_id],
-            )
-            .await
-        {
-            Ok(rows) => rows,
+        let cards = match state.card_repo.list_by_deck(&id).await {
+            Ok(c) => c,
             Err(e) => {
-                tracing::error!("Failed to fetch cards: {}", e);
+                tracing::error!("Failed to fetch cards: {:?}", e);
                 return (
                     StatusCode::INTERNAL_SERVER_ERROR,
                     Json(json!({"error": "Failed to fetch cards"})),
@@ -366,56 +154,31 @@ pub async fn publish_deck(
             }
         };
 
-        let cards: Vec<malfestio_core::model::Card> = card_rows
-            .iter()
-            .map(|row| {
-                let card_id: uuid::Uuid = row.get("id");
-                let card_deck_id: uuid::Uuid = row.get("deck_id");
-                malfestio_core::model::Card {
-                    id: card_id.to_string(),
-                    owner_did: row.get("owner_did"),
-                    deck_id: card_deck_id.to_string(),
-                    front: row.get("front"),
-                    back: row.get("back"),
-                    media_url: row.get("media_url"),
-                    card_type: malfestio_core::model::CardType::default(),
-                    hints: vec![],
-                }
-            })
-            .collect();
-
         match crate::pds::publish::publish_deck_to_pds(state.oauth_repo.clone(), &user.did, &deck, &cards).await {
             Ok(result) => {
                 deck_at_uri = Some(result.deck_at_uri.clone());
 
-                if let Err(e) = client
-                    .execute(
-                        "UPDATE decks SET at_uri = $1, visibility = $2, published_at = $3 WHERE id = $4",
-                        &[
-                            &result.deck_at_uri,
-                            &serde_json::to_value(&Visibility::Public).unwrap(),
-                            &Some(chrono::Utc::now()),
-                            &deck_id,
-                        ],
-                    )
-                    .await
-                {
-                    tracing::error!("Failed to store deck AT-URI: {}", e);
+                let params = UpdateDeckParams {
+                    deck_id: id.clone(),
+                    visibility: Some(Visibility::Public),
+                    published_at: Some(chrono::Utc::now().to_rfc3339()),
+                    at_uri: Some(result.deck_at_uri.clone()),
+                };
+
+                if let Err(e) = state.deck_repo.update(params).await {
+                    tracing::error!("Failed to update deck: {:?}", e);
                 }
+
+                updated_deck.visibility = Visibility::Public;
+                updated_deck.published_at = Some(chrono::Utc::now().to_rfc3339());
 
                 for (i, at_uri) in result.card_at_uris.iter().enumerate() {
                     if i < cards.len()
-                        && let Ok(card_uuid) = uuid::Uuid::parse_str(&cards[i].id)
-                        && let Err(e) = client
-                            .execute("UPDATE cards SET at_uri = $1 WHERE id = $2", &[at_uri, &card_uuid])
-                            .await
+                        && let Err(e) = state.card_repo.update_at_uri(&cards[i].id, at_uri).await
                     {
-                        tracing::warn!("Failed to store card AT-URI: {}", e);
+                        tracing::warn!("Failed to store card AT-URI: {:?}", e);
                     }
                 }
-
-                deck.visibility = Visibility::Public;
-                deck.published_at = Some(chrono::Utc::now().to_rfc3339());
             }
             Err(e) => {
                 tracing::error!("Failed to publish to PDS: {}", e);
@@ -427,36 +190,32 @@ pub async fn publish_deck(
             }
         }
     } else {
-        let (new_visibility, published_at) = (
-            serde_json::to_value(&Visibility::Private).unwrap(),
-            None::<chrono::DateTime<chrono::Utc>>,
-        );
-        if let Err(e) = client
-            .execute(
-                "UPDATE decks SET visibility = $1, published_at = $2 WHERE id = $3",
-                &[&new_visibility, &published_at, &deck_id],
-            )
-            .await
-        {
-            tracing::error!("Failed to update deck: {}", e);
+        let params = UpdateDeckParams {
+            deck_id: id.clone(),
+            visibility: Some(Visibility::Private),
+            published_at: None,
+            at_uri: None,
+        };
+        if let Err(e) = state.deck_repo.update(params).await {
+            tracing::error!("Failed to update deck: {:?}", e);
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(json!({"error": "Failed to update deck"})),
             )
                 .into_response();
         }
-        deck.visibility = Visibility::Private;
-        deck.published_at = None;
+        updated_deck.visibility = Visibility::Private;
+        updated_deck.published_at = None;
     }
 
     if let Some(at_uri) = deck_at_uri {
         Json(json!({
-            "deck": deck,
+            "deck": updated_deck,
             "at_uri": at_uri
         }))
         .into_response()
     } else {
-        Json(deck).into_response()
+        Json(updated_deck).into_response()
     }
 }
 
@@ -468,164 +227,23 @@ pub async fn fork_deck(
         None => return (StatusCode::UNAUTHORIZED, Json(json!({"error": "Unauthorized"}))).into_response(),
     };
 
-    let pool = &state.pool;
-    let mut client = match pool.get().await {
-        Ok(client) => client,
-        Err(e) => {
-            tracing::error!("Failed to get database connection: {}", e);
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({"error": "Database connection failed"})),
-            )
-                .into_response();
+    match state.deck_repo.fork(&id, &user.did).await {
+        Ok(deck) => (StatusCode::CREATED, Json(deck)).into_response(),
+        Err(crate::repository::deck::DeckRepoError::NotFound(_)) => {
+            (StatusCode::NOT_FOUND, Json(json!({"error": "Deck not found"}))).into_response()
         }
-    };
-
-    let original_deck_uuid = match uuid::Uuid::parse_str(&id) {
-        Ok(uuid) => uuid,
-        Err(_) => return (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid deck ID"}))).into_response(),
-    };
-
-    let transaction = match client.transaction().await {
-        Ok(tx) => tx,
-        Err(e) => {
-            tracing::error!("Failed to start transaction: {}", e);
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({"error": "Database error"})),
-            )
-                .into_response();
-        }
-    };
-
-    let original_deck_row = match transaction
-        .query_opt(
-            "SELECT owner_did, title, description, tags, visibility FROM decks WHERE id = $1",
-            &[&original_deck_uuid],
-        )
-        .await
-    {
-        Ok(Some(row)) => row,
-        Ok(None) => return (StatusCode::NOT_FOUND, Json(json!({"error": "Deck not found"}))).into_response(),
-        Err(e) => {
-            tracing::error!("Failed to query deck: {}", e);
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({"error": "Failed to retrieve deck"})),
-            )
-                .into_response();
-        }
-    };
-
-    let visibility_json: serde_json::Value = original_deck_row.get("visibility");
-    let visibility: Visibility = serde_json::from_value(visibility_json).unwrap_or(Visibility::Private);
-
-    let can_fork = match visibility {
-        Visibility::Public | Visibility::Unlisted => true,
-        Visibility::SharedWith(dids) => dids.contains(&user.did),
-        Visibility::Private => {
-            let owner: String = original_deck_row.get("owner_did");
-            owner == user.did
-        }
-    };
-
-    if !can_fork {
-        return (
+        Err(crate::repository::deck::DeckRepoError::AccessDenied(_)) => (
             StatusCode::FORBIDDEN,
             Json(json!({"error": "Cannot fork private deck"})),
         )
-            .into_response();
-    }
-
-    let new_deck_id = uuid::Uuid::new_v4();
-    let title: String = original_deck_row.get("title");
-    let description: String = original_deck_row.get("description");
-    let tags: Vec<String> = original_deck_row.get("tags");
-
-    if let Err(e) = transaction
-        .execute(
-            "INSERT INTO decks (id, owner_did, title, description, tags, visibility, fork_of)
-             VALUES ($1, $2, $3, $4, $5, $6, $7)",
-            &[
-                &new_deck_id,
-                &user.did,
-                &format!("Fork of {}", title),
-                &description,
-                &tags,
-                &serde_json::to_value(&Visibility::Private).unwrap(),
-                &original_deck_uuid,
-            ],
-        )
-        .await
-    {
-        tracing::error!("Failed to create forked deck: {}", e);
-        return (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({"error": "Failed to create deck"})),
-        )
-            .into_response();
-    }
-
-    let original_cards = match transaction
-        .query(
-            "SELECT front, back, media_url FROM cards WHERE deck_id = $1",
-            &[&original_deck_uuid],
-        )
-        .await
-    {
-        Ok(rows) => rows,
+            .into_response(),
         Err(e) => {
-            tracing::error!("Failed to fetch original cards: {}", e);
-            return (
+            tracing::error!("Failed to fork deck: {:?}", e);
+            (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({"error": "Failed to fetch cards"})),
+                Json(json!({"error": "Failed to fork deck"})),
             )
-                .into_response();
-        }
-    };
-
-    for row in original_cards {
-        let card_id = uuid::Uuid::new_v4();
-        let front: String = row.get("front");
-        let back: String = row.get("back");
-        let media_url: Option<String> = row.get("media_url");
-
-        if let Err(e) = transaction
-            .execute(
-                "INSERT INTO cards (id, owner_did, deck_id, front, back, media_url)
-                 VALUES ($1, $2, $3, $4, $5, $6)",
-                &[&card_id, &user.did, &new_deck_id, &front, &back, &media_url],
-            )
-            .await
-        {
-            tracing::error!("Failed to fork card: {}", e);
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({"error": "Failed to fork cards"})),
-            )
-                .into_response();
+                .into_response()
         }
     }
-
-    if let Err(e) = transaction.commit().await {
-        tracing::error!("Failed to commit transaction: {}", e);
-        return (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({"error": "Transaction failed"})),
-        )
-            .into_response();
-    }
-
-    let deck = Deck {
-        id: new_deck_id.to_string(),
-        owner_did: user.did,
-        title: format!("Fork of {}", title),
-        description,
-        tags,
-        visibility: Visibility::Private,
-        published_at: None,
-        fork_of: Some(id),
-    };
-
-    (StatusCode::CREATED, Json(deck)).into_response()
 }

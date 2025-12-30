@@ -1,28 +1,22 @@
 use async_trait::async_trait;
 use chrono::Utc;
+use malfestio_core::error::Error;
 use malfestio_core::model::{Comment, Deck, Visibility};
 
 use crate::db;
 
-#[derive(Debug)]
-/// TODO: merge with core error type
-pub enum SocialRepoError {
-    DatabaseError(String),
-    NotFound(String),
-}
-
 #[async_trait]
 pub trait SocialRepository: Send + Sync {
-    async fn follow(&self, follower: &str, subject: &str) -> Result<(), SocialRepoError>;
-    async fn unfollow(&self, follower: &str, subject: &str) -> Result<(), SocialRepoError>;
-    async fn get_followers(&self, did: &str) -> Result<Vec<String>, SocialRepoError>;
-    async fn get_following(&self, did: &str) -> Result<Vec<String>, SocialRepoError>;
+    async fn follow(&self, follower: &str, subject: &str) -> Result<(), Error>;
+    async fn unfollow(&self, follower: &str, subject: &str) -> Result<(), Error>;
+    async fn get_followers(&self, did: &str) -> Result<Vec<String>, Error>;
+    async fn get_following(&self, did: &str) -> Result<Vec<String>, Error>;
     async fn add_comment(
         &self, deck_id: &str, author_did: &str, content: &str, parent_id: Option<&str>,
-    ) -> Result<Comment, SocialRepoError>;
-    async fn get_comments(&self, deck_id: &str) -> Result<Vec<Comment>, SocialRepoError>;
-    async fn get_feed_follows(&self, user_did: &str) -> Result<Vec<Deck>, SocialRepoError>;
-    async fn get_feed_trending(&self) -> Result<Vec<Deck>, SocialRepoError>;
+    ) -> Result<Comment, Error>;
+    async fn get_comments(&self, deck_id: &str) -> Result<Vec<Comment>, Error>;
+    async fn get_feed_follows(&self, user_did: &str) -> Result<Vec<Deck>, Error>;
+    async fn get_feed_trending(&self) -> Result<Vec<Deck>, Error>;
 }
 
 pub struct DbSocialRepository {
@@ -68,12 +62,12 @@ impl DbSocialRepository {
 
 #[async_trait]
 impl SocialRepository for DbSocialRepository {
-    async fn follow(&self, follower: &str, subject: &str) -> Result<(), SocialRepoError> {
+    async fn follow(&self, follower: &str, subject: &str) -> Result<(), Error> {
         let client = self
             .pool
             .get()
             .await
-            .map_err(|e| SocialRepoError::DatabaseError(format!("Failed to get connection: {}", e)))?;
+            .map_err(|e| Error::Database(format!("Failed to get connection: {}", e)))?;
 
         client
             .execute(
@@ -81,17 +75,17 @@ impl SocialRepository for DbSocialRepository {
                 &[&follower, &subject],
             )
             .await
-            .map_err(|e| SocialRepoError::DatabaseError(format!("Failed to follow: {}", e)))?;
+            .map_err(|e| Error::Database(format!("Failed to follow: {}", e)))?;
 
         Ok(())
     }
 
-    async fn unfollow(&self, follower: &str, subject: &str) -> Result<(), SocialRepoError> {
+    async fn unfollow(&self, follower: &str, subject: &str) -> Result<(), Error> {
         let client = self
             .pool
             .get()
             .await
-            .map_err(|e| SocialRepoError::DatabaseError(format!("Failed to get connection: {}", e)))?;
+            .map_err(|e| Error::Database(format!("Failed to get connection: {}", e)))?;
 
         client
             .execute(
@@ -99,57 +93,56 @@ impl SocialRepository for DbSocialRepository {
                 &[&follower, &subject],
             )
             .await
-            .map_err(|e| SocialRepoError::DatabaseError(format!("Failed to unfollow: {}", e)))?;
+            .map_err(|e| Error::Database(format!("Failed to unfollow: {}", e)))?;
 
         Ok(())
     }
 
-    async fn get_followers(&self, did: &str) -> Result<Vec<String>, SocialRepoError> {
+    async fn get_followers(&self, did: &str) -> Result<Vec<String>, Error> {
         let client = self
             .pool
             .get()
             .await
-            .map_err(|e| SocialRepoError::DatabaseError(format!("Failed to get connection: {}", e)))?;
+            .map_err(|e| Error::Database(format!("Failed to get connection: {}", e)))?;
 
         let rows = client
             .query("SELECT follower_did FROM follows WHERE subject_did = $1", &[&did])
             .await
-            .map_err(|e| SocialRepoError::DatabaseError(format!("Failed to get followers: {}", e)))?;
+            .map_err(|e| Error::Database(format!("Failed to get followers: {}", e)))?;
 
         Ok(rows.iter().map(|row| row.get("follower_did")).collect())
     }
 
-    async fn get_following(&self, did: &str) -> Result<Vec<String>, SocialRepoError> {
+    async fn get_following(&self, did: &str) -> Result<Vec<String>, Error> {
         let client = self
             .pool
             .get()
             .await
-            .map_err(|e| SocialRepoError::DatabaseError(format!("Failed to get connection: {}", e)))?;
+            .map_err(|e| Error::Database(format!("Failed to get connection: {}", e)))?;
 
         let rows = client
             .query("SELECT subject_did FROM follows WHERE follower_did = $1", &[&did])
             .await
-            .map_err(|e| SocialRepoError::DatabaseError(format!("Failed to get following: {}", e)))?;
+            .map_err(|e| Error::Database(format!("Failed to get following: {}", e)))?;
 
         Ok(rows.iter().map(|row| row.get("subject_did")).collect())
     }
 
     async fn add_comment(
         &self, deck_id: &str, author_did: &str, content: &str, parent_id: Option<&str>,
-    ) -> Result<Comment, SocialRepoError> {
+    ) -> Result<Comment, Error> {
         let client = self
             .pool
             .get()
             .await
-            .map_err(|e| SocialRepoError::DatabaseError(format!("Failed to get connection: {}", e)))?;
+            .map_err(|e| Error::Database(format!("Failed to get connection: {}", e)))?;
 
-        let deck_uuid = uuid::Uuid::parse_str(deck_id)
-            .map_err(|_| SocialRepoError::DatabaseError("Invalid deck ID".to_string()))?;
+        let deck_uuid = uuid::Uuid::parse_str(deck_id).map_err(|_| Error::Database("Invalid deck ID".to_string()))?;
 
         let parent_uuid = parent_id
             .map(uuid::Uuid::parse_str)
             .transpose()
-            .map_err(|_| SocialRepoError::DatabaseError("Invalid parent ID".to_string()))?;
+            .map_err(|_| Error::Database("Invalid parent ID".to_string()))?;
 
         let comment_id = uuid::Uuid::new_v4();
         let now = Utc::now();
@@ -161,7 +154,7 @@ impl SocialRepository for DbSocialRepository {
                 &[&comment_id, &deck_uuid, &author_did, &content, &parent_uuid, &now],
             )
             .await
-            .map_err(|e| SocialRepoError::DatabaseError(format!("Failed to add comment: {}", e)))?;
+            .map_err(|e| Error::Database(format!("Failed to add comment: {}", e)))?;
 
         Ok(Comment {
             id: comment_id.to_string(),
@@ -173,15 +166,14 @@ impl SocialRepository for DbSocialRepository {
         })
     }
 
-    async fn get_comments(&self, deck_id: &str) -> Result<Vec<Comment>, SocialRepoError> {
+    async fn get_comments(&self, deck_id: &str) -> Result<Vec<Comment>, Error> {
         let client = self
             .pool
             .get()
             .await
-            .map_err(|e| SocialRepoError::DatabaseError(format!("Failed to get connection: {}", e)))?;
+            .map_err(|e| Error::Database(format!("Failed to get connection: {}", e)))?;
 
-        let deck_uuid = uuid::Uuid::parse_str(deck_id)
-            .map_err(|_| SocialRepoError::DatabaseError("Invalid deck ID".to_string()))?;
+        let deck_uuid = uuid::Uuid::parse_str(deck_id).map_err(|_| Error::Database("Invalid deck ID".to_string()))?;
 
         let rows = client
             .query(
@@ -192,7 +184,7 @@ impl SocialRepository for DbSocialRepository {
                 &[&deck_uuid],
             )
             .await
-            .map_err(|e| SocialRepoError::DatabaseError(format!("Failed to get comments: {}", e)))?;
+            .map_err(|e| Error::Database(format!("Failed to get comments: {}", e)))?;
 
         let mut comments = Vec::new();
         for row in rows {
@@ -214,12 +206,12 @@ impl SocialRepository for DbSocialRepository {
         Ok(comments)
     }
 
-    async fn get_feed_follows(&self, user_did: &str) -> Result<Vec<Deck>, SocialRepoError> {
+    async fn get_feed_follows(&self, user_did: &str) -> Result<Vec<Deck>, Error> {
         let client = self
             .pool
             .get()
             .await
-            .map_err(|e| SocialRepoError::DatabaseError(format!("Failed to get connection: {}", e)))?;
+            .map_err(|e| Error::Database(format!("Failed to get connection: {}", e)))?;
 
         let query = "
             SELECT d.id, d.owner_did, d.title, d.description, d.tags, d.visibility, d.published_at, d.fork_of
@@ -235,17 +227,17 @@ impl SocialRepository for DbSocialRepository {
         let rows = client
             .query(query, &[&user_did])
             .await
-            .map_err(|e| SocialRepoError::DatabaseError(format!("Failed to get feed: {}", e)))?;
+            .map_err(|e| Error::Database(format!("Failed to get feed: {}", e)))?;
 
         Ok(Self::parse_deck_rows(rows))
     }
 
-    async fn get_feed_trending(&self) -> Result<Vec<Deck>, SocialRepoError> {
+    async fn get_feed_trending(&self) -> Result<Vec<Deck>, Error> {
         let client = self
             .pool
             .get()
             .await
-            .map_err(|e| SocialRepoError::DatabaseError(format!("Failed to get connection: {}", e)))?;
+            .map_err(|e| Error::Database(format!("Failed to get connection: {}", e)))?;
 
         let query = "
             SELECT id, owner_did, title, description, tags, visibility, published_at, fork_of
@@ -259,7 +251,7 @@ impl SocialRepository for DbSocialRepository {
         let rows = client
             .query(query, &[])
             .await
-            .map_err(|e| SocialRepoError::DatabaseError(format!("Failed to get trending: {}", e)))?;
+            .map_err(|e| Error::Database(format!("Failed to get trending: {}", e)))?;
 
         Ok(Self::parse_deck_rows(rows))
     }
@@ -290,7 +282,7 @@ pub mod mock {
 
     #[async_trait]
     impl SocialRepository for MockSocialRepository {
-        async fn follow(&self, follower: &str, subject: &str) -> Result<(), SocialRepoError> {
+        async fn follow(&self, follower: &str, subject: &str) -> Result<(), Error> {
             let mut followers = self.followers.lock().unwrap();
             if !followers.contains(&(follower.to_string(), subject.to_string())) {
                 followers.push((follower.to_string(), subject.to_string()));
@@ -298,13 +290,13 @@ pub mod mock {
             Ok(())
         }
 
-        async fn unfollow(&self, follower: &str, subject: &str) -> Result<(), SocialRepoError> {
+        async fn unfollow(&self, follower: &str, subject: &str) -> Result<(), Error> {
             let mut followers = self.followers.lock().unwrap();
             followers.retain(|(f, s)| f != follower || s != subject);
             Ok(())
         }
 
-        async fn get_followers(&self, did: &str) -> Result<Vec<String>, SocialRepoError> {
+        async fn get_followers(&self, did: &str) -> Result<Vec<String>, Error> {
             let followers = self.followers.lock().unwrap();
             Ok(followers
                 .iter()
@@ -313,7 +305,7 @@ pub mod mock {
                 .collect())
         }
 
-        async fn get_following(&self, did: &str) -> Result<Vec<String>, SocialRepoError> {
+        async fn get_following(&self, did: &str) -> Result<Vec<String>, Error> {
             let followers = self.followers.lock().unwrap();
             Ok(followers
                 .iter()
@@ -324,7 +316,7 @@ pub mod mock {
 
         async fn add_comment(
             &self, deck_id: &str, author_did: &str, content: &str, parent_id: Option<&str>,
-        ) -> Result<Comment, SocialRepoError> {
+        ) -> Result<Comment, Error> {
             let comment = Comment {
                 id: uuid::Uuid::new_v4().to_string(),
                 deck_id: deck_id.to_string(),
@@ -337,17 +329,17 @@ pub mod mock {
             Ok(comment)
         }
 
-        async fn get_comments(&self, deck_id: &str) -> Result<Vec<Comment>, SocialRepoError> {
+        async fn get_comments(&self, deck_id: &str) -> Result<Vec<Comment>, Error> {
             let comments = self.comments.lock().unwrap();
             Ok(comments.iter().filter(|c| c.deck_id == deck_id).cloned().collect())
         }
 
         /// Mock empty or predefined
-        async fn get_feed_follows(&self, _user_did: &str) -> Result<Vec<Deck>, SocialRepoError> {
+        async fn get_feed_follows(&self, _user_did: &str) -> Result<Vec<Deck>, Error> {
             Ok(vec![])
         }
 
-        async fn get_feed_trending(&self) -> Result<Vec<Deck>, SocialRepoError> {
+        async fn get_feed_trending(&self) -> Result<Vec<Deck>, Error> {
             Ok(vec![])
         }
     }

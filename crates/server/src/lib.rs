@@ -34,14 +34,35 @@ pub async fn start() -> malfestio_core::Result<()> {
 
     tracing::info!("Starting Malfestio Server...");
 
-    let pool = db::create_pool().map_err(|e| {
+    let database_url = std::env::var("DATABASE_URL")
+        .unwrap_or_else(|_| std::env::var("DB_URL").expect("DATABASE_URL or DB_URL must be set"));
+    let pool = db::create_pool(&database_url).map_err(|e| {
         tracing::error!("Failed to create database pool: {}", e);
         malfestio_core::Error::Database(format!("Failed to create database pool: {}", e))
     })?;
 
     tracing::info!("Database connection pool created");
 
-    let state = state::AppState::new(pool);
+    let oauth_repo = std::sync::Arc::new(repository::oauth::DbOAuthRepository::new(pool.clone()));
+    let deck_repo = std::sync::Arc::new(repository::deck::DbDeckRepository::new(pool.clone()));
+    let card_repo = std::sync::Arc::new(repository::card::DbCardRepository::new(pool.clone()));
+    let note_repo = std::sync::Arc::new(repository::note::DbNoteRepository::new(pool.clone()));
+    let review_repo = std::sync::Arc::new(repository::review::DbReviewRepository::new(pool.clone()));
+    let social_repo = std::sync::Arc::new(repository::social::DbSocialRepository::new(pool.clone()));
+
+    let pds_url = std::env::var("PDS_URL").unwrap_or_else(|_| "https://bsky.social".to_string());
+    let config = state::AppConfig { pds_url };
+
+    let repos = state::Repositories {
+        oauth: oauth_repo,
+        deck: deck_repo,
+        card: card_repo,
+        note: note_repo,
+        review: review_repo,
+        social: social_repo,
+    };
+
+    let state = state::AppState::new(pool, repos, config);
     let oauth_state = std::sync::Arc::new(api::oauth::OAuthState::new());
 
     let auth_routes = Router::new()
@@ -58,7 +79,10 @@ pub async fn start() -> malfestio_core::Result<()> {
         .route("/social/unfollow/{did}", post(api::social::unfollow))
         .route("/decks/{id}/comments", post(api::social::add_comment))
         .route("/feeds/follows", get(api::feed::get_feed_follows))
-        .layer(axum_middleware::from_fn(middleware::auth::auth_middleware));
+        .layer(axum_middleware::from_fn_with_state(
+            state.clone(),
+            middleware::auth::auth_middleware,
+        ));
 
     let optional_auth_routes = Router::new()
         .route("/decks", get(api::deck::list_decks))
@@ -70,7 +94,10 @@ pub async fn start() -> malfestio_core::Result<()> {
         .route("/social/following/{did}", get(api::social::get_following))
         .route("/decks/{id}/comments", get(api::social::get_comments))
         .route("/feeds/trending", get(api::feed::get_feed_trending))
-        .layer(axum_middleware::from_fn(middleware::auth::optional_auth_middleware));
+        .layer(axum_middleware::from_fn_with_state(
+            state.clone(),
+            middleware::auth::optional_auth_middleware,
+        ));
 
     let oauth_routes = Router::new()
         .route("/authorize", post(api::oauth::authorize))

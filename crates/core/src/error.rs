@@ -8,7 +8,7 @@ pub enum Error {
     #[error("Serialization error: {0}")]
     Serialization(#[from] serde_json::Error),
 
-    /// TODO: Replace with database error type
+    /// Wraps external database errors (e.g. Postgres, SQLx, Tokio-Postgres)
     #[error("Database error: {0}")]
     Database(String),
 

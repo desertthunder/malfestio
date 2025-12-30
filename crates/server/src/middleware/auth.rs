@@ -1,11 +1,12 @@
-use axum::response::IntoResponse;
+use crate::state::SharedState;
 use axum::{
-    extract::Request,
-    http::{self, StatusCode},
+    extract::{Request, State},
+    http::{self},
     middleware::Next,
-    response::Response,
+    response::{IntoResponse, Response},
 };
 use serde_json::json;
+use std::time::{Duration, Instant};
 
 #[derive(Clone, Debug)]
 pub struct UserContext {
@@ -13,23 +14,36 @@ pub struct UserContext {
     pub handle: String,
 }
 
+/// Cache expiry time
+const CACHE_TTL: Duration = Duration::from_secs(300); // 5 minutes
+
 /// TODO: Cache or use signature verification for performance
-pub async fn auth_middleware(mut req: Request, next: Next) -> Response {
+pub async fn auth_middleware(State(state): State<SharedState>, mut req: Request, next: Next) -> Response {
     let auth_header = req.headers().get(http::header::AUTHORIZATION);
 
     let token = match auth_header.and_then(|h| h.to_str().ok()) {
         Some(header_val) if header_val.starts_with("Bearer ") => &header_val[7..],
         _ => {
             return (
-                StatusCode::UNAUTHORIZED,
+                axum::http::StatusCode::UNAUTHORIZED,
                 axum::Json(json!({ "error": "Missing or invalid Authorization header" })),
             )
                 .into_response();
         }
     };
 
+    {
+        let cache = state.auth_cache.read().await;
+        if let Some((user_ctx, timestamp)) = cache.get(token)
+            && timestamp.elapsed() < CACHE_TTL
+        {
+            req.extensions_mut().insert(user_ctx.clone());
+            return next.run(req).await;
+        }
+    }
+
     let client = reqwest::Client::new();
-    let pds_url = std::env::var("PDS_URL").unwrap_or_else(|_| "https://bsky.social".to_string());
+    let pds_url = &state.config.pds_url;
 
     let resp = client
         .get(format!("{}/xrpc/com.atproto.server.getSession", pds_url))
@@ -43,11 +57,19 @@ pub async fn auth_middleware(mut req: Request, next: Next) -> Response {
             let did = body["did"].as_str().unwrap_or("").to_string();
             let handle = body["handle"].as_str().unwrap_or("").to_string();
 
-            req.extensions_mut().insert(UserContext { did, handle });
+            let user_ctx = UserContext { did, handle };
+
+            // Update cache
+            {
+                let mut cache = state.auth_cache.write().await;
+                cache.insert(token.to_string(), (user_ctx.clone(), Instant::now()));
+            }
+
+            req.extensions_mut().insert(user_ctx);
             next.run(req).await
         }
         _ => (
-            StatusCode::UNAUTHORIZED,
+            axum::http::StatusCode::UNAUTHORIZED,
             axum::Json(json!({ "error": "Invalid session" })),
         )
             .into_response(),

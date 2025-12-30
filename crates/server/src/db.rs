@@ -5,10 +5,8 @@ use tokio_postgres::NoTls;
 pub type DbPool = Pool;
 
 /// Initialize database connection pool from environment
-pub fn create_pool() -> Result<DbPool, Box<dyn std::error::Error>> {
-    let db_url = std::env::var("DB_URL").map_err(|_| "DB_URL environment variable not set")?;
-
-    let config = db_url.parse::<tokio_postgres::Config>()?;
+pub fn create_pool(url: &str) -> Result<DbPool, Box<dyn std::error::Error>> {
+    let config = url.parse::<tokio_postgres::Config>()?;
 
     let mut pool_config = Config::new();
     pool_config.dbname = config.get_dbname().map(String::from);

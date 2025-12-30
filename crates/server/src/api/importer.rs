@@ -8,6 +8,7 @@ pub struct ImportRequest {
     url: String,
 }
 
+// TODO: add tests
 pub async fn import_article(Json(payload): Json<ImportRequest>) -> impl IntoResponse {
     if payload.url.trim().is_empty() {
         return (StatusCode::BAD_REQUEST, Json(json!({"error": "URL is required"}))).into_response();

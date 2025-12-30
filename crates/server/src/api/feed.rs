@@ -62,7 +62,20 @@ mod tests {
         let oauth_repo = Arc::new(MockOAuthRepository::new()) as Arc<dyn crate::repository::oauth::OAuthRepository>;
         let review_repo = Arc::new(MockReviewRepository::new()) as Arc<dyn crate::repository::review::ReviewRepository>;
 
-        Arc::new(AppState { pool, card_repo, note_repo, oauth_repo, review_repo, social_repo })
+        let deck_repo = Arc::new(crate::repository::deck::mock::MockDeckRepository::new())
+            as Arc<dyn crate::repository::deck::DeckRepository>;
+        let config = crate::state::AppConfig { pds_url: "https://bsky.social".to_string() };
+
+        let repos = crate::state::Repositories {
+            card: card_repo,
+            note: note_repo,
+            oauth: oauth_repo,
+            review: review_repo,
+            social: social_repo,
+            deck: deck_repo,
+        };
+
+        AppState::new(pool, repos, config)
     }
 
     #[tokio::test]
