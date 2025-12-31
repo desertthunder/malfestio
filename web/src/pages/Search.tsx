@@ -100,8 +100,16 @@ const Search: Component = () => {
                       )}
                     </Match>
                   </Switch>
-                  <div class="mt-2 text-xs text-gray-400">
-                    Result Type: {result.item_type} • Score: {result.rank.toFixed(2)}
+                  <div class="mt-2 flex items-center gap-3 text-xs text-gray-400">
+                    <span>Result Type: {result.item_type}</span>
+                    <span>•</span>
+                    <span>Score: {result.rank.toFixed(2)}</span>
+                    <Show when={result.source === "remote"}>
+                      <span class="flex items-center gap-1 text-blue-500 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded-full">
+                        <i class="i-bi-globe2 text-xs" />
+                        <span>Remote</span>
+                      </span>
+                    </Show>
                   </div>
                 </div>
               </div>

@@ -110,4 +110,32 @@ describe("Search", () => {
     const noteLink = screen.getByText("Test Note").closest("a");
     expect(noteLink).toHaveAttribute("href", "/notes/note1");
   });
+
+  it("shows remote indicator for remote results", async () => {
+    mockSearchParams.q = "remote";
+    const remoteResult = {
+      item_type: "deck",
+      item_id: "remote-deck",
+      creator_did: "did:remote:user",
+      data: {
+        id: "remote-deck",
+        owner_did: "did:remote:user",
+        title: "Remote Deck",
+        description: "From afar",
+        tags: [],
+        visibility: { type: "Public" },
+      },
+      rank: 1.0,
+      source: "remote",
+    };
+
+    vi.mocked(api.search).mockResolvedValue(
+      { ok: true, json: () => Promise.resolve([remoteResult]) } as unknown as Response,
+    );
+
+    render(() => <Search />);
+
+    await waitFor(() => expect(screen.getByText("Remote Deck")).toBeInTheDocument());
+    expect(screen.getByText("Remote")).toBeInTheDocument();
+  });
 });

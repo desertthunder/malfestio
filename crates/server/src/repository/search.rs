@@ -9,6 +9,7 @@ pub struct SearchResult {
     pub creator_did: String,
     pub data: serde_json::Value,
     pub rank: f32,
+    pub source: String,
 }
 
 #[async_trait::async_trait]
@@ -46,7 +47,8 @@ impl SearchRepository for DbSearchRepository {
                 item_id,
                 creator_did,
                 data,
-                ts_rank(tsv_content, websearch_to_tsquery('english', $1)) as rank
+                ts_rank(tsv_content, websearch_to_tsquery('english', $1)) as rank,
+                source
             FROM search_items
             WHERE tsv_content @@ websearch_to_tsquery('english', $1)
             AND (
@@ -70,6 +72,7 @@ impl SearchRepository for DbSearchRepository {
                 creator_did: row.get("creator_did"),
                 data: row.get("data"),
                 rank: row.get("rank"),
+                source: row.get("source"),
             })
             .collect();
 

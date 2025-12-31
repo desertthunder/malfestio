@@ -44,8 +44,8 @@
 
 **Search & Discovery:**
 
-- [ ] Implement search over indexed remote records (extend `search_items` view)
-- [ ] User profile aggregation: follower counts, deck counts from federated sources
+- [x] Implement search over indexed remote records (extend `search_items` view)
+- [x] User profile aggregation: follower counts, deck counts from federated sources
 
 **Export & Interop:**
 

@@ -121,6 +121,7 @@ mod tests {
                 creator_did: "did:alice".to_string(),
                 data: serde_json::json!({ "title": "Secret", "visibility": { "type": "Private" } }),
                 rank: 1.0,
+                source: "local".to_string(),
             })
             .await;
 

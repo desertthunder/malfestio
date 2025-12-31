@@ -42,6 +42,7 @@ export const api = {
   getDeckCards: (id: string) => apiFetch(`/decks/${id}/cards`, { method: "GET" }),
   getPreferences: () => apiFetch("/preferences", { method: "GET" }),
   getDiscovery: () => apiFetch("/discovery", { method: "GET" }),
+  getUserProfile: (did: string) => apiFetch(`/users/${did}/profile`, { method: "GET" }),
   createDeck: async (payload: CreateDeckPayload) => {
     const { cards, ...deckPayload } = payload;
     const res = await apiFetch("/decks", { method: "POST", body: JSON.stringify(deckPayload) });
@@ -57,7 +58,10 @@ export const api = {
       ));
     }
 
-    return { ok: true, json: async () => deck };
+    return {
+      ok: true,
+      json: async () => deck,
+    };
   },
   addComment: (deckId: string, content: string, parentId?: string) => {
     return apiFetch(`/decks/${deckId}/comments`, {

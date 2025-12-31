@@ -102,6 +102,7 @@ pub async fn start() -> malfestio_core::Result<()> {
         .route("/feeds/trending", get(api::feed::get_feed_trending))
         .route("/search", get(api::search::search))
         .route("/discovery", get(api::search::discovery))
+        .route("/users/{did}/profile", get(api::users::get_profile))
         .layer(axum_middleware::from_fn_with_state(
             state.clone(),
             middleware::auth::optional_auth_middleware,

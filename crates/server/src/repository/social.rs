@@ -2,8 +2,19 @@ use async_trait::async_trait;
 use chrono::Utc;
 use malfestio_core::error::Error;
 use malfestio_core::model::{Comment, Deck, Visibility};
+use serde::{Deserialize, Serialize};
 
 use crate::db;
+
+/// Aggregated user profile with follower counts and deck statistics
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UserProfile {
+    pub did: String,
+    pub follower_count: i64,
+    pub following_count: i64,
+    pub deck_count: i64,
+    pub indexed_deck_count: i64,
+}
 
 #[async_trait]
 pub trait SocialRepository: Send + Sync {
@@ -17,6 +28,7 @@ pub trait SocialRepository: Send + Sync {
     async fn get_comments(&self, deck_id: &str) -> Result<Vec<Comment>, Error>;
     async fn get_feed_follows(&self, user_did: &str) -> Result<Vec<Deck>, Error>;
     async fn get_feed_trending(&self) -> Result<Vec<Deck>, Error>;
+    async fn get_user_profile(&self, did: &str) -> Result<UserProfile, Error>;
 }
 
 pub struct DbSocialRepository {
@@ -255,6 +267,43 @@ impl SocialRepository for DbSocialRepository {
 
         Ok(Self::parse_deck_rows(rows))
     }
+
+    async fn get_user_profile(&self, did: &str) -> Result<UserProfile, Error> {
+        let client = self
+            .pool
+            .get()
+            .await
+            .map_err(|e| Error::Database(format!("Failed to get connection: {}", e)))?;
+
+        let follower_row = client
+            .query_one("SELECT COUNT(*) as count FROM follows WHERE subject_did = $1", &[&did])
+            .await
+            .map_err(|e| Error::Database(format!("Failed to get follower count: {}", e)))?;
+        let follower_count: i64 = follower_row.get("count");
+
+        let following_row = client
+            .query_one("SELECT COUNT(*) as count FROM follows WHERE follower_did = $1", &[&did])
+            .await
+            .map_err(|e| Error::Database(format!("Failed to get following count: {}", e)))?;
+        let following_count: i64 = following_row.get("count");
+
+        let deck_row = client
+            .query_one("SELECT COUNT(*) as count FROM decks WHERE owner_did = $1", &[&did])
+            .await
+            .map_err(|e| Error::Database(format!("Failed to get deck count: {}", e)))?;
+        let deck_count: i64 = deck_row.get("count");
+
+        let indexed_row = client
+            .query_one(
+                "SELECT COUNT(*) as count FROM indexed_decks WHERE did = $1 AND deleted_at IS NULL",
+                &[&did],
+            )
+            .await
+            .map_err(|e| Error::Database(format!("Failed to get indexed deck count: {}", e)))?;
+        let indexed_deck_count: i64 = indexed_row.get("count");
+
+        Ok(UserProfile { did: did.to_string(), follower_count, following_count, deck_count, indexed_deck_count })
+    }
 }
 
 #[cfg(test)]
@@ -341,6 +390,20 @@ pub mod mock {
 
         async fn get_feed_trending(&self) -> Result<Vec<Deck>, Error> {
             Ok(vec![])
+        }
+
+        async fn get_user_profile(&self, did: &str) -> Result<UserProfile, Error> {
+            let followers = self.followers.lock().unwrap();
+            let follower_count = followers.iter().filter(|(_, s)| s == did).count() as i64;
+            let following_count = followers.iter().filter(|(f, _)| f == did).count() as i64;
+
+            Ok(UserProfile {
+                did: did.to_string(),
+                follower_count,
+                following_count,
+                deck_count: 0,
+                indexed_deck_count: 0,
+            })
         }
     }
 }

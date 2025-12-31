@@ -72,18 +72,27 @@ export type CommentNode = { comment: Comment; children: CommentNode[] };
 
 export type FeedFollows = { decks: Deck[] };
 
-export type SearchResult = { item_type: "deck"; item_id: string; creator_did: string; data: Deck; rank: number } | {
+export type SearchResult = {
+  item_type: "deck";
+  item_id: string;
+  creator_did: string;
+  data: Deck;
+  rank: number;
+  source?: "local" | "remote";
+} | {
   item_type: "card";
   item_id: string;
   creator_did: string;
   data: Card & { deck_id: string };
   rank: number;
+  source?: "local" | "remote";
 } | {
   item_type: "note";
   item_id: string;
   creator_did: string;
   data: { id: string; title: string; owner_did: string };
   rank: number;
+  source?: "local" | "remote";
 };
 
 export const asDeck = (r: SearchResult) => (r.item_type === "deck" ? r : undefined);
@@ -97,6 +106,14 @@ export type UserPreferences = {
   persona: Persona | null;
   onboarding_completed_at: string | null;
   tutorial_deck_completed: boolean;
+};
+
+export type UserProfile = {
+  did: string;
+  follower_count: number;
+  following_count: number;
+  deck_count: number;
+  indexed_deck_count: number;
 };
 
 export type UpdatePreferencesPayload = {

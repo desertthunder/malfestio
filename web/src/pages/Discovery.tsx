@@ -1,7 +1,9 @@
 import { SearchInput } from "$components/SearchInput";
 import { Skeleton } from "$components/ui/Skeleton";
 import { Tag } from "$components/ui/Tag";
+import { UserProfileCard } from "$components/UserProfileCard";
 import { api } from "$lib/api";
+import { authStore } from "$lib/store";
 import { A } from "@solidjs/router";
 import type { Component } from "solid-js";
 import { createResource, For, Index, Show } from "solid-js";
@@ -12,6 +14,13 @@ const Discovery: Component = () => {
     const res = await api.getDiscovery();
     if (res.ok) return (await res.json()) as { top_tags: [string, number][] };
     return { top_tags: [] };
+  });
+
+  const [profile] = createResource(() => authStore.user()?.did, async (did) => {
+    if (!did) return null;
+    const res = await api.getUserProfile(did);
+    if (res.ok) return (await res.json());
+    return null;
   });
 
   return (
@@ -31,6 +40,15 @@ const Discovery: Component = () => {
           <SearchInput />
         </div>
       </Motion.div>
+
+      <Show when={authStore.isAuthenticated() && profile()}>
+        <Motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.1 }}>
+          <UserProfileCard profile={profile()} />
+        </Motion.div>
+      </Show>
 
       <Motion.div
         initial={{ opacity: 0, y: 20 }}
