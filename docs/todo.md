@@ -43,7 +43,7 @@
 - [x] OAuth login directly to user's PDS
 - [x] Handle resolution via DNS TXT or `/.well-known/atproto-did`
     - <https://malfestio.stormlightlabs.org>
-- [ ] DPoP token binding for secure API calls
+- [x] DPoP token binding for secure API calls
 
 **Sync & Conflict Resolution:**
 
@@ -75,7 +75,42 @@
 - Use `did:web` for simplicity, `did:plc` for long-term stability
 - ATProto OAuth is the forward path
 
-### Milestone M - Custom Feed Generator
+### Milestone M - Reliability, Observability, Launch (v0.1.0)
+
+#### Deliverables
+
+**Observability:**
+
+- [ ] Structured logging with correlation IDs
+- [ ] Metrics collection (Prometheus/OpenTelemetry)
+- [ ] Distributed tracing for request flows
+- [ ] Error tracking (Sentry or similar)
+
+**Reliability:**
+
+- [ ] Database backups + restore drills
+- [ ] Health check endpoints (`/health`, `/ready`)
+- [ ] Graceful shutdown handling
+- [ ] Circuit breakers for external dependencies
+
+**Load Testing:**
+
+- [ ] Study session throughput targets
+- [ ] Feed generation latency benchmarks
+- [ ] Search query performance under load
+
+**Launch Prep:**
+
+- [ ] Beta program signup flow
+- [ ] Feedback collection mechanism
+- [ ] Feature flags for gradual rollout
+
+#### Acceptance
+
+- System handles 10x expected load without degradation.
+- Mean time to recovery < 5 minutes for common failures.
+
+### Milestone N - Custom Feed Generator (v0.2.0)
 
 #### Deliverables
 
@@ -145,42 +180,7 @@ type ReasonRepost = {
 - Most feeds can garbage collect data older than 48 hours
 - Reference: [Feed Generator Starter Kit](https://github.com/bluesky-social/feed-generator)
 
-### Milestone N - Reliability, Observability, Launch
-
-#### Deliverables
-
-**Observability:**
-
-- [ ] Structured logging with correlation IDs
-- [ ] Metrics collection (Prometheus/OpenTelemetry)
-- [ ] Distributed tracing for request flows
-- [ ] Error tracking (Sentry or similar)
-
-**Reliability:**
-
-- [ ] Database backups + restore drills
-- [ ] Health check endpoints (`/health`, `/ready`)
-- [ ] Graceful shutdown handling
-- [ ] Circuit breakers for external dependencies
-
-**Load Testing:**
-
-- [ ] Study session throughput targets
-- [ ] Feed generation latency benchmarks
-- [ ] Search query performance under load
-
-**Launch Prep:**
-
-- [ ] Beta program signup flow
-- [ ] Feedback collection mechanism
-- [ ] Feature flags for gradual rollout
-
-#### Acceptance
-
-- System handles 10x expected load without degradation.
-- Mean time to recovery < 5 minutes for common failures.
-
-### Milestone O - Moderation + Abuse Resistance
+### Milestone O - Moderation + Abuse Resistance (v0.3.0)
 
 #### Deliverables
 

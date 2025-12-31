@@ -208,6 +208,7 @@ mod tests {
             search_repo,
             config,
             auth_cache,
+            dpop_nonces: Arc::new(tokio::sync::RwLock::new(std::collections::HashMap::new())),
         })
     }
 

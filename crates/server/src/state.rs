@@ -23,6 +23,9 @@ pub struct AppConfig {
 
 pub type AuthCache = Arc<RwLock<HashMap<String, (UserContext, Instant)>>>;
 
+/// Cache for DPoP nonces with their creation timestamps for TTL enforcement.
+pub type DpopNonceCache = Arc<RwLock<HashMap<String, Instant>>>;
+
 pub struct Repositories {
     pub oauth: Arc<dyn OAuthRepository>,
     pub deck: Arc<dyn DeckRepository>,
@@ -46,11 +49,14 @@ pub struct AppState {
     pub search_repo: Arc<dyn SearchRepository>,
     pub config: AppConfig,
     pub auth_cache: AuthCache,
+    /// Cache of valid DPoP nonces. Nonces are single-use and expire after TTL.
+    pub dpop_nonces: DpopNonceCache,
 }
 
 impl AppState {
     pub fn new(pool: DbPool, repos: Repositories, config: AppConfig) -> SharedState {
         let auth_cache = Arc::new(RwLock::new(HashMap::new()));
+        let dpop_nonces = Arc::new(RwLock::new(HashMap::new()));
         Arc::new(Self {
             pool,
             oauth_repo: repos.oauth,
@@ -63,6 +69,7 @@ impl AppState {
             search_repo: repos.search,
             config,
             auth_cache,
+            dpop_nonces,
         })
     }
 

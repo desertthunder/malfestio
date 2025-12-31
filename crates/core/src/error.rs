@@ -18,6 +18,9 @@ pub enum Error {
     #[error("Invalid argument: {0}")]
     InvalidArgument(String),
 
+    #[error("DPoP error: {0}")]
+    DPoP(String),
+
     #[error("Other: {0}")]
     Other(String),
 }

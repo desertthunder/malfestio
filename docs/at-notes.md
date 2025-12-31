@@ -28,6 +28,33 @@ AT Protocol uses a specific profile of OAuth 2.1 for client↔PDS authorization.
 - **Handle/DID Resolution**: Resolve user identity to discover their PDS
 - **Token Exchange**: Authorization code flow with token refresh
 
+### DPoP (Demonstrating Proof-of-Possession)
+
+DPoP (RFC 9449) binds access tokens to specific client instances, preventing token theft/replay.
+
+**Proof JWT Structure:**
+
+- **Header**: `typ: dpop+jwt`, `alg: EdDSA` (or ES256), `jwk: <public key>`
+- **Payload Claims**:
+    - `jti` — Unique identifier (nonce) per request
+    - `htm` — HTTP method (e.g., "POST", "GET")
+    - `htu` — HTTP target URI (without query/fragment)
+    - `iat` — Issued-at timestamp
+    - `ath` — SHA-256 hash of access token (for resource requests)
+    - `nonce` — Server-provided nonce (if required)
+
+**Usage:**
+
+1. Client generates DPoP keypair per session (not reused across devices/users)
+2. Each request includes `Authorization: DPoP <token>` and `DPoP: <proof JWT>`
+3. Server validates signature, checks claims match request, verifies token binding
+
+**Server Behavior:**
+
+- May return `DPoP-Nonce` header; client must include in subsequent proofs
+- Validates `jti` uniqueness to prevent replay attacks
+- Checks `ath` matches provided access token
+
 ## Record Publishing
 
 ### XRPC Endpoints

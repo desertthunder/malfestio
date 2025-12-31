@@ -54,6 +54,7 @@ mod tests {
             search_repo: Arc::new(MockSearchRepository::new()) as Arc<dyn crate::repository::search::SearchRepository>,
             config: crate::state::AppConfig { pds_url: "https://bsky.social".to_string() },
             auth_cache: Arc::new(tokio::sync::RwLock::new(std::collections::HashMap::new())),
+            dpop_nonces: Arc::new(tokio::sync::RwLock::new(std::collections::HashMap::new())),
         })
     }
 
