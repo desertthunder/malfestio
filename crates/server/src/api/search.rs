@@ -16,6 +16,7 @@ pub struct SearchQuery {
     limit: i64,
     #[serde(default = "default_offset")]
     offset: i64,
+    source: Option<String>,
 }
 
 fn default_limit() -> i64 {
@@ -37,7 +38,13 @@ pub async fn search(
 
     match state
         .search_repo
-        .search(&query.q, query.limit, query.offset, user_did.as_deref())
+        .search(
+            &query.q,
+            query.limit,
+            query.offset,
+            user_did.as_deref(),
+            query.source.as_deref(),
+        )
         .await
     {
         Ok(results) => Json(results).into_response(),
@@ -130,7 +137,7 @@ mod tests {
         let response = search(
             State(state.clone()),
             Some(auth_ctx),
-            Query(SearchQuery { q: "private".to_string(), limit: 10, offset: 0 }),
+            Query(SearchQuery { q: "private".to_string(), limit: 10, offset: 0, source: None }),
         )
         .await
         .into_response();
@@ -144,7 +151,7 @@ mod tests {
         let response_anon = search(
             State(state.clone()),
             None,
-            Query(SearchQuery { q: "private".to_string(), limit: 10, offset: 0 }),
+            Query(SearchQuery { q: "private".to_string(), limit: 10, offset: 0, source: None }),
         )
         .await
         .into_response();

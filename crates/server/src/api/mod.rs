@@ -1,6 +1,7 @@
 pub mod auth;
 pub mod card;
 pub mod deck;
+pub mod export;
 pub mod feed;
 pub mod importer;
 pub mod note;

@@ -15,10 +15,12 @@ export const Header: Component = () => {
       <div class="flex items-center gap-6">
         <A href="/" class="text-xl font-bold text-white tracking-tight">Malfestio</A>
         <nav class="hidden md:flex items-center gap-4 text-sm font-medium text-gray-400">
-          <A href="/decks" activeClass="text-blue-500" class="hover:text-white transition-colors">Decks</A>
-          <A href="/review" activeClass="text-blue-500" class="hover:text-white transition-colors">Review</A>
+          <A href="/home" activeClass="text-blue-500" class="hover:text-white transition-colors">Decks</A>
+          <A href="/study" activeClass="text-blue-500" class="hover:text-white transition-colors">Review</A>
           <A href="/discovery" activeClass="text-blue-500" class="hover:text-white transition-colors">Discovery</A>
+          <A href="/library" activeClass="text-blue-500" class="hover:text-white transition-colors">Library</A>
           <A href="/feed" activeClass="text-blue-500" class="hover:text-white transition-colors">Feed</A>
+          <A href="/settings" activeClass="text-blue-500" class="hover:text-white transition-colors">Settings</A>
         </nav>
       </div>
       <div class="flex items-center gap-4">

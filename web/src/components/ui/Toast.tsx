@@ -1,6 +1,6 @@
+import { toast, toasts, type ToastType } from "$lib/toast";
 import { For, Match, Switch } from "solid-js";
 import type { Component } from "solid-js";
-import { toast, toasts, type ToastType } from "../../lib/toast";
 
 const borderColors: Record<ToastType, string> = {
   success: "border-l-4 border-green-500",
@@ -34,7 +34,7 @@ export const Toaster: Component = () => {
               borderColors[t.type]
             }`}
             role="alert">
-            <div class="flex-shrink-0">
+            <div class="shrink-0">
               <Switch fallback={<InfoIcon />}>
                 <Match when={t.type === "success"}>
                   <svg
@@ -79,7 +79,7 @@ export const Toaster: Component = () => {
             <div class="flex-1 text-sm">{t.message}</div>
             <button
               onClick={() => toast.remove(t.id)}
-              class="flex-shrink-0 text-gray-400 hover:text-white focus:outline-none"
+              class="shrink-0 text-gray-400 hover:text-white focus:outline-none"
               aria-label="Close">
               <svg
                 xmlns="http://www.w3.org/2000/svg"

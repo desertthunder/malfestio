@@ -43,6 +43,8 @@ export const api = {
   getPreferences: () => apiFetch("/preferences", { method: "GET" }),
   getDiscovery: () => apiFetch("/discovery", { method: "GET" }),
   getUserProfile: (did: string) => apiFetch(`/users/${did}/profile`, { method: "GET" }),
+  getRemoteDeck: (uri: string) => apiFetch(`/remote/deck?uri=${encodeURIComponent(uri)}`, { method: "GET" }),
+  exportData: (collection: "decks" | "notes") => apiFetch(`/export/${collection}`, { method: "GET" }),
   createDeck: async (payload: CreateDeckPayload) => {
     const { cards, ...deckPayload } = payload;
     const res = await apiFetch("/decks", { method: "POST", body: JSON.stringify(deckPayload) });
@@ -69,8 +71,9 @@ export const api = {
       body: JSON.stringify({ content, parent_id: parentId }),
     });
   },
-  search: (query: string, limit = 20, offset = 0) => {
+  search: (query: string, limit = 20, offset = 0, source?: "local" | "remote") => {
     const params = new URLSearchParams({ q: query, limit: String(limit), offset: String(offset) });
+    if (source) params.set("source", source);
     return apiFetch(`/search?${params}`, { method: "GET" });
   },
   getDueCards: (deckId?: string, limit = 20) => {

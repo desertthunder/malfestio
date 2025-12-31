@@ -85,6 +85,7 @@ pub async fn start() -> malfestio_core::Result<()> {
         .route("/feeds/follows", get(api::feed::get_feed_follows))
         .route("/preferences", get(api::preferences::get_preferences))
         .route("/preferences", axum::routing::put(api::preferences::update_preferences))
+        .route("/export/{collection}", get(api::export::export_collection))
         .layer(axum_middleware::from_fn_with_state(
             state.clone(),
             middleware::auth::auth_middleware,
@@ -103,6 +104,7 @@ pub async fn start() -> malfestio_core::Result<()> {
         .route("/search", get(api::search::search))
         .route("/discovery", get(api::search::discovery))
         .route("/users/{did}/profile", get(api::users::get_profile))
+        .route("/remote/deck", get(api::deck::fetch_remote_deck))
         .layer(axum_middleware::from_fn_with_state(
             state.clone(),
             middleware::auth::optional_auth_middleware,

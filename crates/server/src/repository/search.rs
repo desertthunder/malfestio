@@ -14,8 +14,9 @@ pub struct SearchResult {
 
 #[async_trait::async_trait]
 pub trait SearchRepository: Send + Sync {
-    async fn search(&self, query: &str, limit: i64, offset: i64, viewer_did: Option<&str>)
-    -> Result<Vec<SearchResult>>;
+    async fn search(
+        &self, query: &str, limit: i64, offset: i64, viewer_did: Option<&str>, source: Option<&str>,
+    ) -> Result<Vec<SearchResult>>;
     async fn get_top_tags(&self, limit: i64) -> Result<Vec<(String, i64)>>;
 }
 
@@ -32,7 +33,7 @@ impl DbSearchRepository {
 #[async_trait::async_trait]
 impl SearchRepository for DbSearchRepository {
     async fn search(
-        &self, query: &str, limit: i64, offset: i64, viewer_did: Option<&str>,
+        &self, query: &str, limit: i64, offset: i64, viewer_did: Option<&str>, source: Option<&str>,
     ) -> Result<Vec<SearchResult>> {
         let client = self
             .pool
@@ -41,6 +42,7 @@ impl SearchRepository for DbSearchRepository {
             .map_err(|e| malfestio_core::Error::Database(e.to_string()))?;
 
         // TODO: implement shared-with logic.
+        // If source is provided, filter by it.
         let sql = "
             SELECT
                 item_type,
@@ -55,12 +57,13 @@ impl SearchRepository for DbSearchRepository {
                 visibility->>'type' = 'Public'
                 OR (creator_did = $4)
             )
+            AND ($5::text IS NULL OR source = $5)
             ORDER BY rank DESC
             LIMIT $2 OFFSET $3
         ";
 
         let rows = client
-            .query(sql, &[&query, &limit, &offset, &viewer_did])
+            .query(sql, &[&query, &limit, &offset, &viewer_did, &source])
             .await
             .map_err(|e| malfestio_core::Error::Database(e.to_string()))?;
 
@@ -140,7 +143,7 @@ pub mod mock {
     #[async_trait::async_trait]
     impl SearchRepository for MockSearchRepository {
         async fn search(
-            &self, query: &str, limit: i64, offset: i64, viewer_did: Option<&str>,
+            &self, query: &str, limit: i64, offset: i64, viewer_did: Option<&str>, source: Option<&str>,
         ) -> Result<Vec<SearchResult>> {
             let results = self.search_results.lock().await;
 
@@ -157,8 +160,8 @@ pub mod mock {
                         == Some("Public");
 
                     let matches_auth = viewer_did.map_or(is_public, |did| r.creator_did == did || is_public);
-
-                    matches_query && matches_auth
+                    let matches_source = source.is_none_or(|s| r.source == s);
+                    matches_query && matches_auth && matches_source
                 })
                 .skip(offset as usize)
                 .take(limit as usize)

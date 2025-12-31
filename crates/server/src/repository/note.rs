@@ -14,10 +14,9 @@ pub trait NoteRepository: Send + Sync {
     async fn create(
         &self, owner_did: &str, title: &str, body: &str, tags: Vec<String>, visibility: Visibility,
     ) -> Result<Note, NoteRepoError>;
-
     async fn list(&self, viewer_did: Option<&str>) -> Result<Vec<Note>, NoteRepoError>;
-
     async fn get(&self, id: &str, viewer_did: Option<&str>) -> Result<Note, NoteRepoError>;
+    async fn get_notes_by_user(&self, owner_did: &str) -> Result<Vec<Note>, NoteRepoError>;
 }
 
 pub struct DbNoteRepository {
@@ -177,6 +176,47 @@ impl NoteRepository for DbNoteRepository {
             links,
         })
     }
+
+    async fn get_notes_by_user(&self, owner_did: &str) -> Result<Vec<Note>, NoteRepoError> {
+        let client = self
+            .pool
+            .get()
+            .await
+            .map_err(|e| NoteRepoError::DatabaseError(format!("Failed to get connection: {}", e)))?;
+
+        let rows = client
+            .query(
+                "SELECT id, owner_did, title, body, tags, visibility, published_at, links, created_at, updated_at
+                 FROM notes
+                 WHERE owner_did = $1",
+                &[&owner_did],
+            )
+            .await
+            .map_err(|e| NoteRepoError::DatabaseError(format!("Failed to retrieve notes: {}", e)))?;
+
+        let mut notes = Vec::new();
+        for row in rows {
+            let visibility_json: serde_json::Value = row.get("visibility");
+            let visibility: Visibility = serde_json::from_value(visibility_json)
+                .map_err(|e| NoteRepoError::SerializationError(format!("Failed to deserialize visibility: {}", e)))?;
+            let id: uuid::Uuid = row.get("id");
+            let links: Vec<String> = row.get("links");
+
+            notes.push(Note {
+                id: id.to_string(),
+                owner_did: row.get("owner_did"),
+                title: row.get("title"),
+                body: row.get("body"),
+                tags: row.get("tags"),
+                visibility,
+                published_at: row
+                    .get::<_, Option<chrono::DateTime<chrono::Utc>>>("published_at")
+                    .map(|dt| dt.to_rfc3339()),
+                links,
+            });
+        }
+        Ok(notes)
+    }
 }
 
 #[cfg(test)]
@@ -282,6 +322,12 @@ pub mod mock {
             }
 
             Ok(note.clone())
+        }
+
+        async fn get_notes_by_user(&self, owner_did: &str) -> Result<Vec<Note>, NoteRepoError> {
+            let notes = self.notes.lock().unwrap();
+            let user_notes = notes.iter().filter(|n| n.owner_did == owner_did).cloned().collect();
+            Ok(user_notes)
         }
     }
 }

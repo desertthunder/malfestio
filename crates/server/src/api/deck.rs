@@ -4,7 +4,7 @@ use crate::state::SharedState;
 use crate::repository::deck::{CreateDeckParams, DeckRepoError, UpdateDeckParams};
 use axum::{
     Json,
-    extract::{Extension, Path, State},
+    extract::{Extension, Path, Query, State},
     http::StatusCode,
     response::IntoResponse,
 };
@@ -48,6 +48,30 @@ pub async fn create_deck(
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(json!({"error": "Failed to create deck"})),
+            )
+                .into_response()
+        }
+    }
+}
+
+#[derive(Deserialize)]
+pub struct RemoteDeckQuery {
+    uri: String,
+}
+
+pub async fn fetch_remote_deck(
+    State(state): State<SharedState>, Query(query): Query<RemoteDeckQuery>,
+) -> impl IntoResponse {
+    match state.deck_repo.get_remote_deck(&query.uri).await {
+        Ok((deck, cards)) => Json(json!({ "deck": deck, "cards": cards })).into_response(),
+        Err(DeckRepoError::NotFound(_)) => {
+            (StatusCode::NOT_FOUND, Json(json!({"error": "Deck not found"}))).into_response()
+        }
+        Err(e) => {
+            tracing::error!("Failed to fetch remote deck: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": "Failed to fetch remote deck"})),
             )
                 .into_response()
         }

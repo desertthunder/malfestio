@@ -31,31 +31,8 @@
     - SEO & Meta: Open Graph / Twitter Card meta tags, Sitemap.xml generation, robots.txt configuration.
     - Onboarding Flow & Help Center/FAQ
     - Empty States
-
-### Milestone K - AppView Indexing
-
-#### Deliverables
-
-**Firehose Enhancement:**
-
-- [x] Upgrade firehose consumer to store full record content (not just metadata)
-- [x] Add `indexed_decks`, `indexed_cards`, `indexed_notes` tables for remote content
-- [x] Track latest processed revision per repo; handle deletions
-
-**Search & Discovery:**
-
-- [x] Implement search over indexed remote records (extend `search_items` view)
-- [x] User profile aggregation: follower counts, deck counts from federated sources
-
-**Export & Interop:**
-
-- [ ] Export local records as valid Lexicon JSON (`/api/export/:collection`)
-- [ ] Read-only "federated library" view showing remote decks
-
-#### Acceptance
-
-- A deck published from Malfestio can be discovered via another AT Protocol client.
-- Remote decks from followed users appear in search results.
+- **(Done) Milestone K**: AppView Indexing.
+    - Firehose Enhancement (full record storage), Extended Search & Discovery (remote records), and Export/Interop features (JSON export, remote deck view).
 
 ### Milestone L - ATProto Integration Pass
 

@@ -34,6 +34,8 @@ pub trait DeckRepository: Send + Sync {
     async fn list_visible(&self, viewer_did: Option<&str>) -> Result<Vec<Deck>, DeckRepoError>;
     async fn update(&self, params: UpdateDeckParams) -> Result<Deck, DeckRepoError>;
     async fn fork(&self, original_deck_id: &str, user_did: &str) -> Result<Deck, DeckRepoError>;
+    async fn get_decks_by_user(&self, owner_did: &str) -> Result<Vec<Deck>, DeckRepoError>;
+    async fn get_remote_deck(&self, at_uri: &str) -> Result<(Deck, Vec<malfestio_core::model::Card>), DeckRepoError>;
 }
 
 pub struct DbDeckRepository {
@@ -221,7 +223,6 @@ impl DeckRepository for DbDeckRepository {
         }
         .map_err(|e| DeckRepoError::DatabaseError(format!("Failed to update deck: {}", e)))?;
 
-        // Return updated deck
         self.get(&params.deck_id).await
     }
 
@@ -313,6 +314,99 @@ impl DeckRepository for DbDeckRepository {
             fork_of: Some(original_deck_id.to_string()),
         })
     }
+
+    async fn get_decks_by_user(&self, owner_did: &str) -> Result<Vec<Deck>, DeckRepoError> {
+        let client = self
+            .pool
+            .get()
+            .await
+            .map_err(|e| DeckRepoError::DatabaseError(format!("Failed to get connection: {}", e)))?;
+
+        let rows = client
+            .query(
+                "SELECT id, owner_did, title, description, tags, visibility, published_at, fork_of
+                 FROM decks
+                 WHERE owner_did = $1",
+                &[&owner_did],
+            )
+            .await
+            .map_err(|e| DeckRepoError::DatabaseError(format!("Failed to retrieve decks: {}", e)))?;
+
+        let mut decks = Vec::new();
+        for row in rows {
+            let visibility_json: serde_json::Value = row.get("visibility");
+            let visibility: Visibility = serde_json::from_value(visibility_json).unwrap_or(Visibility::Private);
+            let fork_of: Option<Uuid> = row.get("fork_of");
+
+            decks.push(Deck {
+                id: row.get::<_, Uuid>("id").to_string(),
+                owner_did: row.get("owner_did"),
+                title: row.get("title"),
+                description: row.get("description"),
+                tags: row.get("tags"),
+                visibility,
+                published_at: row
+                    .get::<_, Option<chrono::DateTime<chrono::Utc>>>("published_at")
+                    .map(|dt| dt.to_rfc3339()),
+                fork_of: fork_of.map(|u| u.to_string()),
+            });
+        }
+        Ok(decks)
+    }
+
+    async fn get_remote_deck(&self, at_uri: &str) -> Result<(Deck, Vec<malfestio_core::model::Card>), DeckRepoError> {
+        let client = self
+            .pool
+            .get()
+            .await
+            .map_err(|e| DeckRepoError::DatabaseError(format!("Failed to get connection: {}", e)))?;
+
+        let deck_row = client
+            .query_opt(
+                "SELECT did, title, description, tags FROM indexed_decks WHERE at_uri = $1 AND deleted_at IS NULL",
+                &[&at_uri],
+            )
+            .await
+            .map_err(|e| DeckRepoError::DatabaseError(format!("Failed to query remote deck: {}", e)))?
+            .ok_or_else(|| DeckRepoError::NotFound("Remote deck not found".to_string()))?;
+
+        let deck = Deck {
+            id: at_uri.to_string(),
+            owner_did: deck_row.get("did"),
+            title: deck_row.get("title"),
+            description: deck_row.get("description"),
+            tags: deck_row.get("tags"),
+            visibility: Visibility::Public,
+            published_at: None,
+            fork_of: None,
+        };
+
+        let card_rows = client
+            .query(
+                "SELECT at_uri, did, front, back, media_url, hints FROM indexed_cards WHERE deck_ref = $1 AND deleted_at IS NULL",
+                &[&at_uri],
+            )
+            .await
+            .map_err(|e| DeckRepoError::DatabaseError(format!("Failed to query remote cards: {}", e)))?;
+
+        let mut cards = Vec::new();
+        for row in card_rows {
+            let hints: Vec<String> = row.get("hints");
+            cards.push(malfestio_core::model::Card {
+                id: row.get("at_uri"),
+                owner_did: row.get("did"),
+                deck_id: at_uri.to_string(),
+                front: row.get("front"),
+                back: row.get("back"),
+                media_url: row.get("media_url"),
+                hints,
+                // TODO: support other card types
+                card_type: malfestio_core::model::CardType::Basic,
+            });
+        }
+
+        Ok((deck, cards))
+    }
 }
 
 #[cfg(test)]
@@ -403,7 +497,26 @@ pub mod mock {
                 fork_of: Some(original_deck_id.to_string()),
             };
             decks.push(deck.clone());
+            decks.push(deck.clone());
             Ok(deck)
+        }
+
+        async fn get_decks_by_user(&self, owner_did: &str) -> Result<Vec<Deck>, DeckRepoError> {
+            let decks = self.decks.lock().unwrap();
+            let user_decks = decks.iter().filter(|d| d.owner_did == owner_did).cloned().collect();
+            Ok(user_decks)
+        }
+
+        async fn get_remote_deck(
+            &self, at_uri: &str,
+        ) -> Result<(Deck, Vec<malfestio_core::model::Card>), DeckRepoError> {
+            let decks = self.decks.lock().unwrap();
+            let deck = decks
+                .iter()
+                .find(|d| d.id == at_uri)
+                .cloned()
+                .ok_or_else(|| DeckRepoError::NotFound("Deck not found".to_string()))?;
+            Ok((deck, vec![]))
         }
     }
 }
