@@ -38,9 +38,9 @@
 
 **Firehose Enhancement:**
 
-- [ ] Upgrade firehose consumer to store full record content (not just metadata)
-- [ ] Add `indexed_decks`, `indexed_cards`, `indexed_notes` tables for remote content
-- [ ] Track latest processed revision per repo; handle deletions
+- [x] Upgrade firehose consumer to store full record content (not just metadata)
+- [x] Add `indexed_decks`, `indexed_cards`, `indexed_notes` tables for remote content
+- [x] Track latest processed revision per repo; handle deletions
 
 **Search & Discovery:**
 

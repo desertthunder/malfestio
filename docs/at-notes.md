@@ -48,20 +48,72 @@ Example: `at://did:plc:abc123/app.malfestio.deck/3k5abc123`
 
 ## Firehose / Jetstream
 
+### Overview
+
+The AT Protocol provides two main options for consuming real-time repository events:
+
+1. **Raw Firehose** (`com.atproto.sync.subscribeRepos`) - Full-fidelity, CBOR-encoded, cryptographically signed
+2. **Jetstream** - Simplified JSON format, lower bandwidth, easier to consume
+
 ### Raw Firehose
 
 - **WebSocket**: Subscribe to `com.atproto.sync.subscribeRepos` from a Relay
-- **CBOR Decoding**: Parse incoming events
-- **Cursor Management**: Track position for reconnection
+- **CBOR Decoding**: Parse CAR files containing MST blocks
+- **Cryptographic Verification**: Validate commit signatures against DID signing keys
+- **Cursor Management**: Track `seq` position for reliable reconnection
 
-### Jetstream (Recommended)
+**Event Types:**
 
-Bluesky's simplified JSON firehose:
+- `#commit` - Repository changes (record create/update/delete)
+- `#identity` - DID/handle updates
+- `#account` - Account status changes (active, deactivated, etc.)
 
-- JSON format (no CBOR decoding)
-- Reduced bandwidth (zstd compression)
-- Collection/repo filtering at source
-- Simpler reconnection with cursors
+### Jetstream (Simplified)
+
+Bluesky's simplified JSON firehose - ideal for indexing and discovery:
+
+- **JSON format**: No CBOR decoding required
+- **zstd compression**: Reduced bandwidth (enable with `compress=true`)
+- **Collection filtering**: Subscribe to specific NSIDs
+- **DID filtering**: Watch specific accounts
+- **Cursor-based reconnection**: Microsecond timestamps
+
+**Public Endpoints:**
+
+- `wss://jetstream1.us-east.bsky.network/subscribe`
+- `wss://jetstream2.us-west.bsky.network/subscribe`
+
+**Tradeoffs:**
+
+- ⚠️ Events are NOT cryptographically signed (trust the Jetstream operator)
+- ⚠️ Not self-authenticating data
+- ✅ Much simpler to implement
+- ✅ Lower bandwidth and compute requirements
+
+### Reliable Synchronization
+
+**Cursor Tracking:**
+
+- Store cursor position (microsecond timestamp) per endpoint
+- Resume from last processed cursor on reconnect
+- Handle gaps by fetching missing commits via `getRepo` if needed
+
+**Per-Repo Revision Tracking:**
+
+- Track latest `rev` (TID) for each DID
+- Compare incoming `rev` against stored value to detect gaps
+- Use `since` field to detect out-of-order events
+
+**Deletion Handling:**
+
+- Handle `operation: "delete"` in commit events
+- Mark records as deleted (soft or hard delete)
+
+**Best Practices:**
+
+- Process events sequentially per-DID (partition by DID)
+- Ignore events with `rev` ≤ stored latest rev
+- Validate records against Lexicon schema before indexing
 
 ## Well-Known Endpoints
 
