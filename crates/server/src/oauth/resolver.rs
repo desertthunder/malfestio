@@ -41,6 +41,11 @@ impl std::fmt::Display for ResolveError {
 
 impl std::error::Error for ResolveError {}
 
+#[allow(deprecated)]
+use hickory_resolver::TokioAsyncResolver;
+#[allow(deprecated)]
+use hickory_resolver::name_server::TokioConnectionProvider;
+
 /// Resolver for AT Protocol identities.
 ///
 /// Handles resolution of:
@@ -49,6 +54,8 @@ impl std::error::Error for ResolveError {}
 pub struct IdentityResolver {
     client: reqwest::Client,
     plc_directory: String,
+    #[allow(deprecated)]
+    dns_resolver: TokioAsyncResolver,
 }
 
 impl Default for IdentityResolver {
@@ -60,25 +67,50 @@ impl Default for IdentityResolver {
 impl IdentityResolver {
     /// Create a new resolver with default settings.
     pub fn new() -> Self {
-        Self { client: reqwest::Client::new(), plc_directory: "https://plc.directory".to_string() }
+        #[allow(deprecated)]
+        let (config, options) = hickory_resolver::system_conf::read_system_conf().expect("Failed to read system conf");
+        #[allow(deprecated)]
+        let dns_resolver = TokioAsyncResolver::new(config, options, TokioConnectionProvider::default());
+
+        Self { client: reqwest::Client::new(), plc_directory: "https://plc.directory".to_string(), dns_resolver }
     }
 
     /// Create a resolver with a custom PLC directory URL.
     pub fn with_plc_directory(plc_directory: &str) -> Self {
-        Self { client: reqwest::Client::new(), plc_directory: plc_directory.to_string() }
+        #[allow(deprecated)]
+        let (config, options) = hickory_resolver::system_conf::read_system_conf().expect("Failed to read system conf");
+        #[allow(deprecated)]
+        let dns_resolver = TokioAsyncResolver::new(config, options, TokioConnectionProvider::default());
+
+        Self { client: reqwest::Client::new(), plc_directory: plc_directory.to_string(), dns_resolver }
     }
 
     /// Resolve a handle to a DID.
     ///
     /// Tries HTTP well-known first, then falls back to DNS TXT.
     pub async fn resolve_handle(&self, handle: &str) -> Result<String, ResolveError> {
-        // Try HTTP well-known first
         if let Ok(did) = self.resolve_handle_http(handle).await {
             return Ok(did);
         }
+        self.resolve_handle_dns(handle).await
+    }
 
-        // Fall back to DNS TXT (simplified - just return error for now)
-        Err(ResolveError::HandleNotFound(handle.to_string()))
+    /// Resolve handle via DNS TXT record (_atproto.<handle>).
+    async fn resolve_handle_dns(&self, handle: &str) -> Result<String, ResolveError> {
+        let query = format!("_atproto.{}", handle);
+
+        match self.dns_resolver.txt_lookup(query).await {
+            Ok(records) => {
+                for record in records.iter() {
+                    let text = record.to_string();
+                    if let Some(did) = text.strip_prefix("did=") {
+                        return Ok(did.trim().to_string());
+                    }
+                }
+                Err(ResolveError::HandleNotFound(handle.to_string()))
+            }
+            Err(e) => Err(ResolveError::NetworkError(e.to_string())),
+        }
     }
 
     /// Resolve handle via HTTP well-known.
@@ -143,7 +175,6 @@ impl IdentityResolver {
             .await
             .map_err(|e| ResolveError::NetworkError(e.to_string()))?;
 
-        // Extract PDS URL from service array
         let pds_url = doc["service"]
             .as_array()
             .and_then(|services| {
@@ -155,7 +186,6 @@ impl IdentityResolver {
             .ok_or_else(|| ResolveError::DidNotFound(did.to_string()))?
             .to_string();
 
-        // Extract handle from alsoKnownAs
         let handle = doc["alsoKnownAs"]
             .as_array()
             .and_then(|aka| {
@@ -170,7 +200,6 @@ impl IdentityResolver {
 
     /// Resolve a did:web via HTTP.
     async fn resolve_web_did(&self, did: &str) -> Result<ResolvedIdentity, ResolveError> {
-        // did:web:example.com -> https://example.com/.well-known/did.json
         let domain = did
             .strip_prefix("did:web:")
             .ok_or_else(|| ResolveError::InvalidDid(did.to_string()))?;
@@ -216,7 +245,6 @@ pub fn is_valid_did(s: &str) -> bool {
 
 /// Check if a string is a valid handle.
 pub fn is_valid_handle(s: &str) -> bool {
-    // Simple validation: contains at least one dot, no spaces
     s.contains('.') && !s.contains(' ') && !s.starts_with("did:")
 }
 
@@ -257,5 +285,15 @@ mod tests {
 
         let err = ResolveError::InvalidDid("bad:did".to_string());
         assert!(err.to_string().contains("bad:did"));
+    }
+
+    #[tokio::test]
+    async fn test_resolve_handle_fallback_logic() {
+        let resolver = IdentityResolver::new();
+        let result = resolver.resolve_handle("nonexistent.invalid").await;
+        assert!(matches!(
+            result,
+            Err(ResolveError::HandleNotFound(_)) | Err(ResolveError::NetworkError(_))
+        ));
     }
 }

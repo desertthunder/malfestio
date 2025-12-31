@@ -80,4 +80,13 @@ export const api = {
   updatePreferences: (updates: import("./model").UpdatePreferencesPayload) => {
     return apiFetch("/preferences", { method: "PUT", body: JSON.stringify(updates) });
   },
+  startOAuth: async (handle: string) => {
+    const res = await apiFetch("/oauth/authorize", { method: "POST", body: JSON.stringify({ handle }) });
+    if (res.ok) {
+      const data = await res.json();
+      window.location.href = data.authorization_url;
+      return { ok: true };
+    }
+    return res;
+  },
 };

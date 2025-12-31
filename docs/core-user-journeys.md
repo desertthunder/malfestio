@@ -172,8 +172,13 @@ This document outlines the core user journeys and detailed user flows for Malfes
 ### Login
 
 1. Navigate to `/login`
-2. Enter Bluesky handle and app password
-3. Submit → redirected to Library
+2. **Option A (OAuth - Recommended)**:
+    - Enter handle only
+    - Click "Continue" → redirected to PDS login page
+    - Approve access → redirected back to Library
+3. **Option B (Legacy)**:
+    - Enter handle and App Password
+    - Click "Continue" → redirected to Library
 
 ### Logout
 

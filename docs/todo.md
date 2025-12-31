@@ -51,7 +51,7 @@
 - [ ] Open Graph / Twitter Card meta tags
     - [ ] Scripted with HTML2Canvas/PNG generation
         - Graph paper background
-        - Floating flash cards, notes
+        - Floating flash cards, notes (scribbles instead of text)
 - [ ] Sitemap.xml generation
 - [ ] robots.txt configuration
 
@@ -91,8 +91,8 @@
 
 **Identity & Auth:**
 
-- [ ] OAuth login directly to user's PDS (vs. local-only auth)
-- [ ] Handle resolution via DNS TXT or `/.well-known/atproto-did`
+- [x] OAuth login directly to user's PDS
+- [x] Handle resolution via DNS TXT or `/.well-known/atproto-did`
     - <https://malfestio.stormlightlabs.org>
 - [ ] DPoP token binding for secure API calls
 
