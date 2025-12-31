@@ -41,17 +41,17 @@ function createAuthStore() {
 
 export const authStore = createRoot(createAuthStore);
 
-function createPreferencesStore() {
-  const [preferences, setPreferences] = createSignal<UserPreferences | null>(null);
+function createPrefStore() {
+  const [prefs, setPrefs] = createSignal<UserPreferences | null>(null);
   const [loading, setLoading] = createSignal(false);
 
-  const fetchPreferences = async () => {
+  const fetchPrefs = async () => {
     if (!authStore.isAuthenticated()) return;
     setLoading(true);
     try {
       const res = await api.getPreferences();
       if (res.ok) {
-        setPreferences(await res.json());
+        setPrefs(await res.json());
       }
     } catch (e) {
       console.error("Failed to fetch preferences:", e);
@@ -64,7 +64,7 @@ function createPreferencesStore() {
     try {
       const res = await api.updatePreferences(updates);
       if (res.ok) {
-        setPreferences(await res.json());
+        setPrefs(await res.json());
       }
     } catch (e) {
       console.error("Failed to update preferences:", e);
@@ -72,13 +72,13 @@ function createPreferencesStore() {
   };
 
   const needsOnboarding = () => {
-    const prefs = preferences();
-    return prefs !== null && prefs.onboarding_completed_at === null;
+    const preferences = prefs();
+    return preferences !== null && preferences.onboarding_completed_at === null;
   };
 
-  const persona = () => preferences()?.persona ?? null;
+  const persona = () => prefs()?.persona ?? null;
 
-  return { preferences, loading, fetchPreferences, updatePreferences, needsOnboarding, persona };
+  return { prefs, loading, fetchPrefs, updatePreferences, needsOnboarding, persona };
 }
 
-export const preferencesStore = createRoot(createPreferencesStore);
+export const prefStore = createRoot(createPrefStore);

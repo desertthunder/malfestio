@@ -1,7 +1,7 @@
 import { AppLayout } from "$components/layout/AppLayout";
 import { OnboardingDialog } from "$components/OnboardingDialog";
 import type { Persona } from "$lib/model";
-import { authStore, preferencesStore } from "$lib/store";
+import { authStore, prefStore } from "$lib/store";
 import About from "$pages/About";
 import DeckNew from "$pages/DeckNew";
 import DeckView from "$pages/DeckView";
@@ -26,19 +26,19 @@ const ProtectedRoute: Component<{ component: Component }> = (props) => {
 
   onMount(async () => {
     if (authStore.isAuthenticated()) {
-      await preferencesStore.fetchPreferences();
+      await prefStore.fetchPrefs();
     }
   });
 
   createEffect(() => {
-    if (preferencesStore.needsOnboarding()) {
+    if (prefStore.needsOnboarding()) {
       setShowOnboarding(true);
     }
   });
 
   const handleOnboardingComplete = (_persona: Persona) => {
     setShowOnboarding(false);
-    preferencesStore.fetchPreferences();
+    prefStore.fetchPrefs();
   };
 
   return (

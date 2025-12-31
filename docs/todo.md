@@ -44,7 +44,7 @@
 - [x] Onboarding flow with persona selection (Learner/Creator/Curator)
 - [x] Empty states with helpful prompts for new users
 - [x] Help center/FAQ section (with beta development notice)
-- [ ] Tutorial/walkthrough for first deck creation
+- [x] Tutorial/walkthrough for first deck creation
 
 **SEO & Meta:**
 

@@ -4,7 +4,7 @@ import { Skeleton } from "$components/ui/Skeleton";
 import { Tag } from "$components/ui/Tag";
 import { api } from "$lib/api";
 import type { Deck, Persona } from "$lib/model";
-import { preferencesStore } from "$lib/store";
+import { prefStore } from "$lib/store";
 import { Button } from "$ui/Button";
 import { A } from "@solidjs/router";
 import type { Component, JSX } from "solid-js";
@@ -145,7 +145,7 @@ const Home: Component = () => {
   });
 
   const currentTip = createMemo(() => {
-    const persona = preferencesStore.persona();
+    const persona = prefStore.persona();
     return persona ? personaTips[persona] : defaultTip;
   });
 

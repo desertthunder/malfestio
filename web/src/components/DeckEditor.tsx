@@ -2,6 +2,7 @@ import { fadeIn, scaleIn } from "$lib/animations";
 import { api } from "$lib/api";
 import type { Card, CardType, CreateDeckPayload, Visibility } from "$lib/model";
 import { toast } from "$lib/toast";
+import { useTutorialTarget } from "$lib/TutorialProvider";
 import { Button } from "$ui/Button";
 import { createSignal, For, Show } from "solid-js";
 import { Motion } from "solid-motionone";
@@ -18,6 +19,14 @@ export function DeckEditor(props: { onSave?: (deck: CreateDeckPayload) => void }
 
   const [cards, setCards] = createSignal<Card[]>([]);
   const [showCardEditor, setShowCardEditor] = createSignal(false);
+
+  const registerTutorialTarget = (id: string) => {
+    try {
+      return useTutorialTarget(id);
+    } catch {
+      return () => {};
+    }
+  };
 
   const handleSubmit = async (e: Event) => {
     e.preventDefault();
@@ -80,6 +89,7 @@ export function DeckEditor(props: { onSave?: (deck: CreateDeckPayload) => void }
           <div>
             <label for="title" class="block text-sm font-medium text-gray-400 mb-1">Title</label>
             <input
+              ref={registerTutorialTarget("title")}
               id="title"
               type="text"
               value={title()}
@@ -91,6 +101,7 @@ export function DeckEditor(props: { onSave?: (deck: CreateDeckPayload) => void }
           <div>
             <label for="description" class="block text-sm font-medium text-gray-400 mb-1">Description</label>
             <textarea
+              ref={registerTutorialTarget("description")}
               id="description"
               value={description()}
               onInput={(e) => setDescription(e.target.value)}
@@ -100,6 +111,7 @@ export function DeckEditor(props: { onSave?: (deck: CreateDeckPayload) => void }
           <div>
             <label for="tags" class="block text-sm font-medium text-gray-400 mb-1">Tags (comma separated)</label>
             <input
+              ref={registerTutorialTarget("tags")}
               id="tags"
               type="text"
               value={tags()}
@@ -111,6 +123,7 @@ export function DeckEditor(props: { onSave?: (deck: CreateDeckPayload) => void }
           <div>
             <label for="visibility" class="block text-sm font-medium text-gray-400 mb-1">Visibility</label>
             <select
+              ref={registerTutorialTarget("visibility")}
               id="visibility"
               value={visibilityType()}
               onChange={(e) => setVisibilityType(e.target.value as Visibility["type"])}
@@ -187,7 +200,12 @@ export function DeckEditor(props: { onSave?: (deck: CreateDeckPayload) => void }
           <Show
             when={showCardEditor()}
             fallback={
-              <Button type="button" variant="secondary" onClick={() => setShowCardEditor(true)} class="w-full">
+              <Button
+                ref={registerTutorialTarget("add-card")}
+                type="button"
+                variant="secondary"
+                onClick={() => setShowCardEditor(true)}
+                class="w-full">
                 Add Card
               </Button>
             }>
