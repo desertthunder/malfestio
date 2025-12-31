@@ -14,9 +14,6 @@ importers:
       '@fontsource-variable/figtree':
         specifier: ^5.2.8
         version: 5.2.10
-      '@fontsource-variable/source-serif-4':
-        specifier: ^5.2.8
-        version: 5.2.9
       '@solidjs/meta':
         specifier: ^0.29.4
         version: 0.29.4(solid-js@1.9.10)
@@ -483,9 +480,6 @@ packages:
 
   '@fontsource-variable/figtree@5.2.10':
     resolution: {integrity: sha512-a5Gumbpy3mdd+Yg31g6Qb7CmjYbrfyutJa3bWfP5q8A4GclIOwX7mI+ZuSHsJnw/mHvW6r9oh1AHJcJTIxK4JA==}
-
-  '@fontsource-variable/source-serif-4@5.2.9':
-    resolution: {integrity: sha512-PPcxjLFk/fS0WHg79pDM2YNvz61kC+oYZ5cWZZyCS0DHpJncmuYOuiZAsvj4tDxlWPBEvxxcRLQQNmSaRbPkqw==}
 
   '@humanfs/core@0.19.1':
     resolution: {integrity: sha512-5DyQ4+1JEUzejeK1JGICcideyfUbGixgS9jNgex5nqkW+cY7WZhxBigmieN5Qnw9ZosSNVC9KQKyb+GUaGyKUA==}
@@ -2579,8 +2573,6 @@ snapshots:
   '@exodus/bytes@1.6.0': {}
 
   '@fontsource-variable/figtree@5.2.10': {}
-
-  '@fontsource-variable/source-serif-4@5.2.9': {}
 
   '@humanfs/core@0.19.1': {}
 

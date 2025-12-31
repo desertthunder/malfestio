@@ -6,13 +6,14 @@
  * Run with: pnpm run generate:og
  */
 import { Resvg } from "@resvg/resvg-js";
-import { writeFileSync } from "fs";
+import { readFileSync, writeFileSync } from "fs";
 import { dirname, join } from "path";
 import satori from "satori";
 import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
+const FONT_PATH = join(__dirname, "..", "public", "fonts", "Mattern-Regular.ttf");
 const WIDTH = 1200;
 const HEIGHT = 630;
 const GRID_SIZE = 32;
@@ -28,12 +29,11 @@ const GRID_SIZE = 32;
  */
 async function fetchFont(family: string, weight: number): Promise<ArrayBuffer> {
   const url = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(family)}:wght@${weight}&display=swap`;
-
   const cssRes = await fetch(url, {
     headers: { "User-Agent": "Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1; Trident/6.0)" },
   });
-  const css = await cssRes.text();
 
+  const css = await cssRes.text();
   const fontUrlMatch = css.match(/src: url\(([^)]+)\)/);
   if (!fontUrlMatch) {
     throw new Error(`Could not find font URL for ${family}`);
@@ -170,13 +170,13 @@ const ogImage = {
         children: [{
           type: "div",
           props: {
-            style: { fontSize: 96, fontFamily: "Source Serif 4", fontWeight: 500, color: "#ffffff", lineHeight: 1.1 },
+            style: { fontSize: 96, fontFamily: "Mattern", fontWeight: 400, color: "#ffffff", lineHeight: 1.1 },
             children: "Learning on",
           },
         }, {
           type: "div",
           props: {
-            style: { fontSize: 96, fontFamily: "Source Serif 4", fontWeight: 500, color: "#737373", lineHeight: 1.1 },
+            style: { fontSize: 96, fontFamily: "Mattern", fontWeight: 400, color: "#737373", lineHeight: 1.1 },
             children: "the AT Protocol.",
           },
         }],
@@ -216,18 +216,21 @@ const ogImage = {
 
 async function main() {
   console.log("Generating OpenGraph image...");
-  console.log("Fetching fonts from Google Fonts...");
+  console.log("Loading fonts...");
 
-  const [sourceSerif, figtree] = await Promise.all([fetchFont("Source Serif 4", 500), fetchFont("Figtree", 600)]);
+  const [matternFont, figtreeFont] = await Promise.all([
+    Promise.resolve(readFileSync(FONT_PATH)),
+    fetchFont("Figtree", 600),
+  ]);
 
   console.log("Rendering SVG...");
 
   const svg = await satori(ogImage, {
     width: WIDTH,
     height: HEIGHT,
-    fonts: [{ name: "Source Serif 4", data: sourceSerif, weight: 500, style: "normal" }, {
+    fonts: [{ name: "Mattern", data: matternFont, weight: 400, style: "normal" }, {
       name: "Figtree",
-      data: figtree,
+      data: figtreeFont,
       weight: 600,
       style: "normal",
     }],

@@ -53,3 +53,36 @@ Presets defined in `src/lib/animations.ts`:
 - **Tabs**: Left/Right arrows
 - **Dropdown**: Arrow keys, `Enter` to select, `Escape` to close
 - **Menu**: Arrow keys, `Enter` to select
+
+## Common Gotchas
+
+### Router Components in Module-Level Constants
+
+Router components (`<A>`, and hooks like `useNavigate`, `useParams`) must be created during component render, not at module initialization.
+
+**Problem:**
+
+```tsx
+// ✗ JSX created when module loads, before Router exists
+const config = {
+  action: <A href="/somewhere">Click me</A>
+}
+```
+
+**Solution:**
+
+```tsx
+// ✓ JSX created during render, inside Router context
+const getConfig = () => ({
+  action: () => <A href="/somewhere">Click me</A>
+})
+
+const MyComponent = () => {
+  const config = getConfig();
+  return <div>{config.action()}</div>
+}
+```
+
+**Why:** Module-level JSX executes immediately on import, before `<Router>` establishes its context. Router components need that context to function.
+
+**Rule:** If storing JSX that contains router components, wrap it in a function to defer creation until render time.

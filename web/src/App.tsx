@@ -18,10 +18,10 @@ import NotFound from "$pages/NotFound";
 import Review from "$pages/Review";
 import Search from "$pages/Search";
 import { Route, Router } from "@solidjs/router";
-import type { Component } from "solid-js";
+import type { Component, ParentComponent } from "solid-js";
 import { createEffect, createSignal, onMount, Show } from "solid-js";
 
-const ProtectedRoute: Component<{ component: Component }> = (props) => {
+const ProtectedLayout: ParentComponent = (props) => {
   const [showOnboarding, setShowOnboarding] = createSignal(false);
 
   onMount(async () => {
@@ -43,9 +43,7 @@ const ProtectedRoute: Component<{ component: Component }> = (props) => {
 
   return (
     <Show when={authStore.isAuthenticated()} fallback={<Landing />}>
-      <AppLayout>
-        <props.component />
-      </AppLayout>
+      <AppLayout>{props.children}</AppLayout>
       <OnboardingDialog open={showOnboarding()} onComplete={handleOnboardingComplete} />
     </Show>
   );
@@ -57,19 +55,21 @@ const App: Component = () => {
       <Route path="/login" component={Login} />
       <Route path="/about" component={About} />
       <Route path="/help" component={Help} />
-      <Route path="/" component={() => <ProtectedRoute component={Home} />} />
-      <Route path="/decks" component={() => <ProtectedRoute component={Home} />} />
-      <Route path="/decks/new" component={() => <ProtectedRoute component={DeckNew} />} />
-      <Route path="/notes/new" component={() => <ProtectedRoute component={NoteNew} />} />
-      <Route path="/decks/:id" component={() => <ProtectedRoute component={DeckView} />} />
-      <Route path="/import" component={() => <ProtectedRoute component={Import} />} />
-      <Route path="/import/lecture" component={() => <ProtectedRoute component={LectureImport} />} />
-      <Route path="/review" component={() => <ProtectedRoute component={Review} />} />
-      <Route path="/review/:deckId" component={() => <ProtectedRoute component={Review} />} />
-      <Route path="/feed" component={() => <ProtectedRoute component={Feed} />} />
-      <Route path="/search" component={() => <ProtectedRoute component={Search} />} />
-      <Route path="/discovery" component={() => <ProtectedRoute component={Discovery} />} />
-      <Route path="*" component={() => <ProtectedRoute component={NotFound} />} />
+      <Route path="/" component={ProtectedLayout}>
+        <Route path="/" component={Home} />
+        <Route path="/decks" component={Home} />
+        <Route path="/decks/new" component={DeckNew} />
+        <Route path="/notes/new" component={NoteNew} />
+        <Route path="/decks/:id" component={DeckView} />
+        <Route path="/import" component={Import} />
+        <Route path="/import/lecture" component={LectureImport} />
+        <Route path="/review" component={Review} />
+        <Route path="/review/:deckId" component={Review} />
+        <Route path="/feed" component={Feed} />
+        <Route path="/search" component={Search} />
+        <Route path="/discovery" component={Discovery} />
+        <Route path="*" component={NotFound} />
+      </Route>
     </Router>
   );
 };

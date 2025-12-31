@@ -1,5 +1,4 @@
 import { Footer } from "$components/layout/Footer";
-import { A } from "@solidjs/router";
 import type { Component, JSX } from "solid-js";
 import { For } from "solid-js";
 import { Motion } from "solid-motionone";
@@ -7,27 +6,27 @@ import { Motion } from "solid-motionone";
 const features = [{
   title: "Flashcards",
   desc: "Built-in spaced repetition system (SRS) ensuring you review the right material at the right time.",
-  icon: <span class="i-bi-card-text text-4xl" />,
+  icon: () => <span class="i-bi-card-text text-4xl" />,
 }, {
   title: "Linked Notes",
   desc: "Connect concepts with bidirectional links. Build a knowledge graph that grows with your understanding.",
-  icon: <span class="i-bi-link-45deg text-4xl" />,
+  icon: () => <span class="i-bi-link-45deg text-4xl" />,
 }, {
   title: "Lectures & Articles",
   desc: "Import content directly. Highlight, annotate, and turn key insights into flashcards instantly.",
-  icon: <span class="i-bi-book text-4xl" />,
+  icon: () => <span class="i-bi-book text-4xl" />,
 }, {
   title: "Social Learning",
   desc: "Publish your decks, follow curators, and fork existing content to improve it for everyone.",
-  icon: <span class="i-bi-people text-4xl" />,
+  icon: () => <span class="i-bi-people text-4xl" />,
 }, {
   title: "Local-First",
   desc: "Your data lives on your device. Offline-first architecture with ATProto for decentralized sync.",
-  icon: <span class="i-bi-hdd text-4xl" />,
+  icon: () => <span class="i-bi-hdd text-4xl" />,
 }, {
   title: "Open Source",
   desc: "Validates knowledge, not proprietary locks. Inspect the code, extend the schema, own the platform.",
-  icon: (
+  icon: () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 25 25" class="text-4xl">
       <path
         fill="currentColor"
@@ -41,9 +40,11 @@ const steps = [{ title: "Import", desc: "Create cards from articles, lectures, o
   desc: "Review with spaced repetition — the right card at the right time.",
 }, { title: "Share", desc: "Publish to the AT Protocol network and discover community content." }];
 
-const Feature: Component<{ title: string; desc: string; icon: JSX.Element }> = (props) => (
+const Feature: Component<{ title: string; desc: string; Icon: Component }> = (props) => (
   <div class="border border-neutral-800 p-6 hover:border-blue-600 transition-colors group h-full bg-neutral-900/50 backdrop-blur-sm">
-    <div class="w-10 h-10 mb-4 text-blue-500 group-hover:text-blue-400 transition-colors">{props.icon}</div>
+    <div class="w-10 h-10 mb-4 text-blue-500 group-hover:text-blue-400 transition-colors">
+      <props.Icon />
+    </div>
     <h3 class="text-xl text-white mb-2 group-hover:text-blue-400 transition-colors">{props.title}</h3>
     <p class="text-neutral-400 font-light leading-relaxed">{props.desc}</p>
   </div>
@@ -77,10 +78,10 @@ const Landing: Component = () => (
   <div class="min-h-screen bg-black text-white font-sans selection:bg-blue-500/30">
     <header class="border-b border-neutral-900 sticky top-0 bg-black/80 backdrop-blur-md z-50">
       <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-        <A href="/" class="font-bold tracking-tight text-xl hover:text-blue-400 transition-colors">Malfestio</A>
+        <a href="/" class="font-bold tracking-tight text-xl hover:text-blue-400 transition-colors">Malfestio</a>
         <div class="flex items-center gap-6">
-          <A href="/about" class="text-sm font-medium text-neutral-400 hover:text-white transition-colors">About</A>
-          <A href="/login" class="text-sm font-medium text-neutral-400 hover:text-white transition-colors">Log in</A>
+          <a href="/about" class="text-sm font-medium text-neutral-400 hover:text-white transition-colors">About</a>
+          <a href="/login" class="text-sm font-medium text-neutral-400 hover:text-white transition-colors">Log in</a>
         </div>
       </div>
     </header>
@@ -151,19 +152,19 @@ const Landing: Component = () => (
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
               class="flex gap-4">
-              <A
+              <a
                 href="/login"
                 class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 font-medium text-lg transition-colors inline-flex items-center gap-2">
                 Get Started
                 <span class="text-xl">→</span>
-              </A>
+              </a>
             </Motion.div>
           </div>
         </div>
       </section>
       <section class="max-w-7xl mx-auto px-6 py-24">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <For each={features}>{(f) => <Feature title={f.title} desc={f.desc} icon={f.icon} />}</For>
+          <For each={features}>{(f) => <Feature title={f.title} desc={f.desc} Icon={f.icon} />}</For>
         </div>
       </section>
       <section class="border-t border-neutral-900 py-24 relative">

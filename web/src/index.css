@@ -1,9 +1,18 @@
 @import "tailwindcss";
 @plugin "@egoist/tailwindcss-icons";
 
+@font-face {
+    font-family: "Mattern";
+    src: url("/fonts/Mattern-Regular.otf") format("opentype"),
+        url("/fonts/Mattern-Regular.ttf") format("truetype");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
 @theme {
-    --font-display: "Source Serif 4 Variable", serif;
-    --font-body: "Figtree Variable", serif;
+    --font-display: "Mattern", serif;
+    --font-body: "Figtree Variable", sans-serif;
 }
 
 * {

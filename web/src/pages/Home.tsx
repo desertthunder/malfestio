@@ -61,14 +61,14 @@ const DeckCardSkeleton: Component = () => (
   </Card>
 );
 
-type PersonaTip = { title: string; description: string; icon: JSX.Element; action: JSX.Element; tips: string[] };
+type PersonaTip = { title: string; description: string; icon: JSX.Element; action: () => JSX.Element; tips: string[] };
 
-const personaTips: Record<Persona, PersonaTip> = {
+const getPersonaTips = (): Record<Persona, PersonaTip> => ({
   learner: {
     title: "Ready to start learning?",
     description: "Find decks from the community or create your own study materials.",
     icon: <span class="i-bi-book text-4xl text-[#0F62FE]" />,
-    action: (
+    action: () => (
       <div class="flex gap-3 flex-wrap justify-center">
         <A href="/discovery">
           <Button variant="secondary">Browse Discovery</Button>
@@ -88,7 +88,7 @@ const personaTips: Record<Persona, PersonaTip> = {
     title: "Create your first deck!",
     description: "Share your knowledge with the community through flashcards.",
     icon: <span class="i-bi-pencil text-4xl text-[#0F62FE]" />,
-    action: (
+    action: () => (
       <div class="flex gap-3 flex-wrap justify-center">
         <A href="/decks/new">
           <Button>Create New Deck</Button>
@@ -108,7 +108,7 @@ const personaTips: Record<Persona, PersonaTip> = {
     title: "Build your collection",
     description: "Discover and organize the best learning content for others.",
     icon: <span class="i-bi-collection text-4xl text-[#0F62FE]" />,
-    action: (
+    action: () => (
       <div class="flex gap-3 flex-wrap justify-center">
         <A href="/feed">
           <Button variant="secondary">View Feed</Button>
@@ -124,19 +124,19 @@ const personaTips: Record<Persona, PersonaTip> = {
       "Use tags to organize by topic",
     ],
   },
-};
+});
 
-const defaultTip: PersonaTip = {
+const getDefaultTip = (): PersonaTip => ({
   title: "No decks found",
   description: "Create your first deck to get started with spaced repetition learning.",
   icon: <span class="i-bi-collection text-4xl text-[#525252]" />,
-  action: (
+  action: () => (
     <A href="/decks/new">
       <Button>Create Your First Deck</Button>
     </A>
   ),
   tips: [],
-};
+});
 
 const Home: Component = () => {
   const [decks] = createResource(async () => {
@@ -146,7 +146,8 @@ const Home: Component = () => {
 
   const currentTip = createMemo(() => {
     const persona = prefStore.persona();
-    return persona ? personaTips[persona] : defaultTip;
+    const tips = getPersonaTips();
+    return persona ? tips[persona] : getDefaultTip();
   });
 
   return (
@@ -181,7 +182,7 @@ const Home: Component = () => {
                   title={currentTip().title}
                   description={currentTip().description}
                   icon={currentTip().icon}
-                  action={currentTip().action} />
+                  action={currentTip().action()} />
                 <Show when={currentTip().tips.length > 0}>
                   <div class="mt-8 p-6 bg-[#1E1E1E] rounded-lg border border-[#262626] max-w-lg mx-auto">
                     <h4 class="text-sm font-medium text-[#F4F4F4] mb-3">Quick Tips</h4>
