@@ -26,39 +26,11 @@
 - **(Done) Milestone I**: Social Layer v1: Follow graph, Feeds (Follows/Trending), Forking workflow, and Threaded comments.
     - Full-text search with pg_trgm/unaccent, visibility filtering, and unified search index.
     - Tag taxonomy and Discovery page with top tags.
-
-### Milestone J - Static Content & Landing Page
-
-#### Deliverables
-
-**Marketing/Static Site:**
-
-- [x] Landing page with hero section, feature highlights
-    - Hero has graph paper/grid background
-    - Floating flash cards, notes animations
-- [x] "How it works" section with study flow visualization
-- [x] About page with team/mission
-
-**App Vision Content:**
-
-- [x] Onboarding flow with persona selection (Learner/Creator/Curator)
-- [x] Empty states with helpful prompts for new users
-- [x] Help center/FAQ section (with beta development notice)
-- [x] Tutorial/walkthrough for first deck creation
-
-**SEO & Meta:**
-
-- [ ] Open Graph / Twitter Card meta tags
-    - [ ] Scripted with HTML2Canvas/PNG generation
-        - Graph paper background
-        - Floating flash cards, notes (scribbles instead of text)
-- [ ] Sitemap.xml generation
-- [ ] robots.txt configuration
-
-#### Acceptance
-
-- New visitors understand the value proposition within 10 seconds.
-- Onboarding flow guides users to create their first deck.
+- **(Done) Milestone J**: Static Content & Landing Page.
+    - Marketing & Static Site: Landing page, "How it works", About page, Onboarding flow, Empty states, Help center/FAQ section.
+    - SEO & Meta: Open Graph / Twitter Card meta tags, Sitemap.xml generation, robots.txt configuration.
+    - Onboarding Flow & Help Center/FAQ
+    - Empty States
 
 ### Milestone K - AppView Indexing
 

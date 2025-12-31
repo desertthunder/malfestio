@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://malfestio.stormlightlabs.org/sitemap.xml
