@@ -7,6 +7,7 @@ and sharing progress & notes.
 
 ## Documentation
 
+- [Local Development](./docs/local-dev.md) - Setup and testing guide
 - [Personas & Principles](./docs/personas.md) - Target users and design philosophy
 - [Architecture](./docs/architecture.md) - System components and data model
 - [Information Architecture](./docs/information-architecture.md) - Navigation and URL structure

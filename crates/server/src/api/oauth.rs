@@ -105,19 +105,31 @@ pub struct CallbackQuery {
 pub async fn authorize(
     State(oauth): State<Arc<OAuthState>>, Json(payload): Json<AuthorizeRequest>,
 ) -> impl IntoResponse {
+    tracing::info!("OAuth authorization request received for handle: {}", payload.handle);
+
     let state = generate_state();
+    tracing::debug!("Generated state parameter: {}", state);
 
     match oauth
         .flow
         .start_authorization(&payload.handle, &state, &oauth.sessions)
         .await
     {
-        Ok(auth_url) => (
-            StatusCode::OK,
-            Json(AuthorizeResponse { authorization_url: auth_url, state }),
-        )
-            .into_response(),
-        Err(e) => (StatusCode::BAD_REQUEST, Json(json!({ "error": e.to_string() }))).into_response(),
+        Ok(auth_url) => {
+            tracing::info!(
+                "OAuth authorization started successfully for handle: {}",
+                payload.handle
+            );
+            (
+                StatusCode::OK,
+                Json(AuthorizeResponse { authorization_url: auth_url, state }),
+            )
+                .into_response()
+        }
+        Err(e) => {
+            tracing::error!("OAuth authorization failed for handle {}: {}", payload.handle, e);
+            (StatusCode::BAD_REQUEST, Json(json!({ "error": e.to_string() }))).into_response()
+        }
     }
 }
 
@@ -125,8 +137,11 @@ pub async fn authorize(
 ///
 /// GET /api/oauth/callback?code=...&state=...
 pub async fn callback(State(oauth): State<Arc<OAuthState>>, Query(params): Query<CallbackQuery>) -> impl IntoResponse {
+    tracing::info!("OAuth callback received with state: {}", params.state);
+
     if let Some(error) = params.error {
         let description = params.error_description.unwrap_or_default();
+        tracing::error!("OAuth authorization error: {} - {}", error, description);
         return Redirect::to(&format!(
             "/login?error={}&description={}",
             urlencoding::encode(&error),
@@ -135,14 +150,19 @@ pub async fn callback(State(oauth): State<Arc<OAuthState>>, Query(params): Query
         .into_response();
     }
 
+    tracing::debug!("Retrieving session for state: {}", params.state);
     let session = {
         let sessions = oauth.sessions.read().unwrap();
         sessions.get(&params.state).cloned()
     };
 
     let session = match session {
-        Some(s) => s,
+        Some(s) => {
+            tracing::debug!("Session found for state: {}", params.state);
+            s
+        }
         None => {
+            tracing::error!("Session not found for state: {}", params.state);
             return Redirect::to("/login?error=session_not_found").into_response();
         }
     };
@@ -153,12 +173,13 @@ pub async fn callback(State(oauth): State<Arc<OAuthState>>, Query(params): Query
         .await
     {
         Ok(tokens) => {
-            let did = session.did.unwrap_or_default();
+            let did = session.did.clone().unwrap_or_default();
             let pds_url = session.pds_url.unwrap_or_default();
             let expires_at = tokens
                 .expires_in
                 .map(|secs| Utc::now() + Duration::seconds(secs as i64));
 
+            tracing::info!("Storing tokens for DID: {}", did);
             if let Err(e) = oauth
                 .repo
                 .store_tokens(StoreTokensRequest {
@@ -172,14 +193,18 @@ pub async fn callback(State(oauth): State<Arc<OAuthState>>, Query(params): Query
                 })
                 .await
             {
-                tracing::error!("Failed to store tokens: {}", e);
+                tracing::error!("Failed to store tokens for DID {}: {}", did, e);
                 return Redirect::to(&format!("/login?error={}", urlencoding::encode("token_storage_failed")))
                     .into_response();
             }
 
+            tracing::info!("OAuth flow completed successfully for DID: {}", did);
             Redirect::to(&format!("/login/success?did={}", urlencoding::encode(&did))).into_response()
         }
-        Err(e) => Redirect::to(&format!("/login?error={}", urlencoding::encode(&e.to_string()))).into_response(),
+        Err(e) => {
+            tracing::error!("Token exchange failed: {}", e);
+            Redirect::to(&format!("/login?error={}", urlencoding::encode(&e.to_string()))).into_response()
+        }
     }
 }
 
@@ -201,18 +226,27 @@ pub struct RefreshResponse {
 /// POST /api/oauth/refresh
 /// Body: { "did": "did:plc:..." }
 pub async fn refresh(State(oauth): State<Arc<OAuthState>>, Json(payload): Json<RefreshRequest>) -> impl IntoResponse {
+    tracing::info!("Token refresh request for DID: {}", payload.did);
+
     // Get stored tokens from database
+    tracing::debug!("Retrieving stored tokens from database for DID: {}", payload.did);
     let stored = match oauth.repo.get_tokens(&payload.did).await {
-        Ok(t) => t,
+        Ok(t) => {
+            tracing::debug!("Found stored tokens for DID: {}", payload.did);
+            t
+        }
         Err(e) => {
+            tracing::error!("Failed to retrieve stored tokens for DID {}: {}", payload.did, e);
             return (StatusCode::NOT_FOUND, Json(json!({ "error": e.to_string() }))).into_response();
         }
     };
 
     // Reconstruct DPoP keypair
+    tracing::debug!("Reconstructing DPoP keypair from stored data");
     let dpop_keypair = match stored.dpop_keypair() {
         Some(kp) => kp,
         None => {
+            tracing::error!("Failed to reconstruct DPoP keypair for DID: {}", payload.did);
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(json!({ "error": "Invalid stored keypair" })),
@@ -225,6 +259,7 @@ pub async fn refresh(State(oauth): State<Arc<OAuthState>>, Json(payload): Json<R
     let refresh_token = match &stored.refresh_token {
         Some(rt) => rt.clone(),
         None => {
+            tracing::error!("No refresh token available for DID: {}", payload.did);
             return (
                 StatusCode::BAD_REQUEST,
                 Json(json!({ "error": "No refresh token available" })),
@@ -244,6 +279,10 @@ pub async fn refresh(State(oauth): State<Arc<OAuthState>>, Json(payload): Json<R
                 .expires_in
                 .map(|secs| Utc::now() + Duration::seconds(secs as i64));
 
+            tracing::info!(
+                "Token refresh successful, updating stored tokens for DID: {}",
+                payload.did
+            );
             if let Err(e) = oauth
                 .repo
                 .update_tokens(
@@ -254,7 +293,7 @@ pub async fn refresh(State(oauth): State<Arc<OAuthState>>, Json(payload): Json<R
                 )
                 .await
             {
-                tracing::error!("Failed to update tokens: {}", e);
+                tracing::error!("Failed to update tokens in database for DID {}: {}", payload.did, e);
                 return (
                     StatusCode::INTERNAL_SERVER_ERROR,
                     Json(json!({ "error": "Failed to update tokens" })),
@@ -262,13 +301,17 @@ pub async fn refresh(State(oauth): State<Arc<OAuthState>>, Json(payload): Json<R
                     .into_response();
             }
 
+            tracing::info!("Token refresh completed successfully for DID: {}", payload.did);
             (
                 StatusCode::OK,
                 Json(RefreshResponse { success: true, expires_at: expires_at.map(|dt| dt.to_rfc3339()) }),
             )
                 .into_response()
         }
-        Err(e) => (StatusCode::BAD_REQUEST, Json(json!({ "error": e.to_string() }))).into_response(),
+        Err(e) => {
+            tracing::error!("Token refresh failed for DID {}: {}", payload.did, e);
+            (StatusCode::BAD_REQUEST, Json(json!({ "error": e.to_string() }))).into_response()
+        }
     }
 }
 

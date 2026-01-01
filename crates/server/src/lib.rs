@@ -11,12 +11,13 @@ pub mod well_known;
 use axum::http::Method;
 use axum::{
     Json, Router,
+    extract::State,
     http::StatusCode,
     middleware as axum_middleware,
     response::{IntoResponse, Response},
     routing::{get, post},
 };
-use serde_json::json;
+use serde_json::{Value, json};
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
 use tower_http::cors::{Any, CorsLayer};
@@ -43,29 +44,9 @@ pub async fn start() -> malfestio_core::Result<()> {
 
     tracing::info!("Database connection pool created");
 
-    let oauth_repo = std::sync::Arc::new(repository::oauth::DbOAuthRepository::new(pool.clone()));
-    let deck_repo = std::sync::Arc::new(repository::deck::DbDeckRepository::new(pool.clone()));
-    let card_repo = std::sync::Arc::new(repository::card::DbCardRepository::new(pool.clone()));
-    let note_repo = std::sync::Arc::new(repository::note::DbNoteRepository::new(pool.clone()));
-    let prefs_repo = std::sync::Arc::new(repository::preferences::DbPreferencesRepository::new(pool.clone()));
-    let review_repo = std::sync::Arc::new(repository::review::DbReviewRepository::new(pool.clone()));
-    let social_repo = std::sync::Arc::new(repository::social::DbSocialRepository::new(pool.clone()));
-
-    let search_repo = std::sync::Arc::new(repository::search::DbSearchRepository::new(pool.clone()));
     let pds_url = std::env::var("PDS_URL").unwrap_or_else(|_| "https://bsky.social".to_string());
     let config = state::AppConfig { pds_url };
-
-    let repos = state::Repositories {
-        oauth: oauth_repo,
-        deck: deck_repo,
-        card: card_repo,
-        note: note_repo,
-        prefs: prefs_repo,
-        review: review_repo,
-        social: social_repo,
-        search: search_repo,
-    };
-
+    let repos = state::Repositories::from(&pool);
     let state = state::AppState::new(pool, repos, config);
     let oauth_state = std::sync::Arc::new(api::oauth::OAuthState::new());
 
@@ -118,6 +99,7 @@ pub async fn start() -> malfestio_core::Result<()> {
 
     let app = Router::new()
         .route("/health", get(health_check))
+        .route("/health/ready", get(readiness_check))
         .route(
             "/.well-known/oauth-client-metadata",
             get(oauth::client_metadata::client_metadata_handler),
@@ -146,8 +128,58 @@ pub async fn start() -> malfestio_core::Result<()> {
     Ok(())
 }
 
+/// Basic liveness check - returns 200 if the server is running.
+///
+/// For simple uptime monitoring and should always respond quickly without checking external dependencies.
 async fn health_check() -> impl IntoResponse {
-    Json(json!({ "status": "ok", "version": env!("CARGO_PKG_VERSION") }))
+    Json(json!({
+        "status": "ok",
+        "service": "malfestio-server",
+        "version": env!("CARGO_PKG_VERSION")
+    }))
+}
+
+/// Readiness check - verifies the server can handle requests.
+///
+/// Checks database connectivity and other critical dependencies (load balancer health checks and deployment readiness probes).
+async fn readiness_check(State(state): State<state::SharedState>) -> (StatusCode, Json<Value>) {
+    match state.pool.get().await {
+        Ok(client) => match client.query("SELECT 1", &[]).await {
+            Ok(_) => (
+                StatusCode::OK,
+                Json(json!({
+                    "status": "ready",
+                    "service": "malfestio-server",
+                    "version": env!("CARGO_PKG_VERSION"),
+                    "checks": { "database": "ok" }
+                })),
+            ),
+            Err(e) => {
+                tracing::error!("Readiness check failed: database query error: {}", e);
+                (
+                    StatusCode::SERVICE_UNAVAILABLE,
+                    Json(json!({
+                        "status": "not_ready",
+                        "service": "malfestio-server",
+                        "version": env!("CARGO_PKG_VERSION"),
+                        "checks": { "database": "query_failed" }
+                    })),
+                )
+            }
+        },
+        Err(e) => {
+            tracing::error!("Readiness check failed: unable to get database connection: {}", e);
+            (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(json!({
+                    "status": "not_ready",
+                    "service": "malfestio-server",
+                    "version": env!("CARGO_PKG_VERSION"),
+                    "checks": { "database": "connection_failed" }
+                })),
+            )
+        }
+    }
 }
 
 pub struct AppError(malfestio_core::Error);
@@ -160,10 +192,33 @@ impl IntoResponse for AppError {
             _ => (StatusCode::INTERNAL_SERVER_ERROR, "Internal Server Error".to_string()),
         };
 
-        let body = Json(json!({
-            "error": error_message,
-        }));
+        (status, Json(json!({ "error": error_message }))).into_response()
+    }
+}
 
-        (status, body).into_response()
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_health_check_response_format() {
+        let runtime = tokio::runtime::Runtime::new().unwrap();
+        runtime.block_on(async {
+            let response = health_check().await.into_response();
+            assert_eq!(response.status(), StatusCode::OK);
+        });
+    }
+
+    #[test]
+    fn test_readiness_check_with_unavailable_db() {
+        let runtime = tokio::runtime::Runtime::new().unwrap();
+        runtime.block_on(async {
+            let pool = db::create_mock_pool();
+            let repos = state::Repositories::default();
+            let config = state::AppConfig { pds_url: "https://test.example.com".to_string() };
+            let app_state = state::AppState::new(pool, repos, config);
+            let (status, _json) = readiness_check(State(app_state)).await;
+            assert_eq!(status, StatusCode::SERVICE_UNAVAILABLE);
+        });
     }
 }

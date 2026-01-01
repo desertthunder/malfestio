@@ -1,5 +1,6 @@
 use crate::db::DbPool;
 use crate::middleware::auth::UserContext;
+use crate::repository;
 use crate::repository::card::CardRepository;
 use crate::repository::deck::DeckRepository;
 use crate::repository::note::NoteRepository;
@@ -9,6 +10,7 @@ use crate::repository::review::ReviewRepository;
 use crate::repository::search::SearchRepository;
 use crate::repository::social::SocialRepository;
 
+use deadpool_postgres::Pool;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Instant;
@@ -35,6 +37,46 @@ pub struct Repositories {
     pub review: Arc<dyn ReviewRepository>,
     pub social: Arc<dyn SocialRepository>,
     pub search: Arc<dyn SearchRepository>,
+}
+
+#[cfg(test)]
+impl Default for Repositories {
+    fn default() -> Self {
+        Self {
+            oauth: Arc::new(repository::oauth::mock::MockOAuthRepository::new()),
+            deck: Arc::new(repository::deck::mock::MockDeckRepository::new()),
+            card: Arc::new(repository::card::mock::MockCardRepository::new()),
+            note: Arc::new(repository::note::mock::MockNoteRepository::new()),
+            prefs: Arc::new(repository::preferences::mock::MockPreferencesRepository::new()),
+            review: Arc::new(repository::review::mock::MockReviewRepository::new()),
+            social: Arc::new(repository::social::mock::MockSocialRepository::new()),
+            search: Arc::new(repository::search::mock::MockSearchRepository::new()),
+        }
+    }
+}
+
+impl From<&Pool> for Repositories {
+    fn from(pool: &Pool) -> Self {
+        let oauth_repo = std::sync::Arc::new(repository::oauth::DbOAuthRepository::new(pool.clone()));
+        let deck_repo = std::sync::Arc::new(repository::deck::DbDeckRepository::new(pool.clone()));
+        let card_repo = std::sync::Arc::new(repository::card::DbCardRepository::new(pool.clone()));
+        let note_repo = std::sync::Arc::new(repository::note::DbNoteRepository::new(pool.clone()));
+        let prefs_repo = std::sync::Arc::new(repository::preferences::DbPreferencesRepository::new(pool.clone()));
+        let review_repo = std::sync::Arc::new(repository::review::DbReviewRepository::new(pool.clone()));
+        let social_repo = std::sync::Arc::new(repository::social::DbSocialRepository::new(pool.clone()));
+        let search_repo = std::sync::Arc::new(repository::search::DbSearchRepository::new(pool.clone()));
+
+        Self {
+            oauth: oauth_repo,
+            deck: deck_repo,
+            card: card_repo,
+            note: note_repo,
+            prefs: prefs_repo,
+            review: review_repo,
+            social: social_repo,
+            search: search_repo,
+        }
+    }
 }
 
 pub struct AppState {

@@ -42,38 +42,35 @@
 
 - [x] OAuth login directly to user's PDS
 - [x] Handle resolution via DNS TXT or `/.well-known/atproto-did`
-    - <https://malfestio.stormlightlabs.org>
 - [x] DPoP token binding for secure API calls
+
+**Local Development:**
+
+- [x] Document local testing with real Bluesky accounts
+- [x] Add justfile commands for common dev tasks
+- [x] Environment variable configuration guide
+- [x] Update health check endpoint for service monitoring
+- [x] Add logging for OAuth flow steps
 
 **Sync & Conflict Resolution:**
 
 - [ ] Bi-directional sync: local drafts → PDS records, PDS records → local cache
 - [ ] Conflict resolution strategy for concurrent edits (last-write-wins or merge UI)
 - [ ] Offline queue for pending publishes
+- [ ] Sync status UI indicators
 
 **Deep Linking:**
 
 - [ ] AT-URI deep linking from external clients
 - [ ] Handle `at://` URL scheme in app
+- [ ] Link preview generation for shared content
 
 #### Acceptance
 
-- User can log in with their existing Bluesky/PDS identity.
-- Local drafts sync correctly after reconnecting.
-
-#### Implementation Details
-
-**Considerations:**
-
-- Scalability: substantial compute; caching, DB optimization, distributed processing
-- Lexicon Validation: validate schemas, ignore invalid records gracefully
-- Account State: track latest processed revision per repo; handle deletions
-- Bluesky's AppView uses PostgreSQL or ScyllaDB + image proxy + AppView core
-
-**Identity:**
-
-- Use `did:web` for simplicity, `did:plc` for long-term stability
-- ATProto OAuth is the forward path
+- User can log in with existing Bluesky/PDS identity
+- OAuth flow works with production bsky.social accounts
+- Developers can test locally using real accounts (see [Local Development Guide](./local-dev.md))
+- Local drafts sync correctly after reconnecting
 
 ### Milestone M - Reliability, Observability, Launch (v0.1.0)
 

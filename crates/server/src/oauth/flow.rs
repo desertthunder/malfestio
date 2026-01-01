@@ -73,31 +73,48 @@ impl OAuthFlow {
     pub async fn start_authorization(
         &self, handle_or_did: &str, state: &str, sessions: &SessionStore,
     ) -> Result<String, OAuthFlowError> {
+        tracing::info!("Starting OAuth authorization for: {}", handle_or_did);
+
         let (did, pds_url) = if handle_or_did.starts_with("did:") {
+            tracing::debug!("Input is a DID, resolving directly: {}", handle_or_did);
             let resolved = self.resolver.resolve_did(handle_or_did).await?;
+            tracing::info!("DID resolved to PDS: {}", resolved.pds_url);
             (resolved.did, resolved.pds_url)
         } else {
+            tracing::debug!("Input is a handle, resolving to DID: {}", handle_or_did);
             let did = self.resolver.resolve_handle(handle_or_did).await?;
+            tracing::info!("Handle resolved to DID: {}", did);
+
             let resolved = self.resolver.resolve_did(&did).await?;
+            tracing::info!("DID resolved to PDS: {}", resolved.pds_url);
             (resolved.did, resolved.pds_url)
         };
 
+        tracing::debug!("Fetching authorization server metadata from PDS: {}", pds_url);
         let auth_server = self.get_auth_server_metadata(&pds_url).await?;
+        tracing::info!(
+            "Authorization server metadata retrieved - issuer: {}, authorization_endpoint: {}",
+            auth_server.issuer,
+            auth_server.authorization_endpoint
+        );
 
+        tracing::debug!("Generating PKCE code verifier and challenge");
         let code_verifier = generate_code_verifier();
         let code_challenge = derive_code_challenge(&code_verifier);
 
+        tracing::debug!("Generating DPoP keypair for session");
         let dpop_keypair = DpopKeypair::generate();
 
         let session = OAuthSession {
             code_verifier,
             dpop_keypair,
             did: Some(did.clone()),
-            pds_url: Some(pds_url),
+            pds_url: Some(pds_url.clone()),
             created_at: std::time::Instant::now(),
         };
 
         sessions.write().unwrap().insert(state.to_string(), session);
+        tracing::debug!("OAuth session stored with state: {}", state);
 
         let auth_url = format!(
             "{}?response_type=code&client_id={}&redirect_uri={}&scope={}&state={}&code_challenge={}&code_challenge_method=S256&login_hint={}",
@@ -110,6 +127,10 @@ impl OAuthFlow {
             urlencoding::encode(&did)
         );
 
+        tracing::info!(
+            "Authorization URL generated, redirecting user to: {}",
+            auth_server.authorization_endpoint
+        );
         Ok(auth_url)
     }
 
@@ -117,21 +138,32 @@ impl OAuthFlow {
     pub async fn exchange_code(
         &self, code: &str, state: &str, sessions: &SessionStore,
     ) -> Result<OAuthTokens, OAuthFlowError> {
-        let session = sessions
-            .read()
-            .unwrap()
-            .get(state)
-            .cloned()
-            .ok_or(OAuthFlowError::SessionNotFound)?;
+        tracing::info!("Exchanging authorization code for tokens");
 
-        let pds_url = session.pds_url.as_ref().ok_or(OAuthFlowError::SessionNotFound)?;
+        let session = sessions.read().unwrap().get(state).cloned().ok_or_else(|| {
+            tracing::error!("OAuth session not found for state: {}", state);
+            OAuthFlowError::SessionNotFound
+        })?;
 
+        tracing::debug!("Session retrieved, DID: {:?}", session.did);
+
+        let pds_url = session.pds_url.as_ref().ok_or_else(|| {
+            tracing::error!("PDS URL missing from session");
+            OAuthFlowError::SessionNotFound
+        })?;
+
+        tracing::debug!("Fetching authorization server metadata for token exchange");
         let auth_server = self.get_auth_server_metadata(pds_url).await?;
 
+        tracing::debug!(
+            "Generating DPoP proof for token endpoint: {}",
+            auth_server.token_endpoint
+        );
         let dpop_proof = session
             .dpop_keypair
             .generate_proof("POST", &auth_server.token_endpoint, None);
 
+        tracing::info!("Sending token exchange request to: {}", auth_server.token_endpoint);
         let response = self
             .client
             .post(&auth_server.token_endpoint)
@@ -145,20 +177,28 @@ impl OAuthFlow {
             ])
             .send()
             .await
-            .map_err(|e| OAuthFlowError::NetworkError(e.to_string()))?;
+            .map_err(|e| {
+                tracing::error!("Network error during token exchange: {}", e);
+                OAuthFlowError::NetworkError(e.to_string())
+            })?;
 
-        if !response.status().is_success() {
+        let status = response.status();
+        if !status.is_success() {
             let error_body = response.text().await.unwrap_or_default();
+            tracing::error!("Token exchange failed with status {}: {}", status, error_body);
             return Err(OAuthFlowError::TokenExchangeFailed(error_body));
         }
 
-        let tokens: OAuthTokens = response
-            .json()
-            .await
-            .map_err(|e| OAuthFlowError::NetworkError(e.to_string()))?;
+        tracing::debug!("Token exchange successful, parsing response");
+        let tokens: OAuthTokens = response.json().await.map_err(|e| {
+            tracing::error!("Failed to parse token response: {}", e);
+            OAuthFlowError::NetworkError(e.to_string())
+        })?;
 
+        tracing::info!("Tokens received successfully, cleaning up session");
         sessions.write().unwrap().remove(state);
 
+        tracing::info!("OAuth token exchange completed successfully");
         Ok(tokens)
     }
 
@@ -166,10 +206,18 @@ impl OAuthFlow {
     pub async fn refresh_token(
         &self, refresh_token: &str, pds_url: &str, dpop_keypair: &DpopKeypair,
     ) -> Result<OAuthTokens, OAuthFlowError> {
+        tracing::info!("Refreshing access token for PDS: {}", pds_url);
+
+        tracing::debug!("Fetching authorization server metadata for token refresh");
         let auth_server = self.get_auth_server_metadata(pds_url).await?;
 
+        tracing::debug!(
+            "Generating DPoP proof for token endpoint: {}",
+            auth_server.token_endpoint
+        );
         let dpop_proof = dpop_keypair.generate_proof("POST", &auth_server.token_endpoint, None);
 
+        tracing::info!("Sending token refresh request to: {}", auth_server.token_endpoint);
         let response = self
             .client
             .post(&auth_server.token_endpoint)
@@ -181,23 +229,33 @@ impl OAuthFlow {
             ])
             .send()
             .await
-            .map_err(|e| OAuthFlowError::NetworkError(e.to_string()))?;
+            .map_err(|e| {
+                tracing::error!("Network error during token refresh: {}", e);
+                OAuthFlowError::NetworkError(e.to_string())
+            })?;
 
-        if !response.status().is_success() {
+        let status = response.status();
+        if !status.is_success() {
             let error_body = response.text().await.unwrap_or_default();
+            tracing::error!("Token refresh failed with status {}: {}", status, error_body);
             return Err(OAuthFlowError::TokenRefreshFailed(error_body));
         }
 
-        response
-            .json()
-            .await
-            .map_err(|e| OAuthFlowError::NetworkError(e.to_string()))
+        tracing::debug!("Token refresh successful, parsing response");
+        let result = response.json().await.map_err(|e| {
+            tracing::error!("Failed to parse token refresh response: {}", e);
+            OAuthFlowError::NetworkError(e.to_string())
+        })?;
+
+        tracing::info!("Token refresh completed successfully");
+        Ok(result)
     }
 
     /// Get authorization server metadata from PDS.
     async fn get_auth_server_metadata(&self, pds_url: &str) -> Result<AuthServerMetadata, OAuthFlowError> {
         // First get the protected resource metadata
         let resource_url = format!("{}/.well-known/oauth-protected-resource", pds_url);
+        tracing::debug!("Fetching protected resource metadata from: {}", resource_url);
 
         let resource_response = self
             .client
@@ -205,24 +263,37 @@ impl OAuthFlow {
             .timeout(std::time::Duration::from_secs(10))
             .send()
             .await
-            .map_err(|e| OAuthFlowError::NetworkError(e.to_string()))?;
+            .map_err(|e| {
+                tracing::error!("Failed to fetch protected resource metadata: {}", e);
+                OAuthFlowError::NetworkError(e.to_string())
+            })?;
 
         if !resource_response.status().is_success() {
+            tracing::error!(
+                "Protected resource metadata fetch failed with status: {}",
+                resource_response.status()
+            );
             return Err(OAuthFlowError::MetadataFetchFailed(pds_url.to_string()));
         }
 
-        let resource: serde_json::Value = resource_response
-            .json()
-            .await
-            .map_err(|e| OAuthFlowError::NetworkError(e.to_string()))?;
+        let resource: serde_json::Value = resource_response.json().await.map_err(|e| {
+            tracing::error!("Failed to parse protected resource metadata: {}", e);
+            OAuthFlowError::NetworkError(e.to_string())
+        })?;
 
         let auth_server_url = resource["authorization_servers"]
             .as_array()
             .and_then(|arr| arr.first())
             .and_then(|v| v.as_str())
-            .ok_or_else(|| OAuthFlowError::MetadataFetchFailed(pds_url.to_string()))?;
+            .ok_or_else(|| {
+                tracing::error!("No authorization servers found in protected resource metadata");
+                OAuthFlowError::MetadataFetchFailed(pds_url.to_string())
+            })?;
+
+        tracing::debug!("Authorization server URL: {}", auth_server_url);
 
         let auth_meta_url = format!("{}/.well-known/oauth-authorization-server", auth_server_url);
+        tracing::debug!("Fetching authorization server metadata from: {}", auth_meta_url);
 
         let auth_response = self
             .client
@@ -230,16 +301,24 @@ impl OAuthFlow {
             .timeout(std::time::Duration::from_secs(10))
             .send()
             .await
-            .map_err(|e| OAuthFlowError::NetworkError(e.to_string()))?;
+            .map_err(|e| {
+                tracing::error!("Failed to fetch authorization server metadata: {}", e);
+                OAuthFlowError::NetworkError(e.to_string())
+            })?;
 
         if !auth_response.status().is_success() {
+            tracing::error!(
+                "Authorization server metadata fetch failed with status: {}",
+                auth_response.status()
+            );
             return Err(OAuthFlowError::MetadataFetchFailed(auth_server_url.to_string()));
         }
 
-        auth_response
-            .json()
-            .await
-            .map_err(|e| OAuthFlowError::NetworkError(e.to_string()))
+        tracing::debug!("Authorization server metadata retrieved successfully");
+        auth_response.json().await.map_err(|e| {
+            tracing::error!("Failed to parse authorization server metadata: {}", e);
+            OAuthFlowError::NetworkError(e.to_string())
+        })
     }
 }
 

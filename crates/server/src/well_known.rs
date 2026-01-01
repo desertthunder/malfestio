@@ -7,8 +7,7 @@ use axum::response::IntoResponse;
 
 /// Handler for `/.well-known/atproto-did`.
 ///
-/// Returns the server's DID from the `ATPROTO_SERVER_DID` environment variable.
-/// Used for domain verification in AT Protocol.
+/// Returns the server's DID from the `ATPROTO_SERVER_DID` environment variable for domain verification in AT Protocol.
 pub async fn atproto_did_handler() -> impl IntoResponse {
     std::env::var("ATPROTO_SERVER_DID").unwrap_or_default()
 }
