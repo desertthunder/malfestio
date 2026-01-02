@@ -13,3 +13,5 @@ pub mod dpop;
 pub mod flow;
 pub mod pkce;
 pub mod resolver;
+
+pub use client_metadata::client_metadata_handler;

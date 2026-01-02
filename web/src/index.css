@@ -15,6 +15,8 @@
     --font-body: "Figtree Variable", sans-serif;
 
     /* Spacing Tokens - 16px grid */
+    /*
+    FIXME: These conflict with, and break existing usage of classes like max-w-4xl
     --spacing-xs: 4px;
     --spacing-sm: 8px;
     --spacing-md: 12px;
@@ -23,7 +25,7 @@
     --spacing-xl: 32px;
     --spacing-2xl: 48px;
     --spacing-3xl: 64px;
-    --spacing-4xl: 96px;
+    --spacing-4xl: 96px; */
 
     /* Elevation Layers */
     --layer-00: #161616;
@@ -180,4 +182,8 @@ h6 {
 .press-effect:active {
     transform: scale(0.97);
     transition: transform var(--duration-instant) var(--easing-sharp);
+}
+
+button {
+    @apply cursor-pointer disabled:cursor-not-allowed disabled:opacity-50;
 }

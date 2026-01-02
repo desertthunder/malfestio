@@ -11,7 +11,7 @@ vi.mock("$lib/api", () => ({ api: { startOAuth: vi.fn(), post: vi.fn() } }));
 
 vi.mock("$lib/store", () => ({ authStore: { login: vi.fn() } }));
 
-vi.mock("@solidjs/router", () => ({ useNavigate: () => mockNavigate }));
+vi.mock("@solidjs/router", () => ({ useNavigate: () => mockNavigate, useSearchParams: () => [{}, vi.fn()] }));
 
 vi.mock(
   "$components/layout/AppLayout",

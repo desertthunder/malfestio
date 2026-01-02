@@ -47,8 +47,8 @@ pub async fn start() -> malfestio_core::Result<()> {
     let pds_url = std::env::var("PDS_URL").unwrap_or_else(|_| "https://bsky.social".to_string());
     let config = state::AppConfig { pds_url };
     let repos = state::Repositories::from(&pool);
-    let state = state::AppState::new(pool, repos, config);
-    let oauth_state = std::sync::Arc::new(api::oauth::OAuthState::new());
+    let state = state::AppState::new(pool.clone(), repos, config);
+    let oauth_state = std::sync::Arc::new(api::oauth::OAuthState::with_pool(pool));
 
     let auth_routes = Router::new()
         .route("/me", get(api::auth::me))
@@ -94,6 +94,7 @@ pub async fn start() -> malfestio_core::Result<()> {
     let oauth_routes = Router::new()
         .route("/authorize", post(api::oauth::authorize))
         .route("/callback", get(api::oauth::callback))
+        .route("/client-metadata.json", get(oauth::client_metadata_handler))
         .route("/refresh", post(api::oauth::refresh))
         .with_state(oauth_state.clone());
 

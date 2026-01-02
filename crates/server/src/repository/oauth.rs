@@ -76,6 +76,9 @@ pub trait OAuthRepository: Send + Sync {
     /// Get stored tokens for a user.
     async fn get_tokens(&self, did: &str) -> Result<StoredToken, OAuthRepoError>;
 
+    /// Get stored tokens by access token.
+    async fn get_token_by_access_token(&self, access_token: &str) -> Result<StoredToken, OAuthRepoError>;
+
     /// Update tokens after refresh.
     async fn update_tokens(
         &self, did: &str, access_token: &str, refresh_token: Option<&str>, expires_at: Option<DateTime<Utc>>,
@@ -143,6 +146,36 @@ impl OAuthRepository for DbOAuthRepository {
             .await
             .map_err(|e| OAuthRepoError::DatabaseError(e.to_string()))?
             .ok_or_else(|| OAuthRepoError::NotFound(format!("No tokens for DID: {}", did)))?;
+
+        Ok(StoredToken {
+            did: row.get("did"),
+            pds_url: row.get("pds_url"),
+            access_token: row.get("access_token"),
+            refresh_token: row.get("refresh_token"),
+            token_type: row.get("token_type"),
+            expires_at: row.get("expires_at"),
+            dpop_private_key: row.get("dpop_private_key"),
+            created_at: row.get("created_at"),
+            updated_at: row.get("updated_at"),
+        })
+    }
+
+    async fn get_token_by_access_token(&self, access_token: &str) -> Result<StoredToken, OAuthRepoError> {
+        let client = self
+            .pool
+            .get()
+            .await
+            .map_err(|e| OAuthRepoError::DatabaseError(e.to_string()))?;
+
+        let row = client
+            .query_opt(
+                "SELECT did, pds_url, access_token, refresh_token, token_type, expires_at, dpop_private_key, created_at, updated_at
+                 FROM oauth_tokens WHERE access_token = $1",
+                &[&access_token],
+            )
+            .await
+            .map_err(|e| OAuthRepoError::DatabaseError(e.to_string()))?
+            .ok_or_else(|| OAuthRepoError::NotFound("Token not found".to_string()))?;
 
         Ok(StoredToken {
             did: row.get("did"),
@@ -277,6 +310,19 @@ pub mod mock {
                 .find(|t| t.did == did)
                 .cloned()
                 .ok_or_else(|| OAuthRepoError::NotFound(format!("No tokens for DID: {}", did)))
+        }
+
+        async fn get_token_by_access_token(&self, access_token: &str) -> Result<StoredToken, OAuthRepoError> {
+            if *self.should_fail.lock().unwrap() {
+                return Err(OAuthRepoError::DatabaseError("Mock failure".to_string()));
+            }
+
+            let tokens = self.tokens.lock().unwrap();
+            tokens
+                .iter()
+                .find(|t| t.access_token == access_token)
+                .cloned()
+                .ok_or_else(|| OAuthRepoError::NotFound("Token not found".to_string()))
         }
 
         async fn update_tokens(

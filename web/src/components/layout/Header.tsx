@@ -11,17 +11,19 @@ const Login: Component = () => (
 
 export const Header: Component = () => {
   return (
-    <header class="h-16 border-b border-gray-800 bg-gray-900 flex items-center justify-between px-6 sticky top-0 z-50">
+    <header class="h-16 border-b border-gray-800 bg-black flex items-center justify-between px-6 sticky top-0 z-50">
       <div class="flex items-center gap-6">
         <A href="/" class="text-xl font-bold text-white tracking-tight">Malfestio</A>
-        <nav class="hidden md:flex items-center gap-4 text-sm font-medium text-gray-400">
-          <A href="/home" activeClass="text-blue-500" class="hover:text-white transition-colors">Decks</A>
-          <A href="/study" activeClass="text-blue-500" class="hover:text-white transition-colors">Review</A>
-          <A href="/discovery" activeClass="text-blue-500" class="hover:text-white transition-colors">Discovery</A>
-          <A href="/library" activeClass="text-blue-500" class="hover:text-white transition-colors">Library</A>
-          <A href="/feed" activeClass="text-blue-500" class="hover:text-white transition-colors">Feed</A>
-          <A href="/settings" activeClass="text-blue-500" class="hover:text-white transition-colors">Settings</A>
-        </nav>
+        <Show when={authStore.isAuthenticated()}>
+          <nav class="hidden md:flex items-center gap-4 text-sm font-medium text-gray-400">
+            <A href="/home" activeClass="text-blue-500" class="hover:text-white transition-colors">Decks</A>
+            <A href="/study" activeClass="text-blue-500" class="hover:text-white transition-colors">Review</A>
+            <A href="/discovery" activeClass="text-blue-500" class="hover:text-white transition-colors">Discovery</A>
+            <A href="/library" activeClass="text-blue-500" class="hover:text-white transition-colors">Library</A>
+            <A href="/feed" activeClass="text-blue-500" class="hover:text-white transition-colors">Feed</A>
+            <A href="/settings" activeClass="text-blue-500" class="hover:text-white transition-colors">Settings</A>
+          </nav>
+        </Show>
       </div>
       <div class="flex items-center gap-4">
         <Show when={authStore.user()} fallback={<Login />}>

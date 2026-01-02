@@ -15,6 +15,7 @@ import Landing from "$pages/Landing";
 import LectureImport from "$pages/LectureImport";
 import Library from "$pages/Library";
 import Login from "$pages/Login";
+import LoginSuccess from "$pages/LoginSuccess";
 import NoteNew from "$pages/NoteNew";
 import Notes from "$pages/Notes";
 import NoteView from "$pages/NoteView";
@@ -58,6 +59,7 @@ const App: Component = () => {
   return (
     <Router>
       <Route path="/login" component={Login} />
+      <Route path="/login/success" component={LoginSuccess} />
       <Route path="/about" component={About} />
       <Route path="/help" component={Help} />
       <Route path="/" component={ProtectedLayout}>

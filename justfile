@@ -72,3 +72,6 @@ verify HANDLE:
 clean:
     cargo clean
     cd web && rm -rf dist node_modules/.vite
+
+push:
+    git push origin main && git push alpha main

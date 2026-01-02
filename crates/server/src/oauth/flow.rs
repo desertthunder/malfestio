@@ -58,13 +58,21 @@ impl OAuthFlow {
     /// Create a new OAuth flow manager.
     pub fn new() -> Self {
         let app_url = std::env::var("APP_URL").unwrap_or_else(|_| "http://localhost:3000".to_string());
+        let app_url = app_url.trim_end_matches('/');
 
         Self {
             resolver: IdentityResolver::new(),
             client: reqwest::Client::new(),
-            client_id: format!("{}/oauth/client-metadata.json", app_url),
-            redirect_uri: format!("{}/oauth/callback", app_url),
+            client_id: format!("{}/api/oauth/client-metadata.json", app_url),
+            redirect_uri: format!("{}/api/oauth/callback", app_url),
         }
+    }
+
+    /// Resolve a DID to an identity (including handle).
+    pub async fn resolve_did(
+        &self, did: &str,
+    ) -> Result<super::resolver::ResolvedIdentity, super::resolver::ResolveError> {
+        self.resolver.resolve_did(did).await
     }
 
     /// Start the OAuth flow for a user handle or DID.
@@ -164,7 +172,7 @@ impl OAuthFlow {
             .generate_proof("POST", &auth_server.token_endpoint, None);
 
         tracing::info!("Sending token exchange request to: {}", auth_server.token_endpoint);
-        let response = self
+        let mut response = self
             .client
             .post(&auth_server.token_endpoint)
             .header("DPoP", dpop_proof)
@@ -181,6 +189,38 @@ impl OAuthFlow {
                 tracing::error!("Network error during token exchange: {}", e);
                 OAuthFlowError::NetworkError(e.to_string())
             })?;
+
+        if (response.status().as_u16() == 400 || response.status().as_u16() == 401)
+            && let Some(nonce) = response
+                .headers()
+                .get("DPoP-Nonce")
+                .and_then(|h| h.to_str().ok().map(|s| s.to_string()))
+        {
+            tracing::info!("Received DPoP nonce, retrying token exchange");
+
+            let dpop_proof =
+                session
+                    .dpop_keypair
+                    .generate_proof_with_nonce("POST", &auth_server.token_endpoint, None, Some(&nonce));
+
+            response = self
+                .client
+                .post(&auth_server.token_endpoint)
+                .header("DPoP", dpop_proof)
+                .form(&[
+                    ("grant_type", "authorization_code"),
+                    ("code", code),
+                    ("redirect_uri", &self.redirect_uri),
+                    ("client_id", &self.client_id),
+                    ("code_verifier", &session.code_verifier),
+                ])
+                .send()
+                .await
+                .map_err(|e| {
+                    tracing::error!("Network error during retry token exchange: {}", e);
+                    OAuthFlowError::NetworkError(e.to_string())
+                })?;
+        }
 
         let status = response.status();
         if !status.is_success() {

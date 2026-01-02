@@ -1,9 +1,9 @@
 import { AppLayout } from "$components/layout/AppLayout";
 import { api } from "$lib/api";
 import { authStore } from "$lib/store";
-import { useNavigate } from "@solidjs/router";
+import { useNavigate, useSearchParams } from "@solidjs/router";
 import type { Component } from "solid-js";
-import { createSignal } from "solid-js";
+import { createEffect, createSignal } from "solid-js";
 
 const Login: Component = () => {
   const [identifier, setIdentifier] = createSignal("");
@@ -11,6 +11,14 @@ const Login: Component = () => {
   const [error, setError] = createSignal("");
   const [isLoading, setIsLoading] = createSignal(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  createEffect(() => {
+    if (searchParams.error) {
+      const desc = searchParams.description ? `: ${searchParams.description}` : "";
+      setError(searchParams.error + desc);
+    }
+  });
 
   const handleLogin = async (e: Event) => {
     e.preventDefault();
@@ -52,7 +60,7 @@ const Login: Component = () => {
 
   return (
     <AppLayout>
-      <div class="min-h-[calc(100vh-8rem)] flex items-center justify-center p-4">
+      <div class="py-12 flex justify-center p-4">
         <div class="w-full max-w-md bg-[#262626] border border-[#393939] p-8 shadow-lg section-entry">
           <h1 class="text-3xl font-light text-[#F4F4F4] mb-2 tracking-tight">Log in</h1>
           <p class="text-[#C6C6C6] text-sm mb-8 font-light">Continue to Malfestio</p>

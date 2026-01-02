@@ -59,6 +59,14 @@ impl OAuthRepository for MockOAuthRepository {
         Err(crate::repository::oauth::OAuthRepoError::NotFound(did.to_string()))
     }
 
+    async fn get_token_by_access_token(
+        &self, _access_token: &str,
+    ) -> Result<crate::repository::oauth::StoredToken, crate::repository::oauth::OAuthRepoError> {
+        Err(crate::repository::oauth::OAuthRepoError::NotFound(
+            "Mock impl".to_string(),
+        ))
+    }
+
     async fn update_tokens(
         &self, _did: &str, _access_token: &str, _refresh_token: Option<&str>,
         _expires_at: Option<chrono::DateTime<Utc>>,
@@ -90,7 +98,7 @@ pub struct AuthorizeResponse {
 /// Query parameters from OAuth callback.
 #[derive(Deserialize)]
 pub struct CallbackQuery {
-    pub code: String,
+    pub code: Option<String>,
     pub state: String,
     #[serde(default)]
     pub error: Option<String>,
@@ -150,6 +158,14 @@ pub async fn callback(State(oauth): State<Arc<OAuthState>>, Query(params): Query
         .into_response();
     }
 
+    let code = match params.code {
+        Some(c) => c,
+        None => {
+            tracing::error!("OAuth callback missing authorization code");
+            return Redirect::to("/login?error=missing_code").into_response();
+        }
+    };
+
     tracing::debug!("Retrieving session for state: {}", params.state);
     let session = {
         let sessions = oauth.sessions.read().unwrap();
@@ -167,11 +183,7 @@ pub async fn callback(State(oauth): State<Arc<OAuthState>>, Query(params): Query
         }
     };
 
-    match oauth
-        .flow
-        .exchange_code(&params.code, &params.state, &oauth.sessions)
-        .await
-    {
+    match oauth.flow.exchange_code(&code, &params.state, &oauth.sessions).await {
         Ok(tokens) => {
             let did = session.did.clone().unwrap_or_default();
             let pds_url = session.pds_url.unwrap_or_default();
@@ -180,6 +192,7 @@ pub async fn callback(State(oauth): State<Arc<OAuthState>>, Query(params): Query
                 .map(|secs| Utc::now() + Duration::seconds(secs as i64));
 
             tracing::info!("Storing tokens for DID: {}", did);
+
             if let Err(e) = oauth
                 .repo
                 .store_tokens(StoreTokensRequest {
@@ -199,7 +212,23 @@ pub async fn callback(State(oauth): State<Arc<OAuthState>>, Query(params): Query
             }
 
             tracing::info!("OAuth flow completed successfully for DID: {}", did);
-            Redirect::to(&format!("/login/success?did={}", urlencoding::encode(&did))).into_response()
+
+            let handle = match oauth.flow.resolve_did(&did).await {
+                Ok(identity) => identity.handle.unwrap_or(did.clone()),
+                Err(e) => {
+                    tracing::warn!("Failed to resolve handle for DID {}: {}", did, e);
+                    did.clone()
+                }
+            };
+
+            let fragment = format!(
+                "accessJwt={}&refreshJwt={}&did={}&handle={}",
+                urlencoding::encode(&tokens.access_token),
+                urlencoding::encode(tokens.refresh_token.as_deref().unwrap_or("")),
+                urlencoding::encode(&did),
+                urlencoding::encode(&handle)
+            );
+            Redirect::to(&format!("/login/success#{}", fragment)).into_response()
         }
         Err(e) => {
             tracing::error!("Token exchange failed: {}", e);
@@ -228,7 +257,6 @@ pub struct RefreshResponse {
 pub async fn refresh(State(oauth): State<Arc<OAuthState>>, Json(payload): Json<RefreshRequest>) -> impl IntoResponse {
     tracing::info!("Token refresh request for DID: {}", payload.did);
 
-    // Get stored tokens from database
     tracing::debug!("Retrieving stored tokens from database for DID: {}", payload.did);
     let stored = match oauth.repo.get_tokens(&payload.did).await {
         Ok(t) => {
@@ -241,7 +269,6 @@ pub async fn refresh(State(oauth): State<Arc<OAuthState>>, Json(payload): Json<R
         }
     };
 
-    // Reconstruct DPoP keypair
     tracing::debug!("Reconstructing DPoP keypair from stored data");
     let dpop_keypair = match stored.dpop_keypair() {
         Some(kp) => kp,
@@ -255,7 +282,6 @@ pub async fn refresh(State(oauth): State<Arc<OAuthState>>, Json(payload): Json<R
         }
     };
 
-    // Get refresh token
     let refresh_token = match &stored.refresh_token {
         Some(rt) => rt.clone(),
         None => {
@@ -268,7 +294,6 @@ pub async fn refresh(State(oauth): State<Arc<OAuthState>>, Json(payload): Json<R
         }
     };
 
-    // Refresh tokens via OAuth flow
     match oauth
         .flow
         .refresh_token(&refresh_token, &stored.pds_url, &dpop_keypair)
@@ -347,7 +372,7 @@ mod tests {
     fn test_callback_query_deserialization() {
         let query = "code=abc123&state=xyz789";
         let parsed: CallbackQuery = serde_qs::from_str(query).unwrap();
-        assert_eq!(parsed.code, "abc123");
+        assert_eq!(parsed.code, Some("abc123".to_string()));
         assert_eq!(parsed.state, "xyz789");
         assert!(parsed.error.is_none());
     }

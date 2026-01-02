@@ -124,32 +124,113 @@ pub async fn auth_middleware(State(state): State<SharedState>, mut req: Request,
     let client = reqwest::Client::new();
     let pds_url = &state.config.pds_url;
 
-    let resp = client
-        .get(format!("{}/xrpc/com.atproto.server.getSession", pds_url))
-        .header("Authorization", format!("Bearer {}", token))
-        .send()
-        .await;
+    let lookup_result = state.oauth_repo.get_token_by_access_token(&token).await;
 
-    match resp {
-        Ok(response) if response.status().is_success() => {
-            let body: serde_json::Value = response.json().await.unwrap_or_default();
-            let did = body["did"].as_str().unwrap_or("").to_string();
-            let handle = body["handle"].as_str().unwrap_or("").to_string();
-            let user_ctx = UserContext { did, handle };
+    if let Err(ref e) = lookup_result {
+        tracing::debug!("Token lookup failed: {}", e);
+    }
 
-            {
-                let mut cache = state.auth_cache.write().await;
-                cache.insert(token.to_string(), (user_ctx.clone(), Instant::now()));
-            }
+    let stored_token = lookup_result.ok();
 
-            req.extensions_mut().insert(user_ctx);
-            next.run(req).await
+    let target_pds_url = stored_token
+        .as_ref()
+        .map(|t| t.pds_url.as_str())
+        .unwrap_or(pds_url.as_str());
+
+    let endpoint_url = format!("{}/xrpc/com.atproto.server.getSession", target_pds_url);
+    let mut nonce: Option<String> = None;
+    let mut attempt = 0;
+
+    loop {
+        attempt += 1;
+        if attempt > 3 {
+            tracing::error!("Failed to verify token with PDS after multiple attempts");
+            return (
+                axum::http::StatusCode::UNAUTHORIZED,
+                axum::Json(json!({ "error": "Invalid session" })),
+            )
+                .into_response();
         }
-        _ => (
-            axum::http::StatusCode::UNAUTHORIZED,
-            axum::Json(json!({ "error": "Invalid session" })),
-        )
-            .into_response(),
+
+        let mut request_builder = client.get(&endpoint_url);
+
+        if let Some(ref stored) = stored_token {
+            if attempt == 1 {
+                tracing::debug!("Found stored DPoP token for validation");
+            }
+            if let Some(dpop_keypair) = stored.dpop_keypair() {
+                if attempt == 1 {
+                    tracing::debug!("Signing PDS request with DPoP Key");
+                }
+
+                let method = "GET";
+                let proof = if let Some(ref n) = nonce {
+                    dpop_keypair.generate_proof_with_nonce(method, &endpoint_url, Some(&token), Some(n))
+                } else {
+                    dpop_keypair.generate_proof(method, &endpoint_url, Some(&token))
+                };
+
+                request_builder = request_builder
+                    .header("Authorization", format!("DPoP {}", token))
+                    .header("DPoP", proof);
+            } else {
+                request_builder = request_builder.header("Authorization", format!("Bearer {}", token));
+            }
+        } else {
+            if attempt == 1 {
+                tracing::debug!("No stored DPoP token found, using standard Bearer auth");
+            }
+            request_builder = request_builder.header("Authorization", format!("Bearer {}", token));
+        }
+
+        let resp = request_builder.send().await;
+
+        match resp {
+            Ok(response) if response.status().is_success() => {
+                let body: serde_json::Value = response.json().await.unwrap_or_default();
+                let did = body["did"].as_str().unwrap_or("").to_string();
+                let handle = body["handle"].as_str().unwrap_or("").to_string();
+                let user_ctx = UserContext { did: did.clone(), handle };
+
+                tracing::debug!("PDS verification successful for DID: {}", did);
+
+                {
+                    let mut cache = state.auth_cache.write().await;
+                    cache.insert(token.to_string(), (user_ctx.clone(), Instant::now()));
+                }
+
+                req.extensions_mut().insert(user_ctx);
+                return next.run(req).await;
+            }
+            Ok(response) => {
+                let status = response.status();
+
+                if status == axum::http::StatusCode::UNAUTHORIZED
+                    && let Some(new_nonce) = response.headers().get("DPoP-Nonce")
+                    && let Ok(nonce_str) = new_nonce.to_str()
+                {
+                    tracing::info!("Received DPoP nonce challenge from PDS, retrying verification...");
+                    nonce = Some(nonce_str.to_string());
+                    continue;
+                }
+
+                let body = response.text().await.unwrap_or_default();
+                tracing::error!("PDS Verification failed. Status: {}, Body: {}", status, body);
+                return (
+                    axum::http::StatusCode::UNAUTHORIZED,
+                    axum::Json(json!({ "error": "Invalid session", "pds_error": body })),
+                )
+                    .into_response();
+            }
+            Err(e) => {
+                tracing::error!("PDS Request failed: {}", e);
+                return (
+                    axum::http::StatusCode::UNAUTHORIZED,
+                    axum::Json(json!({ "error": "Invalid session" })),
+                )
+                    .into_response();
+            }
+        }
     }
 }
 

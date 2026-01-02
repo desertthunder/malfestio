@@ -30,17 +30,18 @@ impl ClientMetadata {
     /// Create client metadata from environment variables.
     pub fn from_env() -> Self {
         let app_url = std::env::var("APP_URL").unwrap_or_else(|_| "http://localhost:3000".to_string());
+        let app_url = app_url.trim_end_matches('/');
         let app_name = std::env::var("APP_NAME").unwrap_or_else(|_| "Malfestio".to_string());
 
         Self {
-            client_id: format!("{}/oauth/client-metadata.json", app_url),
+            client_id: format!("{}/api/oauth/client-metadata.json", app_url),
             application_type: "web".to_string(),
             grant_types: vec!["authorization_code".to_string(), "refresh_token".to_string()],
             scope: "atproto transition:generic".to_string(),
             response_types: vec!["code".to_string()],
-            redirect_uris: vec![format!("{}/oauth/callback", app_url)],
+            redirect_uris: vec![format!("{}/api/oauth/callback", app_url)],
             client_name: app_name,
-            client_uri: app_url,
+            client_uri: app_url.to_string(),
             token_endpoint_auth_method: "none".to_string(),
             dpop_bound_access_tokens: true,
         }
