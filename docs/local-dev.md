@@ -11,15 +11,17 @@
 
 ### Bluesky Account Setup
 
-1. Create a Bluesky account at <https://bsky.app>
-2. Generate an App Password (Settings → App Passwords)
-3. Configure `.env` with your credentials:
+1. Create a Bluesky account at <https://bsky.app> (you'll use this for OAuth testing)
+
+### Environment Configuration
+
+Copy the template and configure for your environment:
 
 ```bash
-APP_USERNAME=your-handle.bsky.social
-APP_PASSWORD=your-app-password-here
-DB_URL="postgres://postgres:postgres@localhost:5432/malfestio_dev?sslmode=disable"
+cp .env.example .env
 ```
+
+For local development, the defaults in `.env.example` work out of the box. You only need to ensure your PostgreSQL connection string is correct.
 
 ## Testing OAuth Flow
 
@@ -82,29 +84,90 @@ After successful OAuth login:
 3. Check your Bluesky profile at <https://bsky.app> to see the published record
 4. Verify record appears in your AT Protocol repository
 
-## Environment Variables
+## Verifying Your Setup
+
+### Check OAuth Tokens
+
+After successful login, verify tokens were stored:
+
+```sql
+SELECT
+  did,
+  pds_url,
+  LEFT(access_token, 20) || '...' as token_preview,
+  created_at,
+  updated_at
+FROM oauth_tokens
+WHERE did = 'your-did-here';
+```
+
+Replace `'your-did-here'` with the DID from your login success page.
+
+### Check Indexed Records
+
+After publishing content, verify firehose indexing:
+
+```sql
+-- Check indexed decks
+SELECT at_uri, title, indexed_at
+FROM indexed_decks
+WHERE did = 'your-did-here'
+ORDER BY indexed_at DESC
+LIMIT 10;
+
+-- Check indexed cards
+SELECT at_uri, front_content, indexed_at
+FROM indexed_cards
+WHERE did = 'your-did-here'
+ORDER BY indexed_at DESC
+LIMIT 10;
+```
+
+Note: Indexing may take 5-10 seconds after publishing.
+
+### Diagnostic Command
+
+Run this command to check handle resolution and database state:
+
+```bash
+just verify your-handle.bsky.social
+```
+
+This will verify:
+
+- Database connection
+- Handle → DID resolution
+- DID → PDS URL resolution
+- OAuth token status
+- Indexed content count
+
+## Environment Variables Reference
 
 ### Required
 
 ```bash
-APP_USERNAME=your-handle.bsky.social
-APP_PASSWORD=your-app-password
 DB_URL="postgres://postgres:postgres@localhost:5432/malfestio_dev?sslmode=disable"
 ```
 
 ### Optional
 
 ```bash
-# Server configuration
+# OAuth Client Configuration
+APP_URL=http://localhost:3000        # OAuth callback URL
+APP_NAME=Malfestio                   # App display name
+
+# Server Configuration
 SERVER_HOST=127.0.0.1
 SERVER_PORT=8080
 
-# Frontend proxy
+# Frontend Configuration
 VITE_API_URL=http://localhost:8080
 
 # Logging
 RUST_LOG=info,malfestio_server=debug
 ```
+
+See `.env.example` for a complete template.
 
 ## Additional Resources
 

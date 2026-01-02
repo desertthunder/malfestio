@@ -64,16 +64,9 @@ test-all: test web-test
 migrate:
     cargo run --bin malfestio-cli migrate
 
-# Setup and test OAuth flow with real Bluesky account
-test-oauth:
-    @echo "Testing OAuth with Bluesky account..."
-    @echo "1. Ensure PostgreSQL is running"
-    @echo "2. Running migrations..."
-    @just migrate
-    @echo "3. Start backend with: just start"
-    @echo "4. Start frontend with: just web-dev"
-    @echo "5. Navigate to http://localhost:3000/login"
-    @echo "6. Enter your Bluesky handle from .env"
+# Test handle and DID resolution for a Bluesky account
+verify HANDLE:
+    cargo run --bin malfestio-cli check {{HANDLE}}
 
 # Clean build artifacts
 clean:

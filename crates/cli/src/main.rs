@@ -23,6 +23,11 @@ enum Commands {
         #[arg(long)]
         db_url: Option<String>,
     },
+    /// Check OAuth flow and database state for a Bluesky handle
+    Check {
+        /// Bluesky handle to test (e.g., alice.bsky.social)
+        handle: String,
+    },
 }
 
 #[tokio::main]
@@ -38,6 +43,9 @@ async fn main() -> malfestio_core::Result<()> {
         }
         Commands::Migrate { db_url } => {
             run_migrations(db_url.as_deref()).await?;
+        }
+        Commands::Check { handle } => {
+            check_flow(handle).await?;
         }
     }
 
@@ -143,4 +151,141 @@ async fn run_migrations(db_url: Option<&str>) -> malfestio_core::Result<()> {
     println!("All migrations complete!");
 
     Ok(())
+}
+
+async fn check_flow(handle: &str) -> malfestio_core::Result<()> {
+    println!("Checking OAuth flow for {}...\n", handle);
+
+    // Get database URL
+    let db_url = std::env::var("DB_URL")
+        .or_else(|_| std::env::var("DATABASE_URL"))
+        .map_err(|_| malfestio_core::Error::InvalidArgument("DB_URL or DATABASE_URL not set".to_string()))?;
+
+    // Test database connection
+    print!("• Testing database connection... ");
+    let (client, connection) = tokio_postgres::connect(&db_url, NoTls)
+        .await
+        .map_err(|e| malfestio_core::Error::Database(format!("Failed to connect: {}", e)))?;
+
+    tokio::spawn(async move {
+        if let Err(e) = connection.await {
+            eprintln!("Database connection error: {}", e);
+        }
+    });
+
+    println!("✓ Connected");
+
+    let resolver = malfestio_server::oauth::resolver::IdentityResolver::new();
+
+    print!("• Resolving handle to DID... ");
+    let did = match resolver.resolve_handle(handle).await {
+        Ok(did) => {
+            println!("✓ {}", did);
+            did
+        }
+        Err(e) => {
+            println!("✗ Failed: {}", e);
+            return Err(malfestio_core::Error::Other(format!("Handle resolution failed: {}", e)));
+        }
+    };
+
+    print!("• Resolving DID to PDS... ");
+    let _resolved = match resolver.resolve_did(&did).await {
+        Ok(resolved) => {
+            println!("✓ {}", resolved.pds_url);
+            resolved
+        }
+        Err(e) => {
+            println!("✗ Failed: {}", e);
+            return Err(malfestio_core::Error::Other(format!("DID resolution failed: {}", e)));
+        }
+    };
+
+    print!("• Checking OAuth tokens... ");
+    let token_row = client
+        .query_opt(
+            "SELECT did, pds_url, created_at, updated_at FROM oauth_tokens WHERE did = $1",
+            &[&did],
+        )
+        .await
+        .map_err(|e| malfestio_core::Error::Database(format!("Token query failed: {}", e)))?;
+
+    if let Some(row) = token_row {
+        let updated_at: chrono::DateTime<chrono::Utc> = row.get(3);
+        println!("✓ Found (last updated: {})", updated_at.format("%Y-%m-%d %H:%M:%S UTC"));
+    } else {
+        println!("✗ Not found");
+        println!("\nℹ No OAuth tokens stored yet. Complete OAuth login first:");
+        println!("  1. Start server: just start");
+        println!("  2. Start frontend: just web-dev");
+        println!("  3. Navigate to http://localhost:3000/login");
+        println!("  4. Enter handle: {}", handle);
+        return Ok(());
+    }
+
+    print!("• Checking indexed decks... ");
+    let deck_rows = client
+        .query(
+            "SELECT at_uri, title, indexed_at FROM indexed_decks WHERE did = $1 ORDER BY indexed_at DESC LIMIT 5",
+            &[&did],
+        )
+        .await
+        .map_err(|e| malfestio_core::Error::Database(format!("Deck query failed: {}", e)))?;
+
+    if deck_rows.is_empty() {
+        println!("0 decks");
+    } else {
+        println!("{} deck(s)", deck_rows.len());
+        for row in &deck_rows {
+            let at_uri: String = row.get(0);
+            let title: Option<String> = row.get(1);
+            let indexed_at: chrono::DateTime<chrono::Utc> = row.get(2);
+            let time_ago = format_time_ago(indexed_at);
+            println!("  - {} ({})", title.unwrap_or_else(|| "Untitled".to_string()), time_ago);
+            println!("    {}", at_uri);
+        }
+    }
+
+    print!("• Checking indexed cards... ");
+    let card_count: i64 = client
+        .query_one("SELECT COUNT(*) FROM indexed_cards WHERE did = $1", &[&did])
+        .await
+        .map_err(|e| malfestio_core::Error::Database(format!("Card count query failed: {}", e)))?
+        .get(0);
+
+    println!("{} card(s)", card_count);
+
+    print!("• Checking indexed notes... ");
+    let note_count: i64 = client
+        .query_one("SELECT COUNT(*) FROM indexed_notes WHERE did = $1", &[&did])
+        .await
+        .map_err(|e| malfestio_core::Error::Database(format!("Note count query failed: {}", e)))?
+        .get(0);
+
+    println!("{} note(s)", note_count);
+
+    println!("\n✓ Status: Ready for testing");
+    println!("\nNext steps:");
+    println!("  - Publish content via UI to see it indexed");
+    println!("  - Check Bluesky profile: https://bsky.app/profile/{}", handle);
+    println!("  - Inspect records: https://pdsls.dev/at/{}", did);
+
+    Ok(())
+}
+
+fn format_time_ago(timestamp: chrono::DateTime<chrono::Utc>) -> String {
+    let now = chrono::Utc::now();
+    let duration = now.signed_duration_since(timestamp);
+
+    if duration.num_seconds() < 60 {
+        format!("{} seconds ago", duration.num_seconds())
+    } else if duration.num_minutes() < 60 {
+        format!("{} minutes ago", duration.num_minutes())
+    } else if duration.num_hours() < 24 {
+        format!("{} hours ago", duration.num_hours())
+    } else if duration.num_days() < 30 {
+        format!("{} days ago", duration.num_days())
+    } else {
+        format!("{} months ago", duration.num_days() / 30)
+    }
 }
