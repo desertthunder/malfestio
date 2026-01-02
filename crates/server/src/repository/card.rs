@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use malfestio_core::model::{Card, CardType};
+use malfestio_core::model::{Card, CardType, Visibility};
 
 #[derive(Debug)]
 pub enum CardRepoError {
@@ -95,6 +95,8 @@ impl CardRepository for DbCardRepository {
             media_url: params.media_url,
             card_type: params.card_type,
             hints: params.hints,
+            visibility: Some(Visibility::Public),
+            language: None,
         })
     }
 
@@ -148,6 +150,8 @@ impl CardRepository for DbCardRepository {
                 media_url: row.get("media_url"),
                 card_type,
                 hints: row.get("hints"),
+                visibility: Some(Visibility::Public),
+                language: None,
             });
         }
 
@@ -253,6 +257,8 @@ pub mod mock {
                 media_url: params.media_url,
                 card_type: params.card_type,
                 hints: params.hints,
+                visibility: Some(Visibility::Public),
+                language: None,
             };
 
             self.cards.lock().unwrap().push(card.clone());

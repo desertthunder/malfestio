@@ -15,27 +15,18 @@
             "format": "at-uri",
             "description": "Reference to the deck this card belongs to."
           },
-          "front": {
-            "type": "string",
-            "format": "markdown",
-            "maxLength": 10000,
-            "description": "Content on the front of the card."
-          },
-          "back": {
-            "type": "string",
-            "format": "markdown",
-            "maxLength": 10000,
-            "description": "Content on the back of the card."
-          },
+          "front": { "type": "string", "maxLength": 10000, "description": "Content on the front of the card." },
+          "back": { "type": "string", "maxLength": 10000, "description": "Content on the back of the card." },
           "cardType": {
             "type": "string",
+            "maxLength": 100,
             "knownValues": ["basic", "cloze"],
             "default": "basic",
             "description": "Type of the card (e.g., basic or cloze deletion)."
           },
           "hints": {
             "type": "array",
-            "items": { "type": "string" },
+            "items": { "type": "string", "maxLength": 1000 },
             "description": "Optional hints to display before revealing the answer."
           },
           "media": {
@@ -45,13 +36,26 @@
               "required": ["uri", "kind"],
               "properties": {
                 "uri": { "type": "string", "format": "uri" },
-                "kind": { "type": "string", "knownValues": ["image", "audio"] },
-                "alt": { "type": "string" }
+                "kind": { "type": "string", "maxLength": 100, "knownValues": ["image", "audio"] },
+                "alt": { "type": "string", "maxLength": 1000 }
               }
             },
             "description": "Multimedia attachments for the card."
           },
-          "createdAt": { "type": "string", "format": "datetime" }
+          "visibility": {
+            "type": "string",
+            "maxLength": 100,
+            "knownValues": ["private", "unlisted", "public"],
+            "default": "public",
+            "description": "Visibility setting for the card."
+          },
+          "language": {
+            "type": "string",
+            "maxLength": 20,
+            "description": "Language code for the card content (e.g., 'en', 'es', 'fr')."
+          },
+          "createdAt": { "type": "string", "format": "datetime" },
+          "updatedAt": { "type": "string", "format": "datetime", "description": "Timestamp of last update." }
         }
       }
     }

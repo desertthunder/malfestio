@@ -206,6 +206,7 @@ mod tests {
                 visibility: Visibility::Public,
                 published_at: None,
                 links: vec![],
+                language: None,
             },
             Note {
                 id: "note-2".to_string(),
@@ -216,6 +217,7 @@ mod tests {
                 visibility: Visibility::Private,
                 published_at: None,
                 links: vec![],
+                language: None,
             },
         ];
 
@@ -249,6 +251,7 @@ mod tests {
             visibility: Visibility::Private,
             published_at: None,
             links: vec![],
+            language: None,
         }];
 
         let note_repo =

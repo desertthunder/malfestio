@@ -11,8 +11,8 @@
         "required": ["url", "title", "createdAt"],
         "properties": {
           "url": { "type": "string", "format": "uri", "description": "URL of the lecture (e.g., YouTube link)." },
-          "title": { "type": "string", "description": "Title of the lecture." },
-          "creator": { "type": "string", "description": "Creator or channel name." },
+          "title": { "type": "string", "maxLength": 500, "description": "Title of the lecture." },
+          "creator": { "type": "string", "maxLength": 300, "description": "Creator or channel name." },
           "timestamps": {
             "type": "array",
             "items": {
@@ -20,7 +20,7 @@
               "required": ["t", "label"],
               "properties": {
                 "t": { "type": "integer", "description": "Time in seconds." },
-                "label": { "type": "string", "description": "Description of the timestamp." },
+                "label": { "type": "string", "maxLength": 500, "description": "Description of the timestamp." },
                 "noteRef": {
                   "type": "string",
                   "format": "at-uri",
@@ -29,6 +29,11 @@
               }
             },
             "description": "Important timestamps or chapters in the lecture."
+          },
+          "language": {
+            "type": "string",
+            "maxLength": 20,
+            "description": "Language code for the lecture content (e.g., 'en', 'es', 'fr')."
           },
           "createdAt": { "type": "string", "format": "datetime" }
         }

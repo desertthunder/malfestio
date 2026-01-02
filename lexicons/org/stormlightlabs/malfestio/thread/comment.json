@@ -12,7 +12,7 @@
         "properties": {
           "subjectRef": { "type": "string", "format": "at-uri", "description": "The root subject being commented on." },
           "replyTo": { "type": "string", "format": "at-uri", "description": "The parent comment if this is a reply." },
-          "body": { "type": "string", "format": "markdown", "maxLength": 5000, "description": "The comment text." },
+          "body": { "type": "string", "maxLength": 5000, "description": "The comment text." },
           "createdAt": { "type": "string", "format": "datetime" }
         }
       }

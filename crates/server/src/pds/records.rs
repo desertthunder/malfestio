@@ -187,6 +187,7 @@ mod tests {
             visibility: Visibility::Public,
             published_at: None,
             fork_of: None,
+            language: None,
         }
     }
 
@@ -200,6 +201,8 @@ mod tests {
             media_url: None,
             card_type: malfestio_core::model::CardType::default(),
             hints: vec![],
+            language: None,
+            visibility: Some(Visibility::Public),
         }
     }
 
@@ -210,9 +213,10 @@ mod tests {
             title: "Test Note".to_string(),
             body: "This is a test note with **markdown**.".to_string(),
             tags: vec!["notes".to_string()],
-            visibility: Visibility::Public,
             published_at: None,
             links: vec![],
+            language: None,
+            visibility: Visibility::Public,
         }
     }
 

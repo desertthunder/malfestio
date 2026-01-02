@@ -11,8 +11,8 @@
         "required": ["url", "title", "createdAt"],
         "properties": {
           "url": { "type": "string", "format": "uri", "description": "URL of the article." },
-          "title": { "type": "string", "description": "Title of the article." },
-          "author": { "type": "string", "description": "Author of the article." },
+          "title": { "type": "string", "maxLength": 500, "description": "Title of the article." },
+          "author": { "type": "string", "maxLength": 300, "description": "Author of the article." },
           "publishedAt": {
             "type": "string",
             "format": "datetime",
@@ -34,6 +34,11 @@
               }
             },
             "description": "User highlights from the article."
+          },
+          "language": {
+            "type": "string",
+            "maxLength": 20,
+            "description": "Language code for the article content (e.g., 'en', 'es', 'fr')."
           },
           "createdAt": { "type": "string", "format": "datetime" }
         }

@@ -11,6 +11,7 @@ pub struct Note {
     pub published_at: Option<String>,
     #[serde(default)]
     pub links: Vec<String>,
+    pub language: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
@@ -33,6 +34,8 @@ pub struct Card {
     pub card_type: CardType,
     #[serde(default)]
     pub hints: Vec<String>,
+    pub visibility: Option<Visibility>,
+    pub language: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -54,6 +57,7 @@ pub struct Deck {
     pub visibility: Visibility,
     pub published_at: Option<String>,
     pub fork_of: Option<String>,
+    pub language: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

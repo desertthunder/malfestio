@@ -12,7 +12,7 @@
         "properties": {
           "title": { "type": "string", "maxLength": 300, "description": "Title of the deck." },
           "description": { "type": "string", "maxLength": 3000, "description": "Description of the deck context." },
-          "tags": { "type": "array", "items": { "type": "string" }, "maxLength": 64 },
+          "tags": { "type": "array", "items": { "type": "string", "maxLength": 100 }, "maxLength": 64 },
           "cardRefs": {
             "type": "array",
             "items": { "type": "string", "format": "at-uri" },
@@ -23,8 +23,21 @@
             "items": { "type": "string", "format": "at-uri" },
             "description": "References to source materials (articles, lectures) used in this deck."
           },
-          "license": { "type": "string", "description": "License for the deck content." },
-          "createdAt": { "type": "string", "format": "datetime" }
+          "license": { "type": "string", "maxLength": 500, "description": "License for the deck content." },
+          "visibility": {
+            "type": "string",
+            "maxLength": 100,
+            "knownValues": ["private", "unlisted", "public"],
+            "default": "public",
+            "description": "Visibility setting for the deck."
+          },
+          "language": {
+            "type": "string",
+            "maxLength": 20,
+            "description": "Language code for the deck content (e.g., 'en', 'es', 'fr')."
+          },
+          "createdAt": { "type": "string", "format": "datetime" },
+          "updatedAt": { "type": "string", "format": "datetime", "description": "Timestamp of last update." }
         }
       }
     }

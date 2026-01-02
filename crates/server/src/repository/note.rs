@@ -62,6 +62,7 @@ impl NoteRepository for DbNoteRepository {
             visibility,
             published_at: None,
             links: Vec::new(),
+            language: None,
         })
     }
 
@@ -115,6 +116,7 @@ impl NoteRepository for DbNoteRepository {
                     .get::<_, Option<chrono::DateTime<chrono::Utc>>>("published_at")
                     .map(|dt| dt.to_rfc3339()),
                 links,
+                language: None,
             });
         }
 
@@ -174,6 +176,7 @@ impl NoteRepository for DbNoteRepository {
                 .get::<_, Option<chrono::DateTime<chrono::Utc>>>("published_at")
                 .map(|dt| dt.to_rfc3339()),
             links,
+            language: None,
         })
     }
 
@@ -213,6 +216,7 @@ impl NoteRepository for DbNoteRepository {
                     .get::<_, Option<chrono::DateTime<chrono::Utc>>>("published_at")
                     .map(|dt| dt.to_rfc3339()),
                 links,
+                language: None,
             });
         }
         Ok(notes)
@@ -268,6 +272,7 @@ pub mod mock {
                 visibility,
                 published_at: None,
                 links: Vec::new(),
+                language: None,
             };
 
             self.notes.lock().unwrap().push(note.clone());

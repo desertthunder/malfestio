@@ -18,15 +18,28 @@
               "type": "object",
               "required": ["type", "ref"],
               "properties": {
-                "type": { "type": "string", "knownValues": ["deck", "note", "article", "lecture"] },
+                "type": { "type": "string", "maxLength": 100, "knownValues": ["deck", "note", "article", "lecture"] },
                 "ref": { "type": "string", "format": "at-uri" },
-                "note": { "type": "string", "description": "Curator's note about this item." }
+                "note": { "type": "string", "maxLength": 1000, "description": "Curator's note about this item." }
               }
             },
             "description": "Ordered items in the collection."
           },
-          "tags": { "type": "array", "items": { "type": "string" }, "maxLength": 64 },
-          "createdAt": { "type": "string", "format": "datetime" }
+          "tags": { "type": "array", "items": { "type": "string", "maxLength": 100 }, "maxLength": 64 },
+          "visibility": {
+            "type": "string",
+            "maxLength": 100,
+            "knownValues": ["private", "unlisted", "public"],
+            "default": "public",
+            "description": "Visibility setting for the collection."
+          },
+          "language": {
+            "type": "string",
+            "maxLength": 20,
+            "description": "Language code for the collection content (e.g., 'en', 'es', 'fr')."
+          },
+          "createdAt": { "type": "string", "format": "datetime" },
+          "updatedAt": { "type": "string", "format": "datetime", "description": "Timestamp of last update." }
         }
       }
     }

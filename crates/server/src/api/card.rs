@@ -165,6 +165,8 @@ mod tests {
                 media_url: None,
                 card_type: CardType::default(),
                 hints: vec![],
+                visibility: None,
+                language: None,
             },
             Card {
                 id: "card-2".to_string(),
@@ -175,6 +177,8 @@ mod tests {
                 media_url: None,
                 card_type: CardType::default(),
                 hints: vec![],
+                visibility: None,
+                language: None,
             },
         ];
 

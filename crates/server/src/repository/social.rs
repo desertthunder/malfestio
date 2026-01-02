@@ -66,6 +66,7 @@ impl DbSocialRepository {
                     .get::<_, Option<chrono::DateTime<chrono::Utc>>>("published_at")
                     .map(|dt| dt.to_rfc3339()),
                 fork_of: fork_of.map(|u| u.to_string()),
+                language: None,
             });
         }
         decks

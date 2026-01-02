@@ -86,7 +86,8 @@ When updating lexicon schemas:
    - Add new optional fields
    - Update descriptions
    - Add new `knownValues` (don't remove old ones)
-   - Increment patch version in documentation
+   - Document version with timestamp (use `date +%s` to get Unix timestamp)
+   - Note in changelog: `// Updated: 1735862400 (2026-01-02)`
 
 2. **Breaking Changes** (avoid if possible):
    - Create new lexicon with new NSID (e.g., `org.stormlightlabs.malfestio.cardV2`)

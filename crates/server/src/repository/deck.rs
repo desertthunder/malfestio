@@ -86,6 +86,7 @@ impl DeckRepository for DbDeckRepository {
             visibility: params.visibility,
             published_at: None,
             fork_of: None,
+            language: None,
         })
     }
 
@@ -126,6 +127,7 @@ impl DeckRepository for DbDeckRepository {
                 .get::<_, Option<chrono::DateTime<chrono::Utc>>>("published_at")
                 .map(|dt| dt.to_rfc3339()),
             fork_of: fork_of.map(|u| u.to_string()),
+            language: None,
         })
     }
 
@@ -175,6 +177,7 @@ impl DeckRepository for DbDeckRepository {
                     .get::<_, Option<chrono::DateTime<chrono::Utc>>>("published_at")
                     .map(|dt| dt.to_rfc3339()),
                 fork_of: fork_of.map(|u| u.to_string()),
+                language: None,
             });
         }
         Ok(decks)
@@ -312,6 +315,7 @@ impl DeckRepository for DbDeckRepository {
             visibility,
             published_at: None,
             fork_of: Some(original_deck_id.to_string()),
+            language: None,
         })
     }
 
@@ -349,6 +353,7 @@ impl DeckRepository for DbDeckRepository {
                     .get::<_, Option<chrono::DateTime<chrono::Utc>>>("published_at")
                     .map(|dt| dt.to_rfc3339()),
                 fork_of: fork_of.map(|u| u.to_string()),
+                language: None,
             });
         }
         Ok(decks)
@@ -379,6 +384,7 @@ impl DeckRepository for DbDeckRepository {
             visibility: Visibility::Public,
             published_at: None,
             fork_of: None,
+            language: None,
         };
 
         let card_rows = client
@@ -402,6 +408,8 @@ impl DeckRepository for DbDeckRepository {
                 hints,
                 // TODO: support other card types
                 card_type: malfestio_core::model::CardType::Basic,
+                visibility: Some(Visibility::Public),
+                language: None,
             });
         }
 
@@ -443,6 +451,7 @@ pub mod mock {
                 visibility: params.visibility,
                 published_at: None,
                 fork_of: None,
+                language: None,
             };
             self.decks.lock().unwrap().push(deck.clone());
             Ok(deck)
@@ -495,6 +504,7 @@ pub mod mock {
                 visibility: Visibility::Private,
                 published_at: None,
                 fork_of: Some(original_deck_id.to_string()),
+                language: None,
             };
             decks.push(deck.clone());
             decks.push(deck.clone());

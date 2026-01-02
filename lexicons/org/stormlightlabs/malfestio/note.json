@@ -13,13 +13,12 @@
           "title": { "type": "string", "maxLength": 300, "description": "Title of the note." },
           "body": {
             "type": "string",
-            "format": "markdown",
             "maxLength": 100000,
             "description": "The body content of the note in Markdown format."
           },
           "tags": {
             "type": "array",
-            "items": { "type": "string" },
+            "items": { "type": "string", "maxLength": 100 },
             "maxLength": 64,
             "description": "Tags associated with the note."
           },
@@ -30,8 +29,8 @@
               "required": ["uri"],
               "properties": {
                 "uri": { "type": "string", "format": "uri" },
-                "title": { "type": "string" },
-                "type": { "type": "string", "description": "Type hint for the linked resource." }
+                "title": { "type": "string", "maxLength": 500 },
+                "type": { "type": "string", "maxLength": 100, "description": "Type hint for the linked resource." }
               }
             },
             "description": "External or internal links referenced in the note."
@@ -40,9 +39,15 @@
           "updatedAt": { "type": "string", "format": "datetime", "description": "Timestamp of last update." },
           "visibility": {
             "type": "string",
+            "maxLength": 100,
             "knownValues": ["private", "unlisted", "public"],
             "default": "private",
             "description": "Visibility setting for the note."
+          },
+          "language": {
+            "type": "string",
+            "maxLength": 20,
+            "description": "Language code for the note content (e.g., 'en', 'es', 'fr')."
           }
         }
       }
