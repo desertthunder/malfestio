@@ -7,11 +7,13 @@ use malfestio_core::at_uri::AtUri;
 use serde::{Deserialize, Serialize};
 
 /// A client for interacting with a user's PDS.
+///
+/// Supports both DPoP-bound tokens (OAuth) and Bearer tokens (app passwords).
 pub struct PdsClient {
     http_client: reqwest::Client,
     pds_url: String,
     access_token: String,
-    dpop_keypair: DpopKeypair,
+    dpop_keypair: Option<DpopKeypair>,
 }
 
 /// Request body for putRecord XRPC.
@@ -101,9 +103,24 @@ impl std::fmt::Display for PdsError {
 impl std::error::Error for PdsError {}
 
 impl PdsClient {
-    /// Create a new PDS client.
+    /// Create a new PDS client with DPoP support (OAuth tokens).
+    ///
+    /// Uses DPoP proof-of-possession for enhanced security.
+    pub fn new_with_dpop(pds_url: String, access_token: String, dpop_keypair: DpopKeypair) -> Self {
+        Self { http_client: reqwest::Client::new(), pds_url, access_token, dpop_keypair: Some(dpop_keypair) }
+    }
+
+    /// Create a new PDS client with Bearer authentication (app password tokens).
+    ///
+    /// Uses standard Bearer token authentication without DPoP.
+    pub fn new_bearer(pds_url: String, access_token: String) -> Self {
+        Self { http_client: reqwest::Client::new(), pds_url, access_token, dpop_keypair: None }
+    }
+
+    /// Create a new PDS client (deprecated - use new_with_dpop or new_bearer).
+    #[deprecated(since = "0.1.0", note = "Use new_with_dpop or new_bearer instead")]
     pub fn new(pds_url: String, access_token: String, dpop_keypair: DpopKeypair) -> Self {
-        Self { http_client: reqwest::Client::new(), pds_url, access_token, dpop_keypair }
+        Self::new_with_dpop(pds_url, access_token, dpop_keypair)
     }
 
     /// Create or update a record in the repository.
@@ -119,8 +136,6 @@ impl PdsClient {
     ) -> Result<AtUri, PdsError> {
         let url = format!("{}/xrpc/com.atproto.repo.putRecord", self.pds_url);
 
-        let dpop_proof = self.dpop_keypair.generate_proof("POST", &url, Some(&self.access_token));
-
         let request = PutRecordRequest {
             repo: did.to_string(),
             collection: collection.to_string(),
@@ -131,11 +146,21 @@ impl PdsClient {
             validate: Some(true),
         };
 
-        let response = self
-            .http_client
-            .post(&url)
-            .header("Authorization", format!("DPoP {}", self.access_token))
-            .header("DPoP", dpop_proof)
+        let mut request_builder = self.http_client.post(&url);
+
+        // Conditionally add DPoP or Bearer authentication
+        if let Some(ref dpop_keypair) = self.dpop_keypair {
+            // OAuth with DPoP
+            let dpop_proof = dpop_keypair.generate_proof("POST", &url, Some(&self.access_token));
+            request_builder = request_builder
+                .header("Authorization", format!("DPoP {}", self.access_token))
+                .header("DPoP", dpop_proof);
+        } else {
+            // App password with Bearer
+            request_builder = request_builder.header("Authorization", format!("Bearer {}", self.access_token));
+        }
+
+        let response = request_builder
             .json(&request)
             .send()
             .await
@@ -148,8 +173,6 @@ impl PdsClient {
     pub async fn delete_record(&self, did: &str, collection: &str, rkey: &str) -> Result<(), PdsError> {
         let url = format!("{}/xrpc/com.atproto.repo.deleteRecord", self.pds_url);
 
-        let dpop_proof = self.dpop_keypair.generate_proof("POST", &url, Some(&self.access_token));
-
         let request = DeleteRecordRequest {
             repo: did.to_string(),
             collection: collection.to_string(),
@@ -158,11 +181,21 @@ impl PdsClient {
             swap_commit: None,
         };
 
-        let response = self
-            .http_client
-            .post(&url)
-            .header("Authorization", format!("DPoP {}", self.access_token))
-            .header("DPoP", dpop_proof)
+        let mut request_builder = self.http_client.post(&url);
+
+        // Conditionally add DPoP or Bearer authentication
+        if let Some(ref dpop_keypair) = self.dpop_keypair {
+            // OAuth with DPoP
+            let dpop_proof = dpop_keypair.generate_proof("POST", &url, Some(&self.access_token));
+            request_builder = request_builder
+                .header("Authorization", format!("DPoP {}", self.access_token))
+                .header("DPoP", dpop_proof);
+        } else {
+            // App password with Bearer
+            request_builder = request_builder.header("Authorization", format!("Bearer {}", self.access_token));
+        }
+
+        let response = request_builder
             .json(&request)
             .send()
             .await
@@ -181,13 +214,21 @@ impl PdsClient {
     pub async fn upload_blob(&self, data: Vec<u8>, mime_type: &str) -> Result<BlobRef, PdsError> {
         let url = format!("{}/xrpc/com.atproto.repo.uploadBlob", self.pds_url);
 
-        let dpop_proof = self.dpop_keypair.generate_proof("POST", &url, Some(&self.access_token));
+        let mut request_builder = self.http_client.post(&url);
 
-        let response = self
-            .http_client
-            .post(&url)
-            .header("Authorization", format!("DPoP {}", self.access_token))
-            .header("DPoP", dpop_proof)
+        // Conditionally add DPoP or Bearer authentication
+        if let Some(ref dpop_keypair) = self.dpop_keypair {
+            // OAuth with DPoP
+            let dpop_proof = dpop_keypair.generate_proof("POST", &url, Some(&self.access_token));
+            request_builder = request_builder
+                .header("Authorization", format!("DPoP {}", self.access_token))
+                .header("DPoP", dpop_proof);
+        } else {
+            // App password with Bearer
+            request_builder = request_builder.header("Authorization", format!("Bearer {}", self.access_token));
+        }
+
+        let response = request_builder
             .header("Content-Type", mime_type)
             .body(data)
             .send()
@@ -298,5 +339,39 @@ mod tests {
 
         let err = PdsError::NetworkError("Connection refused".to_string());
         assert!(err.to_string().contains("Connection refused"));
+    }
+
+    #[test]
+    fn test_pds_client_new_with_dpop() {
+        use crate::oauth::dpop::DpopKeypair;
+
+        let keypair = DpopKeypair::generate();
+        let client = PdsClient::new_with_dpop("https://bsky.social".to_string(), "test_token".to_string(), keypair);
+
+        assert_eq!(client.pds_url, "https://bsky.social");
+        assert_eq!(client.access_token, "test_token");
+        assert!(client.dpop_keypair.is_some());
+    }
+
+    #[test]
+    fn test_pds_client_new_bearer() {
+        let client = PdsClient::new_bearer("https://bsky.social".to_string(), "test_token".to_string());
+
+        assert_eq!(client.pds_url, "https://bsky.social");
+        assert_eq!(client.access_token, "test_token");
+        assert!(client.dpop_keypair.is_none());
+    }
+
+    #[test]
+    #[allow(deprecated)]
+    fn test_pds_client_new_deprecated() {
+        use crate::oauth::dpop::DpopKeypair;
+
+        let keypair = DpopKeypair::generate();
+        let client = PdsClient::new("https://bsky.social".to_string(), "test_token".to_string(), keypair);
+
+        assert_eq!(client.pds_url, "https://bsky.social");
+        assert_eq!(client.access_token, "test_token");
+        assert!(client.dpop_keypair.is_some());
     }
 }

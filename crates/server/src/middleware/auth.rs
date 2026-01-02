@@ -10,10 +10,16 @@ use axum::{
 use serde_json::json;
 use std::time::{Duration, Instant};
 
+/// User context extracted from authentication.
+///
+/// Contains the user's identity and authentication details needed for PDS operations.
 #[derive(Clone, Debug)]
 pub struct UserContext {
     pub did: String,
     pub handle: String,
+    pub access_token: String,
+    pub pds_url: String,
+    pub has_dpop: bool,
 }
 
 /// Cache expiry time (5 minutes)
@@ -190,7 +196,13 @@ pub async fn auth_middleware(State(state): State<SharedState>, mut req: Request,
                 let body: serde_json::Value = response.json().await.unwrap_or_default();
                 let did = body["did"].as_str().unwrap_or("").to_string();
                 let handle = body["handle"].as_str().unwrap_or("").to_string();
-                let user_ctx = UserContext { did: did.clone(), handle };
+                let user_ctx = UserContext {
+                    did: did.clone(),
+                    handle,
+                    access_token: token.to_string(),
+                    pds_url: target_pds_url.to_string(),
+                    has_dpop: stored_token.is_some(),
+                };
 
                 tracing::debug!("PDS verification successful for DID: {}", did);
 
@@ -262,7 +274,13 @@ pub async fn optional_auth_middleware(mut req: Request, next: Next) -> Response 
             let did = body["did"].as_str().unwrap_or("").to_string();
             let handle = body["handle"].as_str().unwrap_or("").to_string();
 
-            req.extensions_mut().insert(UserContext { did, handle });
+            req.extensions_mut().insert(UserContext {
+                did,
+                handle,
+                access_token: token.to_string(),
+                pds_url: pds_url.clone(),
+                has_dpop: false,
+            });
         }
         _ => {}
     }

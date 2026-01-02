@@ -10,12 +10,12 @@ import { Motion } from "solid-motionone";
 type StudySessionProps = { cards: ReviewCard[]; onComplete: () => void; onExit: () => void };
 
 const GRADE_LABELS: { [key in Grade]: { label: string; color: string; key: string } } = {
-  0: { label: "Again", color: "bg-red-600 hover:bg-red-500", key: "1" },
-  1: { label: "Hard", color: "bg-orange-600 hover:bg-orange-500", key: "2" },
-  2: { label: "Okay", color: "bg-yellow-600 hover:bg-yellow-500", key: "3" },
-  3: { label: "Good", color: "bg-green-600 hover:bg-green-500", key: "4" },
-  4: { label: "Easy", color: "bg-emerald-600 hover:bg-emerald-500", key: "5" },
-  5: { label: "Perfect", color: "bg-cyan-600 hover:bg-cyan-500", key: "5" },
+  0: { label: "Again", color: "text-red-500", key: "1" },
+  1: { label: "Hard", color: "text-orange-500", key: "2" },
+  2: { label: "Okay", color: "text-yellow-500", key: "3" },
+  3: { label: "Good", color: "text-green-500", key: "4" },
+  4: { label: "Easy", color: "text-emerald-500", key: "5" },
+  5: { label: "Perfect", color: "text-cyan-500", key: "6" },
 };
 
 export const StudySession: Component<StudySessionProps> = (props) => {
@@ -27,7 +27,7 @@ export const StudySession: Component<StudySessionProps> = (props) => {
   const currentCard = () => props.cards[currentIndex()];
   const progress = () => ((currentIndex() + 1) / props.cards.length) * 100;
   const isComplete = () => currentIndex() >= props.cards.length;
-  const handleFlip = () => !isFlipped() ? setIsFlipped(true) : void 0;
+  const handleFlip = () => setIsFlipped((f) => !f);
 
   const handleGrade = async (grade: Grade) => {
     const card = currentCard();
@@ -63,12 +63,15 @@ export const StudySession: Component<StudySessionProps> = (props) => {
         if (isFlipped()) handleGrade(1);
         break;
       case "3":
-        if (isFlipped()) handleGrade(3);
+        if (isFlipped()) handleGrade(2);
         break;
       case "4":
-        if (isFlipped()) handleGrade(4);
+        if (isFlipped()) handleGrade(3);
         break;
       case "5":
+        if (isFlipped()) handleGrade(4);
+        break;
+      case "6":
         if (isFlipped()) handleGrade(5);
         break;
       case "e":
@@ -96,9 +99,8 @@ export const StudySession: Component<StudySessionProps> = (props) => {
   });
 
   return (
-    <div class="min-h-screen bg-gray-950 flex flex-col items-center justify-center p-4">
-      {/* Progress Header */}
-      <div class="w-full max-w-2xl mb-8">
+    <div class="fixed inset-0 z-50 h-screen w-screen bg-gray-950 grid grid-rows-[auto_1fr_160px] overflow-hidden">
+      <div class="w-full max-w-2xl mx-auto p-4 flex flex-col justify-end">
         <div class="flex items-center justify-between mb-2">
           <span class="text-gray-400 text-sm">Card {currentIndex() + 1} of {props.cards.length}</span>
           <button onClick={() => props.onExit()} class="text-gray-400 hover:text-white text-sm flex items-center gap-1">
@@ -108,68 +110,76 @@ export const StudySession: Component<StudySessionProps> = (props) => {
         <ProgressBar value={progress()} color="green" size="md" />
       </div>
 
-      <Show when={currentCard()}>
-        {(card) => (
-          <Motion.div {...scaleIn} class="w-full max-w-2xl">
-            <div
-              onClick={handleFlip}
-              class="relative min-h-[400px] rounded-2xl cursor-pointer perspective-1000"
-              style={{ "transform-style": "preserve-3d" }}>
+      <div class="flex items-center justify-center p-4">
+        <Show when={currentCard()} keyed>
+          {(card) => (
+            <Motion.div {...scaleIn} class="w-full max-w-2xl h-[400px]">
               <div
-                class={`absolute inset-0 rounded-2xl bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 p-8 flex flex-col items-center justify-center backface-hidden transition-transform duration-400 ${
-                  isFlipped() ? "rotate-y-180" : ""
-                }`}
-                style={{ "backface-visibility": "hidden" }}>
-                <span class="text-xs text-gray-500 mb-4">{card().deck_title}</span>
-                <p class="text-2xl text-white text-center font-medium">{card().front}</p>
-                <Show when={!isFlipped()}>
-                  <p class="text-gray-500 mt-8 text-sm">Press Space or click to reveal</p>
-                </Show>
-              </div>
-
-              <div
-                class={`absolute inset-0 rounded-2xl bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 p-8 flex flex-col items-center justify-center backface-hidden transition-transform duration-400 ${
-                  isFlipped() ? "" : "rotate-y-180"
-                }`}
-                style={{ "backface-visibility": "hidden", transform: "rotateY(180deg)" }}>
-                <span class="text-xs text-gray-500 mb-4">Answer</span>
-                <p class="text-2xl text-white text-center font-medium">{card().back}</p>
-                <Show when={card().hints.length > 0}>
-                  <div class="mt-4 text-sm text-gray-400">
-                    <For each={card().hints}>{(hint) => <p class="italic">💡 {hint}</p>}</For>
+                onClick={handleFlip}
+                class="relative w-full h-full cursor-pointer"
+                style={{ "perspective": "1000px" }}>
+                <div
+                  class="relative w-full h-full transition-transform duration-500"
+                  style={{
+                    "transform-style": "preserve-3d",
+                    "transform": isFlipped() ? "rotateY(180deg)" : "rotateY(0deg)",
+                  }}>
+                  <div
+                    class="absolute inset-0 rounded-2xl bg-linear-to-br from-gray-800 to-gray-900 border border-gray-700 p-8 flex flex-col items-center justify-center"
+                    style={{ "backface-visibility": "hidden" }}>
+                    <span class="text-xs text-gray-500 mb-4">{card.deck_title}</span>
+                    <p class="text-2xl text-white text-center font-medium">{card.front}</p>
+                    <p class="text-gray-500 mt-8 text-sm animate-pulse">Press Space or click to reveal</p>
                   </div>
-                </Show>
+
+                  <div
+                    class="absolute inset-0 rounded-2xl bg-linear-to-br from-gray-800 to-gray-900 border border-gray-700 p-8 flex flex-col items-center justify-center"
+                    style={{ "backface-visibility": "hidden", "transform": "rotateY(180deg)" }}>
+                    <span class="text-xs text-gray-500 mb-4">Answer</span>
+                    <p class="text-2xl text-white text-center font-medium">{card.back}</p>
+                    <Show when={card.hints.length > 0}>
+                      <div class="mt-4 text-sm text-gray-400">
+                        <For each={card.hints}>{(hint) => <p class="italic">💡 {hint}</p>}</For>
+                      </div>
+                    </Show>
+                  </div>
+                </div>
               </div>
+            </Motion.div>
+          )}
+        </Show>
+      </div>
+
+      <div class="flex items-start justify-center p-4">
+        <Show when={isFlipped()}>
+          <Motion.div {...slideInUp} class="w-full max-w-2xl">
+            <p class="text-center text-gray-400 text-sm mb-4">How well did you know this?</p>
+            <div class="grid grid-cols-6 gap-2">
+              <For each={[0, 1, 2, 3, 4, 5] as Grade[]}>
+                {(grade) => (
+                  <button
+                    onClick={() => handleGrade(grade)}
+                    disabled={isSubmitting()}
+                    class="py-3 px-2 rounded-lg font-medium transition-colors bg-gray-800 hover:bg-gray-700 disabled:opacity-50 border border-transparent hover:border-gray-600 group">
+                    <span
+                      class={`block text-lg transition-transform group-hover:scale-110 ${GRADE_LABELS[grade].color}`}>
+                      {GRADE_LABELS[grade].label}
+                    </span>
+                    <span class="block text-xs opacity-75 text-gray-400">({GRADE_LABELS[grade].key})</span>
+                  </button>
+                )}
+              </For>
             </div>
           </Motion.div>
-        )}
-      </Show>
-
-      <Show when={isFlipped()}>
-        <Motion.div {...slideInUp} class="w-full max-w-2xl mt-8">
-          <p class="text-center text-gray-400 text-sm mb-4">How well did you know this?</p>
-          <div class="grid grid-cols-5 gap-2">
-            <For each={[0, 1, 3, 4, 5] as Grade[]}>
-              {(grade) => (
-                <button
-                  onClick={() => handleGrade(grade)}
-                  disabled={isSubmitting()}
-                  class={`py-3 px-2 rounded-lg text-white font-medium transition-colors ${
-                    GRADE_LABELS[grade].color
-                  } disabled:opacity-50`}>
-                  <span class="block text-lg">{GRADE_LABELS[grade].label}</span>
-                  <span class="block text-xs opacity-75">({GRADE_LABELS[grade].key})</span>
-                </button>
-              )}
-            </For>
-          </div>
-        </Motion.div>
-      </Show>
+        </Show>
+      </div>
 
       <div class="fixed bottom-4 left-1/2 -translate-x-1/2 text-gray-600 text-xs flex gap-4">
         <span>Space: Flip</span>
-        <span>1-5: Grade</span>
-        <span>E: Edit</span>
+        <Show when={isFlipped()}>
+          <span>1-6: Grade</span>
+          <span>E: Edit</span>
+        </Show>
         <span>Esc: Exit</span>
       </div>
 

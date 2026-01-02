@@ -68,16 +68,42 @@ describe("StudySession", () => {
     expect(await screen.findByText("How well did you know this?")).toBeInTheDocument();
   });
 
-  it("shows keyboard hints", () => {
+  it("flips back to front on second click", async () => {
+    const onComplete = vi.fn();
+    const onExit = vi.fn();
+
+    render(() => <StudySession cards={mockCards} onComplete={onComplete} onExit={onExit} />);
+
+    const cardElement = screen.getByText("What is 2+2?").closest("div[class*='cursor-pointer']");
+    if (cardElement) fireEvent.click(cardElement);
+
+    expect(await screen.findByText("How well did you know this?")).toBeInTheDocument();
+
+    if (cardElement) fireEvent.click(cardElement);
+    expect(await screen.findByText("Press Space or click to reveal")).toBeInTheDocument();
+    expect(screen.queryByText("How well did you know this?")).not.toBeInTheDocument();
+  });
+
+  it("shows keyboard hints conditionally", async () => {
     const onComplete = vi.fn();
     const onExit = vi.fn();
 
     render(() => <StudySession cards={mockCards} onComplete={onComplete} onExit={onExit} />);
 
     expect(screen.getByText("Space: Flip")).toBeInTheDocument();
-    expect(screen.getByText("1-5: Grade")).toBeInTheDocument();
-    expect(screen.getByText("E: Edit")).toBeInTheDocument();
     expect(screen.getByText("Esc: Exit")).toBeInTheDocument();
+
+    // Initially hidden
+    expect(screen.queryByText("1-6: Grade")).not.toBeInTheDocument();
+    expect(screen.queryByText("E: Edit")).not.toBeInTheDocument();
+
+    // Flip card
+    const cardElement = screen.getByText("What is 2+2?").closest("div[class*='cursor-pointer']");
+    if (cardElement) fireEvent.click(cardElement);
+
+    // Now visible
+    expect(await screen.findByText("1-6: Grade")).toBeInTheDocument();
+    expect(screen.getByText("E: Edit")).toBeInTheDocument();
   });
 
   it("calls onExit when exit button is clicked", () => {

@@ -34,6 +34,7 @@
     "@egoist/tailwindcss-icons": "^1.9.0",
     "@eslint/js": "^9.39.2",
     "@iconify-json/bi": "^1.2.7",
+    "@iconify-json/ri": "^1.2.7",
     "@resvg/resvg-js": "^2.6.2",
     "@solidjs/testing-library": "^0.8.10",
     "@testing-library/jest-dom": "^6.9.1",

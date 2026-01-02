@@ -216,7 +216,13 @@ mod tests {
     async fn test_follow_success() {
         let social_repo = Arc::new(MockSocialRepository::new());
         let state = create_test_state_with_social(social_repo.clone());
-        let user = UserContext { did: "did:plc:follower".to_string(), handle: "follower".to_string() };
+        let user = UserContext {
+            did: "did:plc:follower".to_string(),
+            handle: "follower".to_string(),
+            access_token: "test_token".to_string(),
+            pds_url: "https://bsky.social".to_string(),
+            has_dpop: false,
+        };
 
         let response = follow(State(state), Some(Extension(user)), Path("did:plc:subject".to_string()))
             .await
@@ -234,7 +240,13 @@ mod tests {
         social_repo.follow("did:plc:follower", "did:plc:subject").await.unwrap();
 
         let state = create_test_state_with_social(social_repo.clone());
-        let user = UserContext { did: "did:plc:follower".to_string(), handle: "follower".to_string() };
+        let user = UserContext {
+            did: "did:plc:follower".to_string(),
+            handle: "follower".to_string(),
+            access_token: "test_token".to_string(),
+            pds_url: "https://bsky.social".to_string(),
+            has_dpop: false,
+        };
 
         let response = unfollow(State(state), Some(Extension(user)), Path("did:plc:subject".to_string()))
             .await
@@ -272,7 +284,13 @@ mod tests {
     async fn test_add_comment_success() {
         let social_repo = Arc::new(MockSocialRepository::new());
         let state = create_test_state_with_social(social_repo.clone());
-        let user = UserContext { did: "did:plc:author".to_string(), handle: "author".to_string() };
+        let user = UserContext {
+            did: "did:plc:author".to_string(),
+            handle: "author".to_string(),
+            access_token: "test_token".to_string(),
+            pds_url: "https://bsky.social".to_string(),
+            has_dpop: false,
+        };
 
         let payload = AddCommentRequest { content: "Great deck!".to_string(), parent_id: None };
 

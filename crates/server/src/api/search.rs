@@ -134,7 +134,13 @@ mod tests {
             .await;
 
         let state = create_test_state_with_search(search_repo.clone());
-        let auth_ctx = Extension(UserContext { did: "did:alice".to_string(), handle: "alice.test".to_string() });
+        let auth_ctx = Extension(UserContext {
+            did: "did:alice".to_string(),
+            handle: "alice.test".to_string(),
+            access_token: "test_token".to_string(),
+            pds_url: "https://bsky.social".to_string(),
+            has_dpop: false,
+        });
         let response = search(
             State(state.clone()),
             Some(auth_ctx),

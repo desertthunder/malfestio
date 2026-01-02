@@ -152,7 +152,13 @@ mod tests {
     #[tokio::test]
     async fn test_create_note_success() {
         let state = create_test_state();
-        let user = UserContext { did: "did:plc:test123".to_string(), handle: "test.handle".to_string() };
+        let user = UserContext {
+            did: "did:plc:test123".to_string(),
+            handle: "test.handle".to_string(),
+            access_token: "test_token".to_string(),
+            pds_url: "https://bsky.social".to_string(),
+            has_dpop: false,
+        };
 
         let payload = CreateNoteRequest {
             title: "Test Note".to_string(),
@@ -254,7 +260,13 @@ mod tests {
 
         let state = AppState::new_with_repos(pool, card_repo, note_repo, oauth_repo);
 
-        let owner = UserContext { did: "did:plc:owner".to_string(), handle: "owner.handle".to_string() };
+        let owner = UserContext {
+            did: "did:plc:owner".to_string(),
+            handle: "owner.handle".to_string(),
+            access_token: "test_token".to_string(),
+            pds_url: "https://bsky.social".to_string(),
+            has_dpop: false,
+        };
 
         let response = get_note(
             axum::extract::State(state.clone()),
@@ -266,7 +278,13 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::OK);
 
-        let other_user = UserContext { did: "did:plc:other".to_string(), handle: "other.handle".to_string() };
+        let other_user = UserContext {
+            did: "did:plc:other".to_string(),
+            handle: "other.handle".to_string(),
+            access_token: "test_token".to_string(),
+            pds_url: "https://bsky.social".to_string(),
+            has_dpop: false,
+        };
         let response = get_note(axum::extract::State(state), Some(Extension(other_user)), Path(note_id))
             .await
             .into_response();

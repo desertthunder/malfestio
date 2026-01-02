@@ -10,7 +10,15 @@ const { mockNavigate } = vi.hoisted(() => ({ mockNavigate: vi.fn() }));
 vi.mock(
   "$lib/api",
   () => ({
-    api: { getDeck: vi.fn(), getDeckCards: vi.fn(), forkDeck: vi.fn(), getComments: vi.fn(), addComment: vi.fn() },
+    api: {
+      getDeck: vi.fn(),
+      getDeckCards: vi.fn(),
+      forkDeck: vi.fn(),
+      getComments: vi.fn(),
+      addComment: vi.fn(),
+      getDueCards: vi.fn(),
+      submitReview: vi.fn(),
+    },
   }),
 );
 
@@ -49,6 +57,7 @@ describe("DeckView", () => {
     vi.mocked(api.getDeckCards).mockResolvedValue(
       { ok: true, json: () => Promise.resolve(mockCards) } as unknown as Response,
     );
+    vi.mocked(api.getDueCards).mockResolvedValue({ ok: true, json: () => Promise.resolve([]) } as unknown as Response);
     vi.mocked(api.getComments).mockResolvedValue({ ok: true, json: () => Promise.resolve([]) } as unknown as Response);
 
     render(() => <DeckView />);
@@ -66,6 +75,7 @@ describe("DeckView", () => {
     vi.mocked(api.getDeckCards).mockResolvedValue(
       { ok: true, json: () => Promise.resolve(mockCards) } as unknown as Response,
     );
+    vi.mocked(api.getDueCards).mockResolvedValue({ ok: true, json: () => Promise.resolve([]) } as unknown as Response);
     vi.mocked(api.forkDeck).mockResolvedValue(
       { ok: true, json: () => Promise.resolve({ id: "456" }) } as unknown as Response,
     );
@@ -75,10 +85,10 @@ describe("DeckView", () => {
 
     await waitFor(() => expect(screen.getByText("Test Deck")).toBeInTheDocument());
 
-    const forkButton = screen.getByText("Fork Deck", { selector: "button" });
+    const forkButton = screen.getByRole("button", { name: /Fork Deck/i });
     fireEvent.click(forkButton);
 
-    const dialog = screen.getByRole("dialog");
+    const dialog = await screen.findByRole("dialog");
     expect(within(dialog).getByText(/Are you sure you want to fork/)).toBeInTheDocument();
 
     const confirmButton = within(dialog).getByRole("button", { name: /Fork Deck/i });
@@ -98,6 +108,7 @@ describe("DeckView", () => {
     vi.mocked(api.getDeckCards).mockResolvedValue(
       { ok: true, json: () => Promise.resolve(mockCards) } as unknown as Response,
     );
+    vi.mocked(api.getDueCards).mockResolvedValue({ ok: true, json: () => Promise.resolve([]) } as unknown as Response);
     vi.mocked(api.forkDeck).mockResolvedValue({ ok: false } as unknown as Response);
     vi.mocked(api.getComments).mockResolvedValue({ ok: true, json: () => Promise.resolve([]) } as unknown as Response);
 
@@ -105,10 +116,10 @@ describe("DeckView", () => {
 
     await waitFor(() => expect(screen.getByText("Test Deck")).toBeInTheDocument());
 
-    const forkButton = screen.getByText("Fork Deck", { selector: "button" });
+    const forkButton = screen.getByRole("button", { name: /Fork Deck/i });
     fireEvent.click(forkButton);
 
-    const dialog = screen.getByRole("dialog");
+    const dialog = await screen.findByRole("dialog");
     const confirmButton = within(dialog).getByRole("button", { name: /Fork Deck/i });
     fireEvent.click(confirmButton);
 
@@ -121,7 +132,66 @@ describe("DeckView", () => {
 
   it("renders not found state when deck returns error", async () => {
     vi.mocked(api.getDeck).mockResolvedValue({ ok: false } as unknown as Response);
+    vi.mocked(api.getDueCards).mockResolvedValue({ ok: true, json: () => Promise.resolve([]) } as unknown as Response);
     render(() => <DeckView />);
     await waitFor(() => expect(screen.getByText(/Deck not found/i)).toBeInTheDocument());
+  });
+  it("renders study button with due cards count", async () => {
+    vi.mocked(api.getDeck).mockResolvedValue(
+      { ok: true, json: () => Promise.resolve(mockDeck) } as unknown as Response,
+    );
+    vi.mocked(api.getDeckCards).mockResolvedValue(
+      { ok: true, json: () => Promise.resolve(mockCards) } as unknown as Response,
+    );
+    vi.mocked(api.getDueCards).mockResolvedValue(
+      {
+        ok: true,
+        json: () => Promise.resolve([{ review_id: "r1", card_id: "c1", deck_id: "123", front: "F", back: "B" }]),
+      } as unknown as Response,
+    );
+    vi.mocked(api.getComments).mockResolvedValue({ ok: true, json: () => Promise.resolve([]) } as unknown as Response);
+
+    render(() => <DeckView />);
+
+    await waitFor(() => expect(screen.getByText("Test Deck")).toBeInTheDocument());
+
+    const studyButton = await screen.findByRole("button", { name: /Study Deck \(1 due\)/i });
+    expect(studyButton).toBeInTheDocument();
+    expect(studyButton).not.toBeDisabled();
+  });
+
+  it("enters study mode when study button is clicked", async () => {
+    vi.mocked(api.getDeck).mockResolvedValue(
+      { ok: true, json: () => Promise.resolve(mockDeck) } as unknown as Response,
+    );
+    vi.mocked(api.getDeckCards).mockResolvedValue(
+      { ok: true, json: () => Promise.resolve(mockCards) } as unknown as Response,
+    );
+    vi.mocked(api.getDueCards).mockResolvedValue(
+      {
+        ok: true,
+        json: () =>
+          Promise.resolve([{
+            review_id: "r1",
+            card_id: "c1",
+            deck_id: "123",
+            front: "Study Front",
+            back: "Study Back",
+            deck_title: "Test Deck",
+            hints: [],
+          }]),
+      } as unknown as Response,
+    );
+    vi.mocked(api.getComments).mockResolvedValue({ ok: true, json: () => Promise.resolve([]) } as unknown as Response);
+
+    render(() => <DeckView />);
+
+    await waitFor(() => expect(screen.getByText("Test Deck")).toBeInTheDocument());
+
+    const studyButton = await screen.findByRole("button", { name: /Study Deck \(1 due\)/i });
+    fireEvent.click(studyButton);
+
+    await waitFor(() => expect(screen.getByText("Card 1 of 1")).toBeInTheDocument());
+    expect(screen.getByText("Study Front")).toBeInTheDocument();
   });
 });

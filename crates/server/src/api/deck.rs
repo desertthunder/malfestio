@@ -176,7 +176,7 @@ pub async fn publish_deck(
             }
         };
 
-        match crate::pds::publish::publish_deck_to_pds(state.oauth_repo.clone(), &user.did, &deck, &cards).await {
+        match crate::pds::publish::publish_deck_to_pds(state.oauth_repo.clone(), &user, &deck, &cards).await {
             Ok(result) => {
                 deck_at_uri = Some(result.deck_at_uri.clone());
 
@@ -292,7 +292,13 @@ mod tests {
             Arc::new(crate::repository::oauth::mock::MockOAuthRepository::new()),
         );
 
-        let user = UserContext { did: "did:plc:alice".to_string(), handle: "alice.bsky.social".to_string() };
+        let user = UserContext {
+            did: "did:plc:alice".to_string(),
+            handle: "alice.bsky.social".to_string(),
+            access_token: "test_token".to_string(),
+            pds_url: "https://bsky.social".to_string(),
+            has_dpop: false,
+        };
 
         let payload = CreateDeckRequest {
             title: "My New Deck".to_string(),

@@ -201,7 +201,13 @@ mod tests {
         let review_repo = Arc::new(MockReviewRepository::with_cards(cards)) as Arc<dyn ReviewRepository>;
         let state = create_test_state_with_review(review_repo);
 
-        let user = UserContext { did: "did:plc:test".to_string(), handle: "test.handle".to_string() };
+        let user = UserContext {
+            did: "did:plc:test".to_string(),
+            handle: "test.handle".to_string(),
+            access_token: "test_token".to_string(),
+            pds_url: "https://bsky.social".to_string(),
+            has_dpop: false,
+        };
         let response = get_due_cards(
             State(state),
             Some(Extension(user)),
@@ -218,7 +224,13 @@ mod tests {
         let review_repo = Arc::new(MockReviewRepository::new()) as Arc<dyn ReviewRepository>;
         let state = create_test_state_with_review(review_repo);
 
-        let user = UserContext { did: "did:plc:test".to_string(), handle: "test.handle".to_string() };
+        let user = UserContext {
+            did: "did:plc:test".to_string(),
+            handle: "test.handle".to_string(),
+            access_token: "test_token".to_string(),
+            pds_url: "https://bsky.social".to_string(),
+            has_dpop: false,
+        };
         let payload = SubmitReviewRequest { card_id: "card-1".to_string(), grade: 3 };
 
         let response = submit_review(State(state), Some(Extension(user)), Json(payload))
@@ -233,7 +245,13 @@ mod tests {
         let review_repo = Arc::new(MockReviewRepository::new()) as Arc<dyn ReviewRepository>;
         let state = create_test_state_with_review(review_repo);
 
-        let user = UserContext { did: "did:plc:test".to_string(), handle: "test.handle".to_string() };
+        let user = UserContext {
+            did: "did:plc:test".to_string(),
+            handle: "test.handle".to_string(),
+            access_token: "test_token".to_string(),
+            pds_url: "https://bsky.social".to_string(),
+            has_dpop: false,
+        };
         let payload = SubmitReviewRequest { card_id: "card-1".to_string(), grade: 10 };
 
         let response = submit_review(State(state), Some(Extension(user)), Json(payload))
@@ -248,7 +266,13 @@ mod tests {
         let review_repo = Arc::new(MockReviewRepository::new()) as Arc<dyn ReviewRepository>;
         let state = create_test_state_with_review(review_repo);
 
-        let user = UserContext { did: "did:plc:test".to_string(), handle: "test.handle".to_string() };
+        let user = UserContext {
+            did: "did:plc:test".to_string(),
+            handle: "test.handle".to_string(),
+            access_token: "test_token".to_string(),
+            pds_url: "https://bsky.social".to_string(),
+            has_dpop: false,
+        };
         let response = get_stats(State(state), Some(Extension(user))).await.into_response();
 
         assert_eq!(response.status(), StatusCode::OK);

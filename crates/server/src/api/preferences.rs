@@ -148,7 +148,13 @@ mod tests {
         let prefs_repo = Arc::new(MockPreferencesRepository::new()) as Arc<dyn PreferencesRepository>;
         let state = create_test_state_with_prefs(prefs_repo);
 
-        let user = UserContext { did: "did:plc:test".to_string(), handle: "test.handle".to_string() };
+        let user = UserContext {
+            did: "did:plc:test".to_string(),
+            handle: "test.handle".to_string(),
+            access_token: "test_token".to_string(),
+            pds_url: "https://bsky.social".to_string(),
+            has_dpop: false,
+        };
         let response = get_preferences(State(state), Some(Extension(user)))
             .await
             .into_response();
@@ -161,7 +167,13 @@ mod tests {
         let prefs_repo = Arc::new(MockPreferencesRepository::new()) as Arc<dyn PreferencesRepository>;
         let state = create_test_state_with_prefs(prefs_repo);
 
-        let user = UserContext { did: "did:plc:test".to_string(), handle: "test.handle".to_string() };
+        let user = UserContext {
+            did: "did:plc:test".to_string(),
+            handle: "test.handle".to_string(),
+            access_token: "test_token".to_string(),
+            pds_url: "https://bsky.social".to_string(),
+            has_dpop: false,
+        };
         let payload = UpdatePreferencesRequest {
             persona: Some("creator".to_string()),
             complete_onboarding: Some(true),
@@ -181,7 +193,13 @@ mod tests {
         let prefs_repo = Arc::new(MockPreferencesRepository::new()) as Arc<dyn PreferencesRepository>;
         let state = create_test_state_with_prefs(prefs_repo);
 
-        let user = UserContext { did: "did:plc:test".to_string(), handle: "test.handle".to_string() };
+        let user = UserContext {
+            did: "did:plc:test".to_string(),
+            handle: "test.handle".to_string(),
+            access_token: "test_token".to_string(),
+            pds_url: "https://bsky.social".to_string(),
+            has_dpop: false,
+        };
         let payload = UpdatePreferencesRequest {
             persona: Some("invalid".to_string()),
             complete_onboarding: None,

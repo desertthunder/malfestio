@@ -106,7 +106,13 @@ mod tests {
     #[tokio::test]
     async fn test_create_card_success() {
         let state = create_test_state();
-        let user = UserContext { did: "did:plc:test123".to_string(), handle: "test.handle".to_string() };
+        let user = UserContext {
+            did: "did:plc:test123".to_string(),
+            handle: "test.handle".to_string(),
+            access_token: "test_token".to_string(),
+            pds_url: "https://bsky.social".to_string(),
+            has_dpop: false,
+        };
 
         let payload = CreateCardRequest {
             deck_id: "550e8400-e29b-41d4-a716-446655440000".to_string(),

@@ -89,7 +89,13 @@ mod tests {
     async fn test_get_feed_follows_success() {
         let social_repo = Arc::new(MockSocialRepository::new());
         let state = create_test_state_with_social(social_repo);
-        let user = UserContext { did: "did:plc:test".to_string(), handle: "test.handle".to_string() };
+        let user = UserContext {
+            did: "did:plc:test".to_string(),
+            handle: "test.handle".to_string(),
+            access_token: "test_token".to_string(),
+            pds_url: "https://bsky.social".to_string(),
+            has_dpop: false,
+        };
         let response = get_feed_follows(State(state), Some(Extension(user)))
             .await
             .into_response();
