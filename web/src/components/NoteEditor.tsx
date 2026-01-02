@@ -1,5 +1,6 @@
 /* eslint-disable solid/no-innerhtml */
 import { EditorToolbar } from "$components/notes/EditorToolbar";
+import { MarkdownEditor, type MarkdownEditorAPI } from "$components/notes/MarkdownEditor";
 import { api } from "$lib/api";
 import type { Note } from "$lib/model";
 import { toast } from "$lib/toast";
@@ -12,7 +13,7 @@ import rehypeExternalLinks from "rehype-external-links";
 import rehypeStringify from "rehype-stringify";
 import remarkParse from "remark-parse";
 import remarkRehype from "remark-rehype";
-import { createEffect, createMemo, createResource, createSignal, For, onCleanup, onMount, Show } from "solid-js";
+import { createEffect, createResource, createSignal, onCleanup, Show } from "solid-js";
 import { unified } from "unified";
 
 export type EditorFont = "neon" | "argon" | "krypton" | "radon" | "xenon" | "jetbrains" | "google";
@@ -20,25 +21,6 @@ export type EditorFont = "neon" | "argon" | "krypton" | "radon" | "xenon" | "jet
 type NoteEditorProps = { noteId?: string; initialTitle?: string; initialContent?: string };
 
 type EditorTab = "write" | "preview";
-
-function getFontName(font: EditorFont | (() => EditorFont)) {
-  switch (typeof font === "function" ? font() : font) {
-    case "neon":
-      return "Monaspace Neon";
-    case "argon":
-      return "Monaspace Argon";
-    case "krypton":
-      return "Monaspace Krypton";
-    case "radon":
-      return "Monaspace Radon";
-    case "xenon":
-      return "Monaspace Xenon";
-    case "google":
-      return "Google Sans Code";
-    default:
-      return "JetBrains Mono";
-  }
-}
 
 const processor = unified().use(remarkParse).use(remarkRehype).use(rehypeShiki, { theme: "vitesse-dark" }).use(
   rehypeExternalLinks,
@@ -57,7 +39,7 @@ export function NoteEditor(props: NoteEditorProps) {
   const [editorFont, setEditorFont] = createSignal<EditorFont>("jetbrains");
   const [activeTab, setActiveTab] = createSignal<EditorTab>("write");
 
-  let textareaRef: HTMLTextAreaElement | undefined;
+  let editorApi: MarkdownEditorAPI | undefined;
   let textcomplete: Textcomplete | undefined;
 
   const [allNotes] = createResource(async (): Promise<Note[]> => {
@@ -75,10 +57,16 @@ export function NoteEditor(props: NoteEditorProps) {
     updatePreviewContent().catch(e => console.error(`Preview error: ${e instanceof Error ? e.message : e}`));
   });
 
-  onMount(() => {
-    if (!textareaRef) return;
+  onCleanup(() => {
+    textcomplete?.destroy();
+  });
 
-    const editor = new TextareaEditor(textareaRef);
+  const initTextcomplete = (api: MarkdownEditorAPI) => {
+    editorApi = api;
+    const textarea = api.getTextarea();
+    if (!textarea) return;
+
+    const editor = new TextareaEditor(textarea);
     textcomplete = new Textcomplete(editor, [{
       match: /\[\[([^\]]*)/,
       search: (term: string, callback: (results: string[]) => void) => {
@@ -91,27 +79,9 @@ export function NoteEditor(props: NoteEditorProps) {
       replace: (title: string) => `[[${title}]]`,
       template: (title: string) => title,
     }]);
-  });
-
-  onCleanup(() => {
-    textcomplete?.destroy();
-  });
-
-  const fontValue = createMemo(() => getFontName(editorFont));
-
-  const insertAtCursor = (before: string, after: string = "") => {
-    if (!textareaRef) return;
-    const start = textareaRef.selectionStart;
-    const end = textareaRef.selectionEnd;
-    const text = content();
-    const selectedText = text.substring(start, end);
-    const newText = text.substring(0, start) + before + selectedText + after + text.substring(end);
-    setContent(newText);
-    setTimeout(() => {
-      textareaRef!.focus();
-      textareaRef!.setSelectionRange(start + before.length, start + before.length + selectedText.length);
-    }, 0);
   };
+
+  const insertAtCursor = (before: string, after: string = "") => editorApi?.insertAtCursor(before, after);
 
   const handleBold = () => insertAtCursor("**", "**");
   const handleItalic = () => insertAtCursor("*", "*");
@@ -140,6 +110,8 @@ export function NoteEditor(props: NoteEditorProps) {
       }
     }
   };
+
+  const handleEditorKeyDown = (e: KeyboardEvent) => handleKeyDown(e);
 
   const handleSubmit = async (e: Event) => {
     e.preventDefault();
@@ -182,8 +154,6 @@ export function NoteEditor(props: NoteEditorProps) {
       toast.error("Failed to save note");
     }
   };
-
-  const lineNumbers = () => Array.from({ length: content().split("\n").length }, (_, i) => i + 1);
 
   return (
     <div class="max-w-5xl mx-auto p-6">
@@ -253,7 +223,9 @@ export function NoteEditor(props: NoteEditorProps) {
           </div>
 
           <Show when={activeTab() === "write"}>
-            <div class="border border-slate-700 border-t-0 rounded-b-lg overflow-hidden">
+            <div
+              class="border border-slate-700 border-t-0 rounded-b-lg overflow-hidden"
+              onKeyDown={handleEditorKeyDown}>
               <EditorToolbar
                 onBold={handleBold}
                 onItalic={handleItalic}
@@ -263,26 +235,18 @@ export function NoteEditor(props: NoteEditorProps) {
                 onCodeBlock={handleCodeBlock}
                 onWikilink={handleWikilink}
                 onList={handleList} />
-              <div class="flex">
-                <Show when={showLineNumbers()}>
-                  <div
-                    class={`bg-slate-900 border-r border-slate-700 text-slate-600 text-right px-2 py-3 select-none text-sm leading-relaxed`}>
-                    <For each={lineNumbers()}>{(num) => <div>{num}</div>}</For>
-                  </div>
-                </Show>
-                <textarea
-                  ref={textareaRef}
-                  value={content()}
-                  onInput={(e) => setContent(e.target.value)}
-                  style={{ "font-family": fontValue() }}
-                  onKeyDown={handleKeyDown}
-                  class={`flex-1 bg-slate-800 text-white p-3 text-sm leading-relaxed resize-none focus:outline-none min-h-[400px]`}
-                  placeholder="# Heading
+              <MarkdownEditor
+                value={content()}
+                onChange={setContent}
+                showLineNumbers={showLineNumbers()}
+                font={editorFont()}
+                ref={initTextcomplete}
+                placeholder="# Heading
 
 Write your thoughts...
 
-Link to other notes with [[Title]]" />
-              </div>
+Link to other notes with [[Title]]"
+                class="bg-slate-800 min-h-[400px]" />
             </div>
           </Show>
 

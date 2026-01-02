@@ -104,7 +104,9 @@ const NoteView: Component = () => {
                     {n().title || "Untitled"}
                   </h1>
                   <div class="flex items-center gap-3 text-sm text-slate-500 dark:text-slate-400">
-                    <span>Updated {new Date(n().updated_at).toLocaleDateString()}</span>
+                    <Show when={n().updated_at ?? n().created_at}>
+                      {val => <span>Updated {new Date(val()).toLocaleDateString()}</span>}
+                    </Show>
                     <Show when={n().visibility.type !== "Private"}>
                       <span class="inline-flex items-center rounded-full bg-green-50 dark:bg-green-900/30 px-2 py-0.5 text-xs font-medium text-green-700 dark:text-green-300">
                         {n().visibility.type}
