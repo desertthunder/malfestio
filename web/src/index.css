@@ -25,11 +25,11 @@
     --spacing-3xl: 64px;
     --spacing-4xl: 96px;
 
-    /* Elevation Layers - Carbon-inspired */
+    /* Elevation Layers */
     --layer-00: #161616;
-    --layer-01: #1E1E1E;
+    --layer-01: #1e1e1e;
     --layer-02: #262626;
-    --layer-03: #2C2C2C;
+    --layer-03: #2c2c2c;
     --layer-04: #323232;
 
     /* Elevation Shadows - Subtle depth */
@@ -45,13 +45,12 @@
     --duration-slow: 350ms;
     --duration-slower: 500ms;
 
-    --easing-standard: cubic-bezier(0.4, 0.0, 0.2, 1);
-    --easing-accelerate: cubic-bezier(0.4, 0.0, 1, 1);
-    --easing-decelerate: cubic-bezier(0.0, 0.0, 0.2, 1);
-    --easing-sharp: cubic-bezier(0.4, 0.0, 0.6, 1);
+    --easing-standard: cubic-bezier(0.4, 0, 0.2, 1);
+    --easing-accelerate: cubic-bezier(0.4, 0, 1, 1);
+    --easing-decelerate: cubic-bezier(0, 0, 0.2, 1);
+    --easing-sharp: cubic-bezier(0.4, 0, 0.6, 1);
 
-    /* Density Multiplier - Set by context provider */
-    --density-multiplier: 1.0;
+    --density-multiplier: 1;
 }
 
 * {
@@ -108,14 +107,13 @@ h6 {
 }
 
 .density-comfortable {
-    --density-multiplier: 1.0;
+    --density-multiplier: 1;
 }
 
 .density-spacious {
     --density-multiplier: 1.25;
 }
 
-/* Transition Utilities - Consistent motion */
 .transition-standard {
     transition-duration: var(--duration-normal);
     transition-timing-function: var(--easing-standard);
@@ -129,4 +127,57 @@ h6 {
 .transition-slow {
     transition-duration: var(--duration-slow);
     transition-timing-function: var(--easing-decelerate);
+}
+
+@keyframes pulse {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+@keyframes breathe {
+    0%,
+    100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.02);
+    }
+}
+
+.animate-pulse {
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.animate-shimmer {
+    background: linear-gradient(
+        90deg,
+        var(--layer-01) 0%,
+        var(--layer-02) 50%,
+        var(--layer-01) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+}
+
+.animate-breathe {
+    animation: breathe 3s ease-in-out infinite;
+}
+
+.press-effect:active {
+    transform: scale(0.97);
+    transition: transform var(--duration-instant) var(--easing-sharp);
 }
