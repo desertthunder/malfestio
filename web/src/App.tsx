@@ -16,6 +16,8 @@ import LectureImport from "$pages/LectureImport";
 import Library from "$pages/Library";
 import Login from "$pages/Login";
 import NoteNew from "$pages/NoteNew";
+import Notes from "$pages/Notes";
+import NoteView from "$pages/NoteView";
 import NotFound from "$pages/NotFound";
 import Review from "$pages/Review";
 import Search from "$pages/Search";
@@ -63,6 +65,8 @@ const App: Component = () => {
         <Route path="/decks" component={Home} />
         <Route path="/decks/new" component={DeckNew} />
         <Route path="/notes/new" component={NoteNew} />
+        <Route path="/notes/:id" component={NoteView} />
+        <Route path="/notes" component={Notes} />
         <Route path="/decks/:id" component={DeckView} />
         <Route path="/import" component={Import} />
         <Route path="/import/lecture" component={LectureImport} />

@@ -45,6 +45,12 @@ export const api = {
   getUserProfile: (did: string) => apiFetch(`/users/${did}/profile`, { method: "GET" }),
   getRemoteDeck: (uri: string) => apiFetch(`/remote/deck?uri=${encodeURIComponent(uri)}`, { method: "GET" }),
   exportData: (collection: "decks" | "notes") => apiFetch(`/export/${collection}`, { method: "GET" }),
+  getNotes: () => apiFetch("/notes", { method: "GET" }),
+  getNote: (id: string) => apiFetch(`/notes/${id}`, { method: "GET" }),
+  deleteNote: (id: string) => apiFetch(`/notes/${id}`, { method: "DELETE" }),
+  updateNote: (id: string, payload: object) => {
+    return apiFetch(`/notes/${id}`, { method: "PUT", body: JSON.stringify(payload) });
+  },
   createDeck: async (payload: CreateDeckPayload) => {
     const { cards, ...deckPayload } = payload;
     const res = await apiFetch("/decks", { method: "POST", body: JSON.stringify(deckPayload) });
@@ -60,10 +66,7 @@ export const api = {
       ));
     }
 
-    return {
-      ok: true,
-      json: async () => deck,
-    };
+    return { ok: true, json: async () => deck };
   },
   addComment: (deckId: string, content: string, parentId?: string) => {
     return apiFetch(`/decks/${deckId}/comments`, {

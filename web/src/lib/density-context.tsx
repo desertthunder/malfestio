@@ -5,11 +5,10 @@ import { prefStore } from "./store";
 /**
  * Density Context Provider
  *
- * Provides density mode to all child components. Reads from user preferences
- * and applies the appropriate density class to the container.
+ * Provides density mode to all child components.
+ * Reads from user preferences and applies the appropriate density class to the container.
  *
- * Components can override density locally via props, but will default to
- * this global setting.
+ * Components can override density locally via props.
  */
 const DensityContext = createContext<DensityMode>("comfortable");
 

@@ -27,6 +27,18 @@ export type Deck = {
   fork_of?: string;
 };
 
+export type Note = {
+  id: string;
+  owner_did: string;
+  title: string;
+  body: string;
+  tags: string[];
+  visibility: Visibility;
+  published_at?: string;
+  created_at: string;
+  updated_at: string;
+};
+
 export type CreateDeckPayload = {
   title: string;
   description: string;
