@@ -1,16 +1,27 @@
 /* eslint-disable solid/no-innerhtml */
+import { BacklinksPanel } from "$components/notes/BacklinksPanel";
+import { OutlinePanel } from "$components/notes/OutlinePanel";
+import { WikilinksPanel } from "$components/notes/WikilinksPanel";
 import { Button } from "$components/ui/Button";
 import { api } from "$lib/api";
 import type { Note } from "$lib/model";
+import {
+  extractHeadings,
+  findBacklinks,
+  type Heading,
+  parseWikilinks,
+  resolveWikilink,
+  type WikiLink,
+} from "$lib/wikilink";
 import { Tag } from "$ui/Tag";
+import rehypeShiki from "@shikijs/rehype";
 import { A, useParams } from "@solidjs/router";
 import rehypeExternalLinks from "rehype-external-links";
-import rehypeSanitize from "rehype-sanitize";
 import rehypeStringify from "rehype-stringify";
 import remarkParse from "remark-parse";
 import remarkRehype from "remark-rehype";
 import type { Component } from "solid-js";
-import { createEffect, createResource, createSignal, For, Show } from "solid-js";
+import { createEffect, createMemo, createResource, createSignal, For, Show } from "solid-js";
 import { unified } from "unified";
 
 const NoteView: Component = () => {
@@ -20,14 +31,25 @@ const NoteView: Component = () => {
     if (!res.ok) return null;
     return res.json();
   });
-  const [renderedContent, setRenderedContent] = createSignal("");
 
-  const processor = unified().use(remarkParse).use(remarkRehype).use(rehypeSanitize).use(rehypeExternalLinks, {
-    target: "_blank",
-    rel: ["nofollow"],
-  }).use(rehypeStringify);
+  const [allNotes] = createResource(async (): Promise<Note[]> => {
+    const res = await api.getNotes();
+    if (!res.ok) return [];
+    return res.json();
+  });
+
+  const [renderedContent, setRenderedContent] = createSignal("");
+  const [headings, setHeadings] = createSignal<Heading[]>([]);
+  const [wikilinks, setWikilinks] = createSignal<WikiLink[]>([]);
+
+  const processor = unified().use(remarkParse).use(remarkRehype).use(rehypeShiki, {
+    theme: "vitesse-dark",
+    defaultLanguage: "text",
+  }).use(rehypeExternalLinks, { target: "_blank", rel: ["nofollow"] }).use(rehypeStringify);
 
   const updateRenderedContent = async (n: Note) => {
+    setHeadings(extractHeadings(n.body));
+    setWikilinks(parseWikilinks(n.body));
     const file = await processor.process(n.body);
     setRenderedContent(String(file));
   };
@@ -39,8 +61,17 @@ const NoteView: Component = () => {
     }
   });
 
+  const backlinks = createMemo(() => {
+    const n = note();
+    const all = allNotes() ?? [];
+    if (!n) return [];
+    return findBacklinks(n.title, all);
+  });
+
+  const resolveNote = (title: string) => resolveWikilink(title, allNotes() ?? []);
+
   return (
-    <div class="max-w-5xl mx-auto p-6">
+    <div class="max-w-7xl mx-auto p-6">
       <Show
         when={!note.loading}
         fallback={
@@ -94,9 +125,31 @@ const NoteView: Component = () => {
                 </div>
               </Show>
 
-              <article class="prose prose-slate dark:prose-invert max-w-none bg-white dark:bg-slate-800/50 rounded-xl p-8 border border-slate-200 dark:border-slate-700">
-                <div innerHTML={renderedContent()} />
-              </article>
+              <div class="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6">
+                <article class="prose prose-slate dark:prose-invert max-w-none bg-white dark:bg-slate-800/50 rounded-xl p-8 border border-slate-200 dark:border-slate-700 overflow-hidden">
+                  <div class="shiki-content" innerHTML={renderedContent()} />
+                </article>
+
+                <aside class="space-y-6">
+                  <div class="surface-01 rounded-lg p-4">
+                    <OutlinePanel headings={headings()} />
+                  </div>
+                  <div class="surface-01 rounded-lg p-4">
+                    <WikilinksPanel links={wikilinks()} notes={allNotes() ?? []} resolveNote={resolveNote} />
+                  </div>
+                  <div class="surface-01 rounded-lg p-4">
+                    <BacklinksPanel backlinks={backlinks()} />
+                  </div>
+                  <Show when={n().tags.length > 0}>
+                    <div class="surface-01 rounded-lg p-4 hidden lg:block">
+                      <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-2">Tags</h3>
+                      <div class="flex flex-wrap gap-2">
+                        <For each={n().tags}>{(tag) => <Tag label={tag} density="compact" />}</For>
+                      </div>
+                    </div>
+                  </Show>
+                </aside>
+              </div>
             </div>
           )}
         </Show>

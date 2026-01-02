@@ -14,9 +14,19 @@
   },
   "dependencies": {
     "@fontsource-variable/figtree": "^5.2.8",
+    "@fontsource-variable/jetbrains-mono": "^5.0.0",
+    "@fontsource/google-sans-code": "^5.0.0",
+    "@fontsource/monaspace-argon": "^5.0.0",
+    "@fontsource/monaspace-krypton": "^5.0.0",
+    "@fontsource/monaspace-neon": "^5.0.0",
+    "@fontsource/monaspace-radon": "^5.0.0",
+    "@fontsource/monaspace-xenon": "^5.0.0",
+    "@shikijs/rehype": "^3.0.0",
     "@solidjs/meta": "^0.29.4",
     "@solidjs/router": "^0.15.4",
     "@tailwindcss/vite": "^4.1.18",
+    "@textcomplete/core": "^0.1.0",
+    "@textcomplete/textarea": "^0.1.0",
     "clsx": "^2.1.1",
     "motion": "^12.23.26",
     "rehype-external-links": "^3.0.0",
@@ -24,6 +34,7 @@
     "rehype-stringify": "^10.0.1",
     "remark-parse": "^11.0.0",
     "remark-rehype": "^11.1.2",
+    "shiki": "^3.0.0",
     "solid-js": "^1.9.10",
     "solid-motionone": "^1.0.4",
     "tailwind-merge": "^3.4.0",
@@ -37,6 +48,7 @@
     "@iconify-json/ri": "^1.2.7",
     "@resvg/resvg-js": "^2.6.2",
     "@solidjs/testing-library": "^0.8.10",
+    "@tailwindcss/forms": "^0.5.11",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/user-event": "^14.6.1",
     "@types/node": "^24.10.1",
@@ -53,5 +65,9 @@
     "vite-plugin-solid": "^2.11.10",
     "vitest": "^4.0.16"
   },
-  "pnpm": { "overrides": { "vite": "npm:rolldown-vite@7.2.5" } }
+  "pnpm": {
+    "overrides": {
+      "vite": "npm:rolldown-vite@7.2.5"
+    }
+  }
 }
