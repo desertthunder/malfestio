@@ -35,8 +35,9 @@ export type Note = {
   tags: string[];
   visibility: Visibility;
   published_at?: string;
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
+  links?: string[];
 };
 
 export type CreateDeckPayload = {

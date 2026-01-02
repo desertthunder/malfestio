@@ -32,6 +32,75 @@ This directory contains the Lexicon definitions for the malfestio's public recor
 - **Private layer**:
     - review schedule, lapses, grades, per-card performance, streaks
 
+## Publishing Lexicons to AT Protocol Network
+
+### Prerequisites
+
+**Goat CLI**: Install the official AT Protocol CLI tool
+
+```bash
+# macOS
+brew install goat
+```
+
+### Publishing Workflow
+
+1. **Validate schemas locally**:
+
+   ```bash
+   goat lexicon lint lexicons/
+   ```
+
+2. **Check DNS configuration**:
+
+   ```bash
+   goat lexicon check-dns org.stormlightlabs.malfestio.card
+   ```
+
+3. **Publish to network**:
+
+   ```bash
+   goat lexicon publish lexicons/org/stormlightlabs/malfestio/
+   ```
+
+### PDS Validation Modes
+
+AT Protocol PDSs support three lexicon validation modes:
+
+1. **Explicit validation required**: Record must validate against schema; fails if PDS doesn't know the lexicon
+   - This is the current mode causing `Lexicon not found` errors
+   - Requires publishing lexicons or using optimistic validation
+
+2. **Optimistic validation** (default): Validates if PDS knows the schema, allows creation if unknown
+   - Most flexible for custom lexicons during development
+   - Set via `validate: undefined` in create/update record calls
+
+3. **Explicit no validation**: Skips validation even if PDS knows the schema
+   - Set via `validate: false` in create/update record calls
+
+### Version Updates
+
+When updating lexicon schemas:
+
+1. **Minor Updates** (additive only):
+   - Add new optional fields
+   - Update descriptions
+   - Add new `knownValues` (don't remove old ones)
+   - Increment patch version in documentation
+
+2. **Breaking Changes** (avoid if possible):
+   - Create new lexicon with new NSID (e.g., `org.stormlightlabs.malfestio.cardV2`)
+   - Maintain both versions during migration period
+   - Update code to support both old and new schemas
+   - Document migration path
+
+3. **Republishing**:
+
+   ```bash
+   goat lexicon lint lexicons/
+   goat lexicon publish lexicons/org/stormlightlabs/malfestio/
+   ```
+
 ## Evolution Rules
 
 1. **Additive Changes Only**: You can add new optional fields to existing records.

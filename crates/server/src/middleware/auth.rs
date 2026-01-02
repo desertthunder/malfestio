@@ -250,42 +250,11 @@ pub async fn auth_middleware(State(state): State<SharedState>, mut req: Request,
 /// but continues without error if no token or invalid token.
 ///
 /// Used by endpoints that need to check permissions but don't require authentication.
-pub async fn optional_auth_middleware(mut req: Request, next: Next) -> Response {
-    let auth_header = req.headers().get(http::header::AUTHORIZATION);
-
-    let token = match auth_header.and_then(|h| h.to_str().ok()).and_then(parse_auth_header) {
-        Some(AuthScheme::Bearer(t)) | Some(AuthScheme::DPoP(t)) => t,
-        None => {
-            return next.run(req).await;
-        }
-    };
-
-    let client = reqwest::Client::new();
-    let pds_url = std::env::var("PDS_URL").unwrap_or_else(|_| "https://bsky.social".to_string());
-
-    match client
-        .get(format!("{}/xrpc/com.atproto.server.getSession", pds_url))
-        .header("Authorization", format!("Bearer {}", token))
-        .send()
-        .await
-    {
-        Ok(response) if response.status().is_success() => {
-            let body: serde_json::Value = response.json().await.unwrap_or_default();
-            let did = body["did"].as_str().unwrap_or("").to_string();
-            let handle = body["handle"].as_str().unwrap_or("").to_string();
-
-            req.extensions_mut().insert(UserContext {
-                did,
-                handle,
-                access_token: token.to_string(),
-                pds_url: pds_url.clone(),
-                has_dpop: false,
-            });
-        }
-        _ => {}
+pub async fn optional_auth_middleware(State(state): State<SharedState>, req: Request, next: Next) -> Response {
+    if req.headers().get(http::header::AUTHORIZATION).is_none() {
+        return next.run(req).await;
     }
-
-    next.run(req).await
+    auth_middleware(State(state), req, next).await
 }
 
 /// Cleanup expired nonces from the cache.

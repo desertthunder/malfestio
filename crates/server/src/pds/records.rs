@@ -82,7 +82,7 @@ impl DeckRecord {
     /// Create a DeckRecord from an internal Deck model.
     pub fn from_deck(deck: &Deck, card_at_uris: Vec<String>) -> Self {
         Self {
-            record_type: "app.malfestio.deck".to_string(),
+            record_type: "org.stormlightlabs.malfestio.deck".to_string(),
             title: deck.title.clone(),
             description: if deck.description.is_empty() { None } else { Some(deck.description.clone()) },
             tags: deck.tags.clone(),
@@ -98,7 +98,7 @@ impl CardRecord {
     /// Create a CardRecord from an internal Card model.
     pub fn from_card(card: &Card, deck_at_uri: &str) -> Self {
         Self {
-            record_type: "app.malfestio.card".to_string(),
+            record_type: "org.stormlightlabs.malfestio.card".to_string(),
             deck_ref: deck_at_uri.to_string(),
             front: card.front.clone(),
             back: card.back.clone(),
@@ -117,7 +117,7 @@ impl NoteRecord {
     /// Create a NoteRecord from an internal Note model.
     pub fn from_note(note: &Note) -> Self {
         Self {
-            record_type: "app.malfestio.note".to_string(),
+            record_type: "org.stormlightlabs.malfestio.note".to_string(),
             title: note.title.clone(),
             body: note.body.clone(),
             tags: note.tags.clone(),
@@ -143,7 +143,7 @@ pub fn prepare_deck_record(deck: &Deck, card_at_uris: Vec<String>) -> PreparedRe
     let record = DeckRecord::from_deck(deck, card_at_uris);
     PreparedRecord {
         rkey: generate_tid(),
-        collection: "app.malfestio.deck".to_string(),
+        collection: "org.stormlightlabs.malfestio.deck".to_string(),
         record: serde_json::to_value(record).expect("Failed to serialize deck record"),
     }
 }
@@ -153,7 +153,7 @@ pub fn prepare_card_record(card: &Card, deck_at_uri: &str) -> PreparedRecord {
     let record = CardRecord::from_card(card, deck_at_uri);
     PreparedRecord {
         rkey: generate_tid(),
-        collection: "app.malfestio.card".to_string(),
+        collection: "org.stormlightlabs.malfestio.card".to_string(),
         record: serde_json::to_value(record).expect("Failed to serialize card record"),
     }
 }
@@ -163,7 +163,7 @@ pub fn prepare_note_record(note: &Note) -> PreparedRecord {
     let record = NoteRecord::from_note(note);
     PreparedRecord {
         rkey: generate_tid(),
-        collection: "app.malfestio.note".to_string(),
+        collection: "org.stormlightlabs.malfestio.note".to_string(),
         record: serde_json::to_value(record).expect("Failed to serialize note record"),
     }
 }
@@ -221,7 +221,7 @@ mod tests {
         let deck = sample_deck();
         let record = DeckRecord::from_deck(&deck, vec![]);
 
-        assert_eq!(record.record_type, "app.malfestio.deck");
+        assert_eq!(record.record_type, "org.stormlightlabs.malfestio.deck");
         assert_eq!(record.title, "Test Deck");
         assert_eq!(record.description, Some("A test deck".to_string()));
         assert_eq!(record.tags.len(), 2);
@@ -230,10 +230,13 @@ mod tests {
     #[test]
     fn test_deck_record_serialization() {
         let deck = sample_deck();
-        let record = DeckRecord::from_deck(&deck, vec!["at://did:plc:abc/app.malfestio.card/tid1".to_string()]);
+        let record = DeckRecord::from_deck(
+            &deck,
+            vec!["at://did:plc:abc/org.stormlightlabs.malfestio.card/tid1".to_string()],
+        );
 
         let json = serde_json::to_string(&record).unwrap();
-        assert!(json.contains("\"$type\":\"app.malfestio.deck\""));
+        assert!(json.contains("\"$type\":\"org.stormlightlabs.malfestio.deck\""));
         assert!(json.contains("\"title\":\"Test Deck\""));
         assert!(json.contains("cardRefs"));
     }
@@ -241,10 +244,10 @@ mod tests {
     #[test]
     fn test_card_record_from_card() {
         let card = sample_card();
-        let deck_uri = "at://did:plc:abc123/app.malfestio.deck/tid123";
+        let deck_uri = "at://did:plc:abc123/org.stormlightlabs.malfestio.deck/tid123";
         let record = CardRecord::from_card(&card, deck_uri);
 
-        assert_eq!(record.record_type, "app.malfestio.card");
+        assert_eq!(record.record_type, "org.stormlightlabs.malfestio.card");
         assert_eq!(record.deck_ref, deck_uri);
         assert_eq!(record.front, "What is the capital of France?");
         assert_eq!(record.back, "Paris");
@@ -255,7 +258,7 @@ mod tests {
         let note = sample_note();
         let record = NoteRecord::from_note(&note);
 
-        assert_eq!(record.record_type, "app.malfestio.note");
+        assert_eq!(record.record_type, "org.stormlightlabs.malfestio.note");
         assert_eq!(record.title, "Test Note");
         assert_eq!(record.visibility, "public");
     }
@@ -265,7 +268,7 @@ mod tests {
         let deck = sample_deck();
         let prepared = prepare_deck_record(&deck, vec![]);
 
-        assert_eq!(prepared.collection, "app.malfestio.deck");
+        assert_eq!(prepared.collection, "org.stormlightlabs.malfestio.deck");
         assert_eq!(prepared.rkey.len(), 13); // TID length
         assert!(prepared.record.is_object());
     }
@@ -273,9 +276,9 @@ mod tests {
     #[test]
     fn test_prepare_card_record() {
         let card = sample_card();
-        let prepared = prepare_card_record(&card, "at://did:plc:abc/app.malfestio.deck/tid");
+        let prepared = prepare_card_record(&card, "at://did:plc:abc/org.stormlightlabs.malfestio.deck/tid");
 
-        assert_eq!(prepared.collection, "app.malfestio.card");
+        assert_eq!(prepared.collection, "org.stormlightlabs.malfestio.card");
         assert_eq!(prepared.rkey.len(), 13);
     }
 
@@ -284,14 +287,17 @@ mod tests {
         let note = sample_note();
         let prepared = prepare_note_record(&note);
 
-        assert_eq!(prepared.collection, "app.malfestio.note");
+        assert_eq!(prepared.collection, "org.stormlightlabs.malfestio.note");
         assert_eq!(prepared.rkey.len(), 13);
     }
 
     #[test]
     fn test_make_at_uri() {
-        let uri = make_at_uri("did:plc:abc123", "app.malfestio.deck", "3k5abc123");
-        assert_eq!(uri.to_string(), "at://did:plc:abc123/app.malfestio.deck/3k5abc123");
+        let uri = make_at_uri("did:plc:abc123", "org.stormlightlabs.malfestio.deck", "3k5abc123");
+        assert_eq!(
+            uri.to_string(),
+            "at://did:plc:abc123/org.stormlightlabs.malfestio.deck/3k5abc123"
+        );
     }
 
     #[test]

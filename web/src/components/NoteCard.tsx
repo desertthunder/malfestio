@@ -32,7 +32,7 @@ export const NoteCard: Component<NoteCardProps> = (props) => {
               {props.note.title || "Untitled"}
             </h3>
             <p class="text-xs text-slate-500 dark:text-slate-400">
-              {new Date(props.note.updated_at).toLocaleDateString()}
+              {props.note.updated_at ? new Date(props.note.updated_at).toLocaleDateString() : ""}
             </p>
           </div>
 

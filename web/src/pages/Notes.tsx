@@ -3,9 +3,9 @@ import { Button } from "$components/ui/Button";
 import { EmptyState } from "$components/ui/EmptyState";
 import { api } from "$lib/api";
 import type { Note } from "$lib/model";
-import { A } from "@solidjs/router";
+import { A, useLocation } from "@solidjs/router";
 import type { Component } from "solid-js";
-import { createMemo, createResource, createSignal, For, Show } from "solid-js";
+import { createEffect, createMemo, createResource, createSignal, For, Show } from "solid-js";
 
 const fetchNotes = async (): Promise<Note[]> => {
   const res = await api.getNotes();
@@ -16,9 +16,16 @@ const fetchNotes = async (): Promise<Note[]> => {
 type ViewMode = "grid" | "list";
 
 const Notes: Component = () => {
-  const [notes] = createResource(fetchNotes);
+  const location = useLocation();
+  const [notes, { refetch }] = createResource(fetchNotes);
   const [viewMode, setViewMode] = createSignal<ViewMode>("grid");
   const [searchQuery, setSearchQuery] = createSignal("");
+
+  createEffect(() => {
+    if (location.pathname === "/notes") {
+      refetch();
+    }
+  });
 
   const filteredNotes = createMemo(() => {
     const allNotes = notes() || [];

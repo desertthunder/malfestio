@@ -5,6 +5,7 @@ import type { Note } from "$lib/model";
 import { toast } from "$lib/toast";
 import { Button } from "$ui/Button";
 import rehypeShiki from "@shikijs/rehype";
+import { useNavigate } from "@solidjs/router";
 import { Textcomplete } from "@textcomplete/core";
 import { TextareaEditor } from "@textcomplete/textarea";
 import rehypeExternalLinks from "rehype-external-links";
@@ -20,12 +21,32 @@ type NoteEditorProps = { noteId?: string; initialTitle?: string; initialContent?
 
 type EditorTab = "write" | "preview";
 
+function getFontName(font: EditorFont | (() => EditorFont)) {
+  switch (typeof font === "function" ? font() : font) {
+    case "neon":
+      return "Monaspace Neon";
+    case "argon":
+      return "Monaspace Argon";
+    case "krypton":
+      return "Monaspace Krypton";
+    case "radon":
+      return "Monaspace Radon";
+    case "xenon":
+      return "Monaspace Xenon";
+    case "google":
+      return "Google Sans Code";
+    default:
+      return "JetBrains Mono";
+  }
+}
+
 const processor = unified().use(remarkParse).use(remarkRehype).use(rehypeShiki, { theme: "vitesse-dark" }).use(
   rehypeExternalLinks,
   { target: "_blank", rel: ["nofollow"] },
 ).use(rehypeStringify);
 
 export function NoteEditor(props: NoteEditorProps) {
+  const navigate = useNavigate();
   const [title, setTitle] = createSignal(props.initialTitle || "");
   const [content, setContent] = createSignal(props.initialContent || "");
   const [preview, setPreview] = createSignal("");
@@ -76,24 +97,7 @@ export function NoteEditor(props: NoteEditorProps) {
     textcomplete?.destroy();
   });
 
-  const fontValue = createMemo(() => {
-    switch (editorFont()) {
-      case "neon":
-        return "Monaspace Neon";
-      case "argon":
-        return "Monaspace Argon";
-      case "krypton":
-        return "Monaspace Krypton";
-      case "radon":
-        return "Monaspace Radon";
-      case "xenon":
-        return "Monaspace Xenon";
-      case "google":
-        return "Google Sans Code";
-      default:
-        return "JetBrains Mono";
-    }
-  });
+  const fontValue = createMemo(() => getFontName(editorFont));
 
   const insertAtCursor = (before: string, after: string = "") => {
     if (!textareaRef) return;
@@ -116,11 +120,7 @@ export function NoteEditor(props: NoteEditorProps) {
   const handleCodeBlock = () => insertAtCursor("```\n", "\n```");
   const handleWikilink = () => insertAtCursor("[[", "]]");
   const handleList = () => insertAtCursor("- ");
-
-  const handleHeading = (level: 1 | 2 | 3 | 4 | 5 | 6) => {
-    const prefix = "#".repeat(level) + " ";
-    insertAtCursor(prefix);
-  };
+  const handleHeading = (level: 1 | 2 | 3 | 4 | 5 | 6) => insertAtCursor("#".repeat(level) + " ");
 
   const handleKeyDown = (e: KeyboardEvent) => {
     if (e.metaKey || e.ctrlKey) {
@@ -162,14 +162,19 @@ export function NoteEditor(props: NoteEditorProps) {
 
       if (res.ok) {
         toast.success("Note saved!");
-        if (!props.noteId) {
-          setTitle("");
-          setContent("");
-          setTags("");
-          setVisibilityType("Private");
-          setSharedWith("");
+        if (props.noteId) {
+          navigate(`/notes/${props.noteId}`);
+        } else {
+          try {
+            const newNote = await res.json();
+            navigate(`/notes/${newNote.id}`);
+          } catch {
+            navigate("/notes");
+          }
         }
       } else {
+        const errorText = await res.text();
+        console.error("Failed to save note:", res.status, errorText);
         toast.error("Failed to save note");
       }
     } catch (e) {

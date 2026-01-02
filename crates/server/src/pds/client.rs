@@ -128,7 +128,7 @@ impl PdsClient {
     /// # Arguments
     ///
     /// * `did` - The user's DID (repository owner)
-    /// * `collection` - The collection NSID (e.g., "app.malfestio.deck")
+    /// * `collection` - The collection NSID (e.g., "org.stormlightlabs.malfestio.deck")
     /// * `rkey` - The record key (TID)
     /// * `record` - The record data as JSON
     pub async fn put_record(
@@ -284,7 +284,7 @@ mod tests {
     fn test_put_record_request_serialization() {
         let request = PutRecordRequest {
             repo: "did:plc:abc123".to_string(),
-            collection: "app.malfestio.deck".to_string(),
+            collection: "org.stormlightlabs.malfestio.deck".to_string(),
             rkey: "3k5abc123".to_string(),
             record: serde_json::json!({
                 "title": "Test Deck",
@@ -297,7 +297,7 @@ mod tests {
 
         let json = serde_json::to_string(&request).unwrap();
         assert!(json.contains("\"repo\":\"did:plc:abc123\""));
-        assert!(json.contains("\"collection\":\"app.malfestio.deck\""));
+        assert!(json.contains("\"collection\":\"org.stormlightlabs.malfestio.deck\""));
         assert!(json.contains("\"rkey\":\"3k5abc123\""));
         assert!(json.contains("\"validate\":true"));
     }
@@ -306,7 +306,7 @@ mod tests {
     fn test_delete_record_request_serialization() {
         let request = DeleteRecordRequest {
             repo: "did:plc:abc123".to_string(),
-            collection: "app.malfestio.deck".to_string(),
+            collection: "org.stormlightlabs.malfestio.deck".to_string(),
             rkey: "3k5abc123".to_string(),
             swap_record: None,
             swap_commit: None,

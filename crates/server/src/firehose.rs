@@ -1,7 +1,7 @@
 //! Firehose consumption via AT Protocol Jetstream.
 //!
 //! Provides WebSocket subscription to Jetstream for indexing public records.
-//! Filters for `app.malfestio.*` collections and indexes them locally.
+//! Filters for `org.stormlightlabs.malfestio.*` collections and indexes them locally.
 
 use crate::db::DbPool;
 use async_trait::async_trait;
@@ -15,7 +15,11 @@ use tokio_util::sync::CancellationToken;
 pub const DEFAULT_JETSTREAM_URL: &str = "wss://jetstream2.us-west.bsky.network/subscribe";
 
 /// Collections we're interested in indexing.
-pub const MALFESTIO_COLLECTIONS: &[&str] = &["app.malfestio.deck", "app.malfestio.card", "app.malfestio.note"];
+pub const MALFESTIO_COLLECTIONS: &[&str] = &[
+    "org.stormlightlabs.malfestio.deck",
+    "org.stormlightlabs.malfestio.card",
+    "org.stormlightlabs.malfestio.note",
+];
 
 /// Deck record structure matching the Lexicon schema.
 #[derive(Debug, Deserialize)]
@@ -85,7 +89,7 @@ impl MalfestioEventHandler {
     async fn index_deck(
         &self, did: &str, rkey: &str, rev: &str, record: &Value,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        let at_uri = format!("at://{}/app.malfestio.deck/{}", did, rkey);
+        let at_uri = format!("at://{}/org.stormlightlabs.malfestio.deck/{}", did, rkey);
         let deck: DeckRecord = serde_json::from_value(record.clone())?;
         let created_at = parse_record_datetime(&deck.created_at);
 
@@ -122,7 +126,7 @@ impl MalfestioEventHandler {
     async fn index_card(
         &self, did: &str, rkey: &str, rev: &str, record: &Value,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        let at_uri = format!("at://{}/app.malfestio.card/{}", did, rkey);
+        let at_uri = format!("at://{}/org.stormlightlabs.malfestio.card/{}", did, rkey);
         let card: CardRecord = serde_json::from_value(record.clone())?;
         let created_at = parse_record_datetime(&card.created_at);
         let card_type = card.card_type.unwrap_or_else(|| "basic".to_string());
@@ -160,7 +164,7 @@ impl MalfestioEventHandler {
     async fn index_note(
         &self, did: &str, rkey: &str, rev: &str, record: &Value,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        let at_uri = format!("at://{}/app.malfestio.note/{}", did, rkey);
+        let at_uri = format!("at://{}/org.stormlightlabs.malfestio.note/{}", did, rkey);
         let note: NoteRecord = serde_json::from_value(record.clone())?;
         let created_at = parse_record_datetime(&note.created_at);
         let visibility = note.visibility.unwrap_or_else(|| "public".to_string());
@@ -201,9 +205,9 @@ impl MalfestioEventHandler {
         let client = self.pool.get().await?;
 
         let table = match collection {
-            "app.malfestio.deck" => "indexed_decks",
-            "app.malfestio.card" => "indexed_cards",
-            "app.malfestio.note" => "indexed_notes",
+            "org.stormlightlabs.malfestio.deck" => "indexed_decks",
+            "org.stormlightlabs.malfestio.card" => "indexed_cards",
+            "org.stormlightlabs.malfestio.note" => "indexed_notes",
             _ => return Ok(()),
         };
 
@@ -289,9 +293,15 @@ impl EventHandler for MalfestioEventHandler {
                 match operation.as_str() {
                     "create" | "update" => {
                         let result = match collection.as_str() {
-                            "app.malfestio.deck" => self.index_deck(&did, rkey, rev, &commit.record).await,
-                            "app.malfestio.card" => self.index_card(&did, rkey, rev, &commit.record).await,
-                            "app.malfestio.note" => self.index_note(&did, rkey, rev, &commit.record).await,
+                            "org.stormlightlabs.malfestio.deck" => {
+                                self.index_deck(&did, rkey, rev, &commit.record).await
+                            }
+                            "org.stormlightlabs.malfestio.card" => {
+                                self.index_card(&did, rkey, rev, &commit.record).await
+                            }
+                            "org.stormlightlabs.malfestio.note" => {
+                                self.index_note(&did, rkey, rev, &commit.record).await
+                            }
                             _ => Ok(()),
                         };
 
@@ -414,9 +424,9 @@ mod tests {
 
     #[test]
     fn test_malfestio_collections() {
-        assert!(MALFESTIO_COLLECTIONS.contains(&"app.malfestio.deck"));
-        assert!(MALFESTIO_COLLECTIONS.contains(&"app.malfestio.card"));
-        assert!(MALFESTIO_COLLECTIONS.contains(&"app.malfestio.note"));
+        assert!(MALFESTIO_COLLECTIONS.contains(&"org.stormlightlabs.malfestio.deck"));
+        assert!(MALFESTIO_COLLECTIONS.contains(&"org.stormlightlabs.malfestio.card"));
+        assert!(MALFESTIO_COLLECTIONS.contains(&"org.stormlightlabs.malfestio.note"));
     }
 
     #[test]
@@ -425,7 +435,7 @@ mod tests {
             "title": "Test Deck",
             "description": "A test deck",
             "tags": ["rust", "learning"],
-            "cardRefs": ["at://did:plc:abc/app.malfestio.card/123"],
+            "cardRefs": ["at://did:plc:abc/org.stormlightlabs.malfestio.card/123"],
             "sourceRefs": [],
             "license": "CC-BY-4.0",
             "createdAt": "2024-01-01T00:00:00Z"
@@ -442,7 +452,7 @@ mod tests {
     #[test]
     fn test_parse_card_record() {
         let json = serde_json::json!({
-            "deckRef": "at://did:plc:abc/app.malfestio.deck/123",
+            "deckRef": "at://did:plc:abc/org.stormlightlabs.malfestio.deck/123",
             "front": "What is Rust?",
             "back": "A systems programming language",
             "cardType": "basic",
@@ -451,7 +461,7 @@ mod tests {
         });
 
         let card: CardRecord = serde_json::from_value(json).unwrap();
-        assert_eq!(card.deck_ref, "at://did:plc:abc/app.malfestio.deck/123");
+        assert_eq!(card.deck_ref, "at://did:plc:abc/org.stormlightlabs.malfestio.deck/123");
         assert_eq!(card.front, "What is Rust?");
         assert_eq!(card.back, "A systems programming language");
         assert_eq!(card.card_type, Some("basic".to_string()));
