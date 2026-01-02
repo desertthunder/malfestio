@@ -1,4 +1,5 @@
 import { NoteCard } from "$components/NoteCard";
+import { NotesGraph } from "$components/notes/NotesGraph";
 import { Button } from "$components/ui/Button";
 import { EmptyState } from "$components/ui/EmptyState";
 import { api } from "$lib/api";
@@ -13,7 +14,7 @@ const fetchNotes = async (): Promise<Note[]> => {
   return res.json();
 };
 
-type ViewMode = "grid" | "list";
+type ViewMode = "grid" | "list" | "graph";
 
 const Notes: Component = () => {
   const location = useLocation();
@@ -104,6 +105,23 @@ const Notes: Component = () => {
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
+          <button
+            onClick={() => setViewMode("graph")}
+            class={`p-2 rounded ${
+              viewMode() === "graph" ? "bg-slate-200 dark:bg-slate-700" : "hover:bg-slate-100 dark:hover:bg-slate-800"
+            }`}
+            aria-label="Graph view">
+            <svg
+              class="w-5 h-5 text-slate-600 dark:text-slate-300"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24">
+              <circle cx="5" cy="6" r="2" stroke-width="2" />
+              <circle cx="12" cy="18" r="2" stroke-width="2" />
+              <circle cx="19" cy="10" r="2" stroke-width="2" />
+              <path stroke-linecap="round" stroke-width="2" d="M6.5 7.5L10.5 16M13.5 16.5L17 11.5M7 6h10" />
+            </svg>
+          </button>
         </div>
       </div>
 
@@ -141,12 +159,18 @@ const Notes: Component = () => {
                 } />
             </Show>
           }>
-          <div
-            class={viewMode() === "grid"
-              ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-              : "flex flex-col gap-4"}>
-            <For each={filteredNotes()}>{(note) => <NoteCard note={note} />}</For>
-          </div>
+          <Show
+            when={viewMode() === "graph"}
+            fallback={
+              <div
+                class={viewMode() === "grid"
+                  ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                  : "flex flex-col gap-4"}>
+                <For each={filteredNotes()}>{(note) => <NoteCard note={note} />}</For>
+              </div>
+            }>
+            <NotesGraph notes={filteredNotes()} />
+          </Show>
         </Show>
       </Show>
     </div>
