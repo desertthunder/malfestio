@@ -209,6 +209,7 @@ mod tests {
             config,
             auth_cache,
             dpop_nonces: Arc::new(tokio::sync::RwLock::new(std::collections::HashMap::new())),
+            identity_resolver: crate::oauth::resolver::IdentityResolver::new(),
         })
     }
 

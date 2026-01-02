@@ -1,5 +1,6 @@
 use crate::db::DbPool;
 use crate::middleware::auth::UserContext;
+use crate::oauth::resolver::IdentityResolver;
 use crate::repository;
 use crate::repository::card::CardRepository;
 use crate::repository::deck::DeckRepository;
@@ -93,12 +94,15 @@ pub struct AppState {
     pub auth_cache: AuthCache,
     /// Cache of valid DPoP nonces. Nonces are single-use and expire after TTL.
     pub dpop_nonces: DpopNonceCache,
+    /// Identity resolver for AT Protocol handle/DID resolution.
+    pub identity_resolver: IdentityResolver,
 }
 
 impl AppState {
     pub fn new(pool: DbPool, repos: Repositories, config: AppConfig) -> SharedState {
         let auth_cache = Arc::new(RwLock::new(HashMap::new()));
         let dpop_nonces = Arc::new(RwLock::new(HashMap::new()));
+        let identity_resolver = IdentityResolver::new();
         Arc::new(Self {
             pool,
             oauth_repo: repos.oauth,
@@ -112,6 +116,7 @@ impl AppState {
             config,
             auth_cache,
             dpop_nonces,
+            identity_resolver,
         })
     }
 

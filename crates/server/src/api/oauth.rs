@@ -53,6 +53,12 @@ impl OAuthRepository for MockOAuthRepository {
         Ok(())
     }
 
+    async fn store_app_password_session(
+        &self, _req: crate::repository::oauth::StoreAppPasswordSessionRequest<'_>,
+    ) -> Result<(), crate::repository::oauth::OAuthRepoError> {
+        Ok(())
+    }
+
     async fn get_tokens(
         &self, did: &str,
     ) -> Result<crate::repository::oauth::StoredToken, crate::repository::oauth::OAuthRepoError> {

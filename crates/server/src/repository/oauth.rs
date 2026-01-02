@@ -10,6 +10,8 @@ use ed25519_dalek::SigningKey;
 use serde::{Deserialize, Serialize};
 
 /// Stored OAuth token record.
+///
+/// Supports both OAuth sessions (with DPoP) and app password sessions (without DPoP).
 #[derive(Clone, Serialize, Deserialize)]
 pub struct StoredToken {
     pub did: String,
@@ -18,19 +20,22 @@ pub struct StoredToken {
     pub refresh_token: Option<String>,
     pub token_type: String,
     pub expires_at: Option<DateTime<Utc>>,
-    pub dpop_private_key: Vec<u8>,
+    pub dpop_private_key: Option<Vec<u8>>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
 
 impl StoredToken {
     /// Reconstruct the DPoP keypair from stored bytes.
+    ///
+    /// Returns None for app password sessions (no DPoP) or if the key is invalid.
     pub fn dpop_keypair(&self) -> Option<DpopKeypair> {
-        if self.dpop_private_key.len() != 32 {
+        let key_bytes_vec = self.dpop_private_key.as_ref()?;
+        if key_bytes_vec.len() != 32 {
             return None;
         }
         let mut key_bytes = [0u8; 32];
-        key_bytes.copy_from_slice(&self.dpop_private_key);
+        key_bytes.copy_from_slice(key_bytes_vec);
         let signing_key = SigningKey::from_bytes(&key_bytes);
         Some(DpopKeypair::from_signing_key(signing_key))
     }
@@ -56,7 +61,7 @@ impl std::fmt::Display for OAuthRepoError {
 
 impl std::error::Error for OAuthRepoError {}
 
-/// Request to store OAuth tokens.
+/// Request to store OAuth tokens with DPoP.
 pub struct StoreTokensRequest<'a> {
     pub did: &'a str,
     pub pds_url: &'a str,
@@ -67,11 +72,23 @@ pub struct StoreTokensRequest<'a> {
     pub dpop_keypair: &'a DpopKeypair,
 }
 
+/// Request to store app password session (without DPoP).
+pub struct StoreAppPasswordSessionRequest<'a> {
+    pub did: &'a str,
+    pub pds_url: &'a str,
+    pub access_token: &'a str,
+    pub refresh_token: Option<&'a str>,
+    pub expires_at: Option<DateTime<Utc>>,
+}
+
 /// Repository trait for OAuth token operations.
 #[async_trait]
 pub trait OAuthRepository: Send + Sync {
-    /// Store OAuth tokens for a user.
+    /// Store OAuth tokens for a user (with DPoP).
     async fn store_tokens(&self, req: StoreTokensRequest<'_>) -> Result<(), OAuthRepoError>;
+
+    /// Store app password session for a user (without DPoP).
+    async fn store_app_password_session(&self, req: StoreAppPasswordSessionRequest<'_>) -> Result<(), OAuthRepoError>;
 
     /// Get stored tokens for a user.
     async fn get_tokens(&self, did: &str) -> Result<StoredToken, OAuthRepoError>;
@@ -123,6 +140,32 @@ impl OAuthRepository for DbOAuthRepository {
                      dpop_private_key = EXCLUDED.dpop_private_key,
                      updated_at = NOW()",
                 &[&req.did, &req.pds_url, &req.access_token, &req.refresh_token, &req.token_type, &req.expires_at, &dpop_bytes.as_slice()],
+            )
+            .await
+            .map_err(|e| OAuthRepoError::DatabaseError(e.to_string()))?;
+
+        Ok(())
+    }
+
+    async fn store_app_password_session(&self, req: StoreAppPasswordSessionRequest<'_>) -> Result<(), OAuthRepoError> {
+        let client = self
+            .pool
+            .get()
+            .await
+            .map_err(|e| OAuthRepoError::DatabaseError(e.to_string()))?;
+
+        client
+            .execute(
+                "INSERT INTO oauth_tokens (did, pds_url, access_token, refresh_token, token_type, expires_at, dpop_private_key)
+                 VALUES ($1, $2, $3, $4, 'Bearer', $5, NULL)
+                 ON CONFLICT (did) DO UPDATE SET
+                     pds_url = EXCLUDED.pds_url,
+                     access_token = EXCLUDED.access_token,
+                     refresh_token = EXCLUDED.refresh_token,
+                     expires_at = EXCLUDED.expires_at,
+                     dpop_private_key = NULL,
+                     updated_at = NOW()",
+                &[&req.did, &req.pds_url, &req.access_token, &req.refresh_token, &req.expires_at],
             )
             .await
             .map_err(|e| OAuthRepoError::DatabaseError(e.to_string()))?;
@@ -290,7 +333,28 @@ pub mod mock {
                 refresh_token: req.refresh_token.map(String::from),
                 token_type: req.token_type.to_string(),
                 expires_at: req.expires_at,
-                dpop_private_key: req.dpop_keypair.private_key_bytes(),
+                dpop_private_key: Some(req.dpop_keypair.private_key_bytes()),
+                created_at: Utc::now(),
+                updated_at: Utc::now(),
+            };
+
+            self.tokens.lock().unwrap().push(token);
+            Ok(())
+        }
+
+        async fn store_app_password_session(&self, req: StoreAppPasswordSessionRequest<'_>) -> Result<(), OAuthRepoError> {
+            if *self.should_fail.lock().unwrap() {
+                return Err(OAuthRepoError::DatabaseError("Mock failure".to_string()));
+            }
+
+            let token = StoredToken {
+                did: req.did.to_string(),
+                pds_url: req.pds_url.to_string(),
+                access_token: req.access_token.to_string(),
+                refresh_token: req.refresh_token.map(String::from),
+                token_type: "Bearer".to_string(),
+                expires_at: req.expires_at,
+                dpop_private_key: None,
                 created_at: Utc::now(),
                 updated_at: Utc::now(),
             };

@@ -143,20 +143,17 @@ impl PdsClient {
             record,
             swap_record: None,
             swap_commit: None,
-            validate: Some(true),
+            validate: Some(false),
         };
 
         let mut request_builder = self.http_client.post(&url);
 
-        // Conditionally add DPoP or Bearer authentication
         if let Some(ref dpop_keypair) = self.dpop_keypair {
-            // OAuth with DPoP
             let dpop_proof = dpop_keypair.generate_proof("POST", &url, Some(&self.access_token));
             request_builder = request_builder
                 .header("Authorization", format!("DPoP {}", self.access_token))
                 .header("DPoP", dpop_proof);
         } else {
-            // App password with Bearer
             request_builder = request_builder.header("Authorization", format!("Bearer {}", self.access_token));
         }
 
@@ -183,15 +180,12 @@ impl PdsClient {
 
         let mut request_builder = self.http_client.post(&url);
 
-        // Conditionally add DPoP or Bearer authentication
         if let Some(ref dpop_keypair) = self.dpop_keypair {
-            // OAuth with DPoP
             let dpop_proof = dpop_keypair.generate_proof("POST", &url, Some(&self.access_token));
             request_builder = request_builder
                 .header("Authorization", format!("DPoP {}", self.access_token))
                 .header("DPoP", dpop_proof);
         } else {
-            // App password with Bearer
             request_builder = request_builder.header("Authorization", format!("Bearer {}", self.access_token));
         }
 
@@ -216,15 +210,12 @@ impl PdsClient {
 
         let mut request_builder = self.http_client.post(&url);
 
-        // Conditionally add DPoP or Bearer authentication
         if let Some(ref dpop_keypair) = self.dpop_keypair {
-            // OAuth with DPoP
             let dpop_proof = dpop_keypair.generate_proof("POST", &url, Some(&self.access_token));
             request_builder = request_builder
                 .header("Authorization", format!("DPoP {}", self.access_token))
                 .header("DPoP", dpop_proof);
         } else {
-            // App password with Bearer
             request_builder = request_builder.header("Authorization", format!("Bearer {}", self.access_token));
         }
 
@@ -314,7 +305,7 @@ mod tests {
 
         let json = serde_json::to_string(&request).unwrap();
         assert!(json.contains("\"repo\":\"did:plc:abc123\""));
-        assert!(!json.contains("swapRecord")); // Should be omitted when None
+        assert!(!json.contains("swapRecord"));
     }
 
     #[test]
