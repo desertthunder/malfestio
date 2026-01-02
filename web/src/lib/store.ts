@@ -15,8 +15,8 @@ function createAuthStore() {
       ? { did: localStorage.getItem("did")!, handle: localStorage.getItem("handle") || "" }
       : null,
   );
-  const [accessJwt, setAccessJwt] = createSignal<string | null>(localStorage.getItem("accessJwt"));
-  const [_refreshJwt, setRefreshJwt] = createSignal<string | null>(localStorage.getItem("refreshJwt"));
+  const [accessJwt, setAccessJwt] = createSignal(localStorage.getItem("accessJwt"));
+  const [_, setRefreshJwt] = createSignal(localStorage.getItem("refreshJwt"));
 
   const login = (data: { accessJwt: string; refreshJwt: string; did: string; handle: string }) => {
     setAccessJwt(data.accessJwt);
@@ -36,7 +36,16 @@ function createAuthStore() {
     localStorage.clear();
   };
 
-  return { user, accessJwt, isAuthenticated: () => !!accessJwt(), login, logout };
+  const [loading, setLoading] = createSignal(true);
+
+  const init = async () => {
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    setLoading(false);
+  };
+
+  init();
+
+  return { user, accessJwt, isAuthenticated: () => !!accessJwt(), login, logout, loading };
 }
 
 export const authStore = createRoot(createAuthStore);

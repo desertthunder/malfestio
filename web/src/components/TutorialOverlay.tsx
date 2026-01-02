@@ -75,11 +75,14 @@ export const TutorialOverlay: Component = () => {
   });
 
   createEffect(() => {
-    if (!tutorial.active()) return;
-    const element = currentTarget();
-    if (element && typeof element.scrollIntoView === "function") {
-      element.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (tutorial.active()) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
     }
+    onCleanup(() => {
+      document.body.style.overflow = "";
+    });
   });
 
   return (
@@ -127,10 +130,7 @@ export const TutorialOverlay: Component = () => {
                     "box-shadow": "0 0 0 4px rgba(15, 98, 254, 0.3)",
                   }} />
 
-                <Motion.div
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.2 }}
+                <div
                   class="absolute w-80 bg-[#262626] border border-[#393939] rounded-lg shadow-xl p-4 pointer-events-auto"
                   style={{
                     top: `${getTooltipPosition(pos(), tutorial.currentStep()!.placement).top}px`,
@@ -178,7 +178,7 @@ export const TutorialOverlay: Component = () => {
                     </Index>
                   </div>
                   <p class="text-xs text-[#525252] text-center mt-3">Use ← → arrow keys or Esc to skip</p>
-                </Motion.div>
+                </div>
               </>
             )}
           </Show>
