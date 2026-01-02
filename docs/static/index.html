@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Malfestio - Coming Soon</title>
+    <meta name="description"
+        content="Coming soon: Master complex topics with spaced repetition, linked notes, and active recall. Share your decks, notes, and discoveries with the community.">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://malfestio.stormlightlabs.org/">
+    <meta property="og:title" content="Malfestio — Learning on the AT Protocol">
+    <meta property="og:description"
+        content="Coming soon: Master complex topics with spaced repetition, linked notes, and active recall. Share your decks, notes, and discoveries with the community.">
+    <meta property="og:image" content="https://malfestio.stormlightlabs.org/og-image.png">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://malfestio.stormlightlabs.org/">
+    <meta name="twitter:title" content="Malfestio — Learning on the AT Protocol">
+    <meta name="twitter:description"
+        content="Coming soon: Master complex topics with spaced repetition, linked notes, and active recall. Share your decks, notes, and discoveries with the community.">
+    <meta name="twitter:image" content="https://malfestio.stormlightlabs.org/og-image.png">
+
+    <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='2em' height='2em' viewBox='0 0 24 24'><path fill='%232859c5' d='M12 14.327q2.394 0 4.197-1.445T18 9.173q0-.959-.348-1.795t-.975-1.474q-1.735.108-2.956 1.296Q12.5 8.389 12.5 10.116h-1q0-1.727-1.23-2.92Q9.038 6.004 7.294 5.93q-.599.638-.947 1.461T6 9.173q0 2.264 1.803 3.709T12 14.327M8.75 9.904q-.31 0-.52-.21t-.21-.52t.21-.521t.52-.21t.52.21t.21.52t-.21.52q-.209.21-.52.21m6.5 0q-.31 0-.52-.209q-.21-.21-.21-.52t.21-.521q.209-.21.52-.21t.52.21q.21.209.21.52q0 .31-.21.52q-.209.21-.52.21M12 21q-2.931 0-4.966-2.084Q5 16.83 5 13.885V9.173q0-2.69 2.092-4.431T12 3q2.68 0 4.84 1.696T19 9.173V20h-1q-1.558 0-2.664-1.106t-1.105-2.663v-1.212q-.25.074-.5.122l-.5.095v1q0 1.974 1.395 3.369T18 21z'/></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600&family=Lora:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --layer-00: #161616;
+            --layer-01: #1e1e1e;
+            --layer-02: #262626;
+            --layer-03: #2c2c2c;
+            --duration-normal: 250ms;
+            --easing-standard: cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body {
+            font-family: 'Figtree', sans-serif;
+            font-weight: 300;
+            background: #000000;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .grid-pattern {
+            position: absolute;
+            inset: 0;
+            background-size: 32px 32px;
+            background-image:
+                linear-gradient(to right, rgba(85, 85, 85, 0.3) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(85, 85, 85, 0.3) 1px, transparent 1px);
+            pointer-events: none;
+        }
+
+        .gradient-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, transparent, rgba(0, 0, 0, 0.3), #000000);
+            pointer-events: none;
+        }
+
+        .container {
+            max-width: 700px;
+            text-align: center;
+            animation: fadeIn 0.8s var(--easing-standard);
+            position: relative;
+            z-index: 1;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            font-family: 'Lora', serif;
+            font-size: 5rem;
+            font-weight: 500;
+            margin-bottom: 1rem;
+            letter-spacing: -0.02em;
+            line-height: 1.1;
+        }
+
+        .tagline {
+            font-family: 'Lora', serif;
+            font-size: 1.75rem;
+            font-weight: 400;
+            margin-bottom: 3rem;
+            color: #a3a3a3;
+        }
+
+        .description {
+            font-size: 1.125rem;
+            line-height: 1.8;
+            margin-bottom: 3rem;
+            color: #a3a3a3;
+            font-weight: 300;
+        }
+
+        .status {
+            font-family: 'Figtree', sans-serif;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            padding: 0.75rem 1.5rem;
+            background: var(--layer-02);
+            border: 1px solid var(--layer-03);
+            border-radius: 0.125rem;
+            display: inline-block;
+            transition: all var(--duration-normal) var(--easing-standard);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+        }
+
+        .bsky-link {
+            color: #3b82f6;
+            text-decoration: none;
+            transition: color var(--duration-normal) var(--easing-standard);
+        }
+
+        .bsky-link:hover {
+            color: #60a5fa;
+        }
+
+        .bsky-link:visited {
+            color: #60a5fa;
+        }
+
+        .footer {
+            margin-top: 4rem;
+            font-size: 0.875rem;
+            color: #737373;
+            font-weight: 300;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 3rem;
+            }
+
+            .tagline {
+                font-size: 1.25rem;
+            }
+
+            .description {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="grid-pattern"></div>
+    <div class="gradient-overlay"></div>
+    <div class="container">
+        <h1>Malfestio</h1>
+        <div class="tagline">
+            Learning on the AT Protocol
+        </div>
+        <p class="description">
+            Coming Soon
+        </p>
+        <div class="footer">
+            Check out <a class="bsky-link" href="https://bsky.app/profile/desertthunder.dev">Bluesky</a> for updates
+        </div>
+    </div>
+</body>
+
+</html>
