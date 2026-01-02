@@ -7,32 +7,8 @@
 
 ## Roadmap Milestones
 
-- **(Done) Milestone A**: Defined core user journeys, information architecture, and privacy rules for the platform.
-- **(Done) Milestone B**: Designed AT Protocol Lexicons for all core types and documented data model mapping + publishing pipeline.
-- **(Done) Milestone C**: Foundations: Repo, CI, Axum API Skeleton, Solid Shell.
-    - Monorepo layout, CI, Axum/Solid skeletons implemented.
-    - Backend running on 8080, Frontend on 3000.
-- **(Done) Milestone D**: Identity + Permissions + Publishing Model.
-    - Auth MVP, Permission model (Private/Public/SharedWith), and basic Publishing flow implemented.
-    - Backend API and Frontend Editor updated with tests covering permissions and publishing.
-- **(Done) Milestone E**: Internal component library/UI Foundation + Animations.
-- **(Done) Milestone F**: OAuth + PDS Record Publishing.
-    - OAuth 2.1 client flow (PKCE, DPoP, handle/DID resolution, token refresh).
-    - PDS client for `putRecord`, `deleteRecord`, `uploadBlob`.
-    - TID generation and AT-URI builder in core crate.
-- **(Done) Milestone G**: Content Authoring (Notes + Cards + Deck Builder).
-- **(Done) Milestone H**: Study Engine (SRS) + Daily Review UX.
-    - SM-2 spaced repetition scheduler.
-- **(Done) Milestone I**: Social Layer v1: Follow graph, Feeds (Follows/Trending), Forking workflow, and Threaded comments.
-    - Full-text search with pg_trgm/unaccent, visibility filtering, and unified search index.
-    - Tag taxonomy and Discovery page with top tags.
-- **(Done) Milestone J**: Static Content & Landing Page.
-    - Marketing & Static Site: Landing page, "How it works", About page, Onboarding flow, Empty states, Help center/FAQ section.
-    - SEO & Meta: Open Graph / Twitter Card meta tags, Sitemap.xml generation, robots.txt configuration.
-    - Onboarding Flow & Help Center/FAQ
-    - Empty States
-- **(Done) Milestone K**: AppView Indexing.
-    - Firehose Enhancement (full record storage), Extended Search & Discovery (remote records), and Export/Interop features (JSON export, remote deck view).
+> [!NOTE]
+> Completed milestones (A-K) have been moved to [CHANGELOG.md](/CHANGELOG.md).
 
 ### Milestone L - ATProto Integration Pass
 
