@@ -71,6 +71,7 @@ describe("UserPreferences Types", () => {
       persona: "learner",
       onboarding_completed_at: "2024-01-01T00:00:00Z",
       tutorial_deck_completed: false,
+      density_mode: "comfortable",
     };
 
     expect(prefs.user_did).toBe("did:plc:test");
@@ -85,6 +86,7 @@ describe("UserPreferences Types", () => {
       persona: null,
       onboarding_completed_at: null,
       tutorial_deck_completed: false,
+      density_mode: null,
     };
 
     expect(prefs.persona).toBeNull();

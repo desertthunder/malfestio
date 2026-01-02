@@ -32,4 +32,16 @@ describe("Tag", () => {
     const tag = screen.getByText("Selected").parentElement;
     expect(tag).toHaveClass("bg-blue-600");
   });
+
+  it("applies compact density styling", () => {
+    render(() => <Tag label="Compact" density="compact" />);
+    const tag = screen.getByText("Compact").parentElement;
+    expect(tag).toHaveClass("py-0.5");
+  });
+
+  it("applies spacious density styling", () => {
+    render(() => <Tag label="Spacious" density="spacious" />);
+    const tag = screen.getByText("Spacious").parentElement;
+    expect(tag).toHaveClass("py-1.5");
+  });
 });

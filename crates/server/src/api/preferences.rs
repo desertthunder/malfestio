@@ -16,6 +16,7 @@ pub struct UpdatePreferencesRequest {
     pub persona: Option<String>,
     pub complete_onboarding: Option<bool>,
     pub tutorial_deck_completed: Option<bool>,
+    pub density_mode: Option<String>,
 }
 
 /// GET /api/preferences - Get current user preferences
@@ -71,6 +72,7 @@ pub async fn update_preferences(
         persona,
         complete_onboarding: payload.complete_onboarding,
         tutorial_deck_completed: payload.tutorial_deck_completed,
+        density_mode: payload.density_mode,
     };
 
     let result = state.prefs_repo.update(&user.did, updates).await;
@@ -164,6 +166,7 @@ mod tests {
             persona: Some("creator".to_string()),
             complete_onboarding: Some(true),
             tutorial_deck_completed: None,
+            density_mode: None,
         };
 
         let response = update_preferences(State(state), Some(Extension(user)), Json(payload))
@@ -183,6 +186,7 @@ mod tests {
             persona: Some("invalid".to_string()),
             complete_onboarding: None,
             tutorial_deck_completed: None,
+            density_mode: None,
         };
 
         let response = update_preferences(State(state), Some(Extension(user)), Json(payload))

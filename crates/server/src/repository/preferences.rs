@@ -49,6 +49,7 @@ pub struct UserPreferences {
     pub onboarding_completed_at: Option<DateTime<Utc>>,
     #[serde(default)]
     pub tutorial_deck_completed: bool,
+    pub density_mode: Option<String>,
 }
 
 /// Update request for user preferences
@@ -57,6 +58,7 @@ pub struct UpdatePreferences {
     pub persona: Option<Persona>,
     pub complete_onboarding: Option<bool>,
     pub tutorial_deck_completed: Option<bool>,
+    pub density_mode: Option<String>,
 }
 
 #[async_trait]
@@ -91,7 +93,7 @@ impl PreferencesRepository for DbPreferencesRepository {
         // Try to get existing preferences
         let row = client
             .query_opt(
-                "SELECT user_did, persona, onboarding_completed_at, tutorial_deck_completed FROM user_prefs WHERE user_did = $1",
+                "SELECT user_did, persona, onboarding_completed_at, tutorial_deck_completed, density_mode FROM user_prefs WHERE user_did = $1",
                 &[&user_did],
             )
             .await
@@ -106,6 +108,7 @@ impl PreferencesRepository for DbPreferencesRepository {
                 persona,
                 onboarding_completed_at: row.get("onboarding_completed_at"),
                 tutorial_deck_completed: row.get("tutorial_deck_completed"),
+                density_mode: row.get("density_mode"),
             });
         }
 
@@ -157,6 +160,11 @@ impl PreferencesRepository for DbPreferencesRepository {
             param_idx += 1;
         }
 
+        if updates.density_mode.is_some() {
+            set_clauses.push(format!("density_mode = ${}", param_idx));
+            param_idx += 1;
+        }
+
         if complete_onboarding {
             set_clauses.push(format!("onboarding_completed_at = ${}", param_idx));
         }
@@ -175,6 +183,10 @@ impl PreferencesRepository for DbPreferencesRepository {
 
         if let Some(tutorial) = updates.tutorial_deck_completed {
             param_vec.push(Box::new(tutorial));
+        }
+
+        if let Some(ref density) = updates.density_mode {
+            param_vec.push(Box::new(density.clone()));
         }
 
         if complete_onboarding {
@@ -266,6 +278,10 @@ pub mod mock {
                 entry.tutorial_deck_completed = tutorial;
             }
 
+            if let Some(density) = updates.density_mode {
+                entry.density_mode = Some(density);
+            }
+
             Ok(entry.clone())
         }
     }
@@ -297,6 +313,7 @@ mod tests {
                     persona: Some(Persona::Creator),
                     complete_onboarding: None,
                     tutorial_deck_completed: None,
+                    density_mode: None,
                 },
             )
             .await
@@ -315,6 +332,7 @@ mod tests {
                     persona: Some(Persona::Learner),
                     complete_onboarding: Some(true),
                     tutorial_deck_completed: None,
+                    density_mode: None,
                 },
             )
             .await

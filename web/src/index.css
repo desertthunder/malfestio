@@ -13,6 +13,45 @@
 @theme {
     --font-display: "Mattern", serif;
     --font-body: "Figtree Variable", sans-serif;
+
+    /* Spacing Tokens - 16px grid */
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 12px;
+    --spacing-base: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+    --spacing-2xl: 48px;
+    --spacing-3xl: 64px;
+    --spacing-4xl: 96px;
+
+    /* Elevation Layers - Carbon-inspired */
+    --layer-00: #161616;
+    --layer-01: #1E1E1E;
+    --layer-02: #262626;
+    --layer-03: #2C2C2C;
+    --layer-04: #323232;
+
+    /* Elevation Shadows - Subtle depth */
+    --shadow-01: 0 1px 2px rgba(0, 0, 0, 0.1);
+    --shadow-02: 0 2px 4px rgba(0, 0, 0, 0.15);
+    --shadow-03: 0 4px 8px rgba(0, 0, 0, 0.2);
+    --shadow-04: 0 8px 16px rgba(0, 0, 0, 0.25);
+
+    /* Motion Tokens */
+    --duration-instant: 100ms;
+    --duration-fast: 150ms;
+    --duration-normal: 250ms;
+    --duration-slow: 350ms;
+    --duration-slower: 500ms;
+
+    --easing-standard: cubic-bezier(0.4, 0.0, 0.2, 1);
+    --easing-accelerate: cubic-bezier(0.4, 0.0, 1, 1);
+    --easing-decelerate: cubic-bezier(0.0, 0.0, 0.2, 1);
+    --easing-sharp: cubic-bezier(0.4, 0.0, 0.6, 1);
+
+    /* Density Multiplier - Set by context provider */
+    --density-multiplier: 1.0;
 }
 
 * {
@@ -36,4 +75,58 @@ h6 {
             transparent 1px
         ),
         linear-gradient(to bottom, rgba(85, 85, 85, 0.3) 1px, transparent 1px);
+}
+
+/* Elevation Utilities - Carbon-inspired layering */
+.surface-00 {
+    background-color: var(--layer-00);
+}
+
+.surface-01 {
+    background-color: var(--layer-01);
+    box-shadow: var(--shadow-01);
+}
+
+.surface-02 {
+    background-color: var(--layer-02);
+    box-shadow: var(--shadow-02);
+}
+
+.surface-03 {
+    background-color: var(--layer-03);
+    box-shadow: var(--shadow-03);
+}
+
+.surface-04 {
+    background-color: var(--layer-04);
+    box-shadow: var(--shadow-04);
+}
+
+/* Density Utilities - Applied to container elements */
+.density-compact {
+    --density-multiplier: 0.75;
+}
+
+.density-comfortable {
+    --density-multiplier: 1.0;
+}
+
+.density-spacious {
+    --density-multiplier: 1.25;
+}
+
+/* Transition Utilities - Consistent motion */
+.transition-standard {
+    transition-duration: var(--duration-normal);
+    transition-timing-function: var(--easing-standard);
+}
+
+.transition-fast {
+    transition-duration: var(--duration-fast);
+    transition-timing-function: var(--easing-standard);
+}
+
+.transition-slow {
+    transition-duration: var(--duration-slow);
+    transition-timing-function: var(--easing-decelerate);
 }

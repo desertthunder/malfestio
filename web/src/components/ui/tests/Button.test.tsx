@@ -1,3 +1,4 @@
+import { DensityProvider } from "$lib/density-context";
 import { cleanup, fireEvent, render, screen } from "@solidjs/testing-library";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Button } from "../Button";
@@ -30,5 +31,32 @@ describe("Button", () => {
 
     fireEvent.click(button);
     expect(handleClick).toHaveBeenCalled();
+  });
+
+  describe("density support", () => {
+    it("renders with density prop", () => {
+      render(() => <Button density="compact">Button</Button>);
+      const button = screen.getByRole("button", { name: /button/i });
+      expect(button).toBeInTheDocument();
+    });
+
+    it("renders within DensityProvider", () => {
+      render(() => (
+        <DensityProvider>
+          <Button>Button</Button>
+        </DensityProvider>
+      ));
+      const button = screen.getByRole("button", { name: /button/i });
+      expect(button).toBeInTheDocument();
+    });
+
+    it("accepts all density modes", () => {
+      const { unmount } = render(() => <Button density="compact">Compact</Button>);
+      expect(screen.getByRole("button")).toBeInTheDocument();
+      unmount();
+
+      render(() => <Button density="spacious">Spacious</Button>);
+      expect(screen.getByRole("button")).toBeInTheDocument();
+    });
   });
 });

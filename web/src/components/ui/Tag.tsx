@@ -1,5 +1,7 @@
+import { useDensity } from "$lib/density-context";
+import type { DensityMode } from "$lib/design-tokens";
 import { Show, splitProps } from "solid-js";
-import type { Component, JSX } from "solid-js";
+import type { Component } from "solid-js";
 
 export type TagType = "read-only" | "dismissible" | "selectable";
 export type TagColor = "gray" | "blue" | "green" | "red" | "yellow" | "purple";
@@ -11,7 +13,8 @@ type TagProps = {
   selected?: boolean;
   onDismiss?: () => void;
   onSelect?: () => void;
-  icon?: JSX.Element;
+  icon?: Component;
+  density?: DensityMode;
   class?: string;
 };
 
@@ -42,8 +45,12 @@ export const Tag: Component<TagProps> = (props) => {
     "onDismiss",
     "onSelect",
     "icon",
+    "density",
     "class",
   ]);
+
+  const globalDensity = useDensity();
+  const density = () => local.density || globalDensity;
   const type = () => local.type ?? "read-only";
   const color = () => local.color ?? "gray";
 
@@ -51,6 +58,11 @@ export const Tag: Component<TagProps> = (props) => {
     const c = colorStyles[color()];
     const isSelected = local.selected && type() === "selectable";
     return isSelected ? c.selected : c.base;
+  };
+
+  const sizeClass = () => {
+    const d = density();
+    return d === "compact" ? "px-2 py-0.5 text-xs" : d === "spacious" ? "px-3 py-1.5 text-sm" : "px-2.5 py-1 text-xs";
   };
 
   const handleClick = () => {
@@ -71,13 +83,21 @@ export const Tag: Component<TagProps> = (props) => {
       tabIndex={type() === "selectable" ? 0 : undefined}
       aria-pressed={type() === "selectable" ? local.selected : undefined}
       class={`
-        inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium border rounded-full transition-colors
+        inline-flex items-center gap-1.5 font-medium border rounded-full transition-colors
+        ${sizeClass()}
         ${baseClass()}
         ${type() === "selectable" ? "cursor-pointer hover:opacity-80" : ""}
         ${local.class || ""}
       `}>
       <Show when={local.icon}>
-        <span class="w-3 h-3 flex items-center justify-center">{local.icon}</span>
+        {icon => {
+          const IconComponent = icon();
+          return (
+            <span class="w-3 h-3 flex items-center justify-center">
+              <IconComponent />
+            </span>
+          );
+        }}
       </Show>
       <span>{local.label}</span>
       <Show when={type() === "dismissible"}>

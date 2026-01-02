@@ -106,6 +106,7 @@ export type UserPreferences = {
   persona: Persona | null;
   onboarding_completed_at: string | null;
   tutorial_deck_completed: boolean;
+  density_mode: "compact" | "comfortable" | "spacious" | null;
 };
 
 export type UserProfile = {

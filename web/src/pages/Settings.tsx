@@ -1,11 +1,23 @@
 import { api } from "$lib/api";
+import type { DensityMode } from "$lib/design-tokens";
+import { prefStore } from "$lib/store";
 import type { Component } from "solid-js";
-import { createSignal, Show } from "solid-js";
+import { createSignal, For, Show } from "solid-js";
+
+type DensityOption = { value: DensityMode; label: string; description: string };
+
+// TODO: move to constants
+const densityOptions: DensityOption[] = [
+  { value: "compact", label: "Compact", description: "Minimal spacing, more content at a glance" },
+  { value: "comfortable", label: "Comfortable", description: "Balanced spacing for everyday use" },
+  { value: "spacious", label: "Spacious", description: "Generous spacing, easier on the eyes" },
+];
 
 const Settings: Component = () => {
   const [exportingDecks, setExportingDecks] = createSignal(false);
   const [exportingNotes, setExportingNotes] = createSignal(false);
   const [exportError, setExportError] = createSignal<string | null>(null);
+  const [savingDensity, setSavingDensity] = createSignal(false);
 
   const handleExport = async (collection: "decks" | "notes") => {
     if (collection === "decks") setExportingDecks(true);
@@ -34,6 +46,14 @@ const Settings: Component = () => {
     }
   };
 
+  const handleDensityChange = async (mode: DensityMode) => {
+    setSavingDensity(true);
+    await prefStore.updatePreferences({ density_mode: mode });
+    setSavingDensity(false);
+  };
+
+  const currentDensity = () => prefStore.densityMode() as DensityMode;
+
   return (
     <div class="max-w-4xl mx-auto p-6 space-y-8">
       <header class="space-y-4">
@@ -42,7 +62,49 @@ const Settings: Component = () => {
       </header>
 
       <div class="grid gap-6">
-        {/* Export Section */}
+        <section class="p-6 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
+          <h2 class="text-xl font-semibold text-slate-900 dark:text-white mb-4">Interface Density</h2>
+          <p class="text-sm text-slate-600 dark:text-slate-400 mb-6">
+            Control how much information is displayed at once. Compact shows more content, spacious provides more
+            breathing room.
+          </p>
+
+          <div class="grid gap-3 sm:grid-cols-3">
+            <For each={densityOptions}>
+              {(option) => (
+                <button
+                  type="button"
+                  disabled={savingDensity()}
+                  onClick={() => handleDensityChange(option.value)}
+                  class={`
+                    p-4 rounded-lg border-2 text-left transition-all
+                    ${
+                    currentDensity() === option.value
+                      ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                      : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
+                  }
+                    ${savingDensity() ? "opacity-50 cursor-wait" : "cursor-pointer"}
+                  `}>
+                  <div class="flex items-center gap-2 mb-1">
+                    <span
+                      class={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                        currentDensity() === option.value
+                          ? "border-blue-500 bg-blue-500"
+                          : "border-slate-400 dark:border-slate-500"
+                      }`}>
+                      <Show when={currentDensity() === option.value}>
+                        <span class="w-2 h-2 rounded-full bg-white" />
+                      </Show>
+                    </span>
+                    <span class="font-medium text-slate-900 dark:text-white">{option.label}</span>
+                  </div>
+                  <p class="text-xs text-slate-500 dark:text-slate-400 ml-6">{option.description}</p>
+                </button>
+              )}
+            </For>
+          </div>
+        </section>
+
         <section class="p-6 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
           <h2 class="text-xl font-semibold text-slate-900 dark:text-white mb-4">Export Data</h2>
           <p class="text-sm text-slate-600 dark:text-slate-400 mb-6">
@@ -70,19 +132,6 @@ const Settings: Component = () => {
               {exportingNotes() ? "Exporting..." : "Export Notes"}
             </button>
           </div>
-        </section>
-
-        {/* Preferences Section - Placeholder for now as per plan */}
-        <section class="p-6 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 opacity-50 pointer-events-none">
-          <div class="flex justify-between items-center mb-4">
-            <h2 class="text-xl font-semibold text-slate-900 dark:text-white">Preferences</h2>
-            <span class="text-xs font-medium px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
-              Coming Soon
-            </span>
-          </div>
-          <p class="text-sm text-slate-600 dark:text-slate-400">
-            Advanced theme settings and default visibility options will be available here.
-          </p>
         </section>
       </div>
     </div>

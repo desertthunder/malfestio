@@ -60,7 +60,13 @@ function createPrefStore() {
     }
   };
 
-  const updatePreferences = async (updates: { persona?: Persona; complete_onboarding?: boolean }) => {
+  const updatePreferences = async (
+    updates: {
+      persona?: Persona;
+      complete_onboarding?: boolean;
+      density_mode?: "compact" | "comfortable" | "spacious";
+    },
+  ) => {
     try {
       const res = await api.updatePreferences(updates);
       if (res.ok) {
@@ -77,8 +83,8 @@ function createPrefStore() {
   };
 
   const persona = () => prefs()?.persona ?? null;
-
-  return { prefs, loading, fetchPrefs, updatePreferences, needsOnboarding, persona };
+  const densityMode = () => prefs()?.density_mode ?? "comfortable";
+  return { prefs, loading, fetchPrefs, updatePreferences, needsOnboarding, persona, densityMode };
 }
 
 export const prefStore = createRoot(createPrefStore);
