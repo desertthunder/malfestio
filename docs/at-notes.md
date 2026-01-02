@@ -71,7 +71,7 @@ Use TID (timestamp-based identifiers) per Lexicon spec.
 
 Format: `at://<did>/<collection>/<rkey>`
 
-Example: `at://did:plc:abc123/app.malfestio.deck/3k5abc123`
+Example: `at://did:plc:abc123/org.stormlightlabs.malfestio.deck/3k5abc123`
 
 ## Firehose / Jetstream
 

@@ -15,13 +15,13 @@ This distinction is critical for the application's architecture and user privacy
 
 These entities are visible to anyone with access to the PDS (essentially public).
 
-- Deck (`app.malfestio.deck`): The collection of cards/notes.
-- Card (`app.malfestio.card`): The flashcard content (Front/Back).
-- Note (`app.malfestio.note`): The source knowledge note.
-- Article (`app.malfestio.source.article`): Metadata/snapshot of an external article.
-- Lecture (`app.malfestio.source.lecture`): Metadata/outline of an external video/audio.
-- Collection (`app.malfestio.collection`): Curated lists of decks.
-- Comment (`app.malfestio.thread.comment`): Public discussion.
+- Deck (`org.stormlightlabs.malfestio.deck`): The collection of cards/notes.
+- Card (`org.stormlightlabs.malfestio.card`): The flashcard content (Front/Back).
+- Note (`org.stormlightlabs.malfestio.note`): The source knowledge note.
+- Article (`org.stormlightlabs.malfestio.source.article`): Metadata/snapshot of an external article.
+- Lecture (`org.stormlightlabs.malfestio.source.lecture`): Metadata/outline of an external video/audio.
+- Collection (`org.stormlightlabs.malfestio.collection`): Curated lists of decks.
+- Comment (`org.stormlightlabs.malfestio.thread.comment`): Public discussion.
 
 > **Rule**: If a user puts sensitive information in a Card, they must be warned that
 > publishing the Deck makes it public.

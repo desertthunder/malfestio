@@ -1,6 +1,6 @@
 {
   "lexicon": 1,
-  "id": "app.malfestio.source.article",
+  "id": "org.stormlightlabs.malfestio.source.article",
   "defs": {
     "main": {
       "type": "record",

@@ -23,11 +23,8 @@ pub struct CreateCardParams {
 #[async_trait]
 pub trait CardRepository: Send + Sync {
     async fn create(&self, params: CreateCardParams) -> Result<Card, CardRepoError>;
-
     async fn list_by_deck(&self, deck_id: &str) -> Result<Vec<Card>, CardRepoError>;
-
     async fn verify_deck_ownership(&self, deck_id: &str, owner_did: &str) -> Result<bool, CardRepoError>;
-
     async fn update_at_uri(&self, card_id: &str, at_uri: &str) -> Result<(), CardRepoError>;
 }
 
@@ -67,10 +64,14 @@ impl CardRepository for DbCardRepository {
         }
 
         let card_id = uuid::Uuid::new_v4();
+        let card_type_str = match params.card_type {
+            CardType::Basic => "basic",
+            CardType::Cloze => "cloze",
+        };
         client
             .execute(
-                "INSERT INTO cards (id, owner_did, deck_id, front, back, media_url, hints)
-                 VALUES ($1, $2, $3, $4, $5, $6, $7)",
+                "INSERT INTO cards (id, owner_did, deck_id, front, back, media_url, hints, card_type)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
                 &[
                     &card_id,
                     &params.owner_did,
@@ -79,6 +80,7 @@ impl CardRepository for DbCardRepository {
                     &params.back,
                     &params.media_url,
                     &params.hints,
+                    &card_type_str,
                 ],
             )
             .await
@@ -118,7 +120,7 @@ impl CardRepository for DbCardRepository {
 
         let rows = client
             .query(
-                "SELECT id, owner_did, deck_id, front, back, media_url, hints
+                "SELECT id, owner_did, deck_id, front, back, media_url, hints, card_type
                  FROM cards
                  WHERE deck_id = $1
                  ORDER BY created_at ASC",
@@ -131,6 +133,11 @@ impl CardRepository for DbCardRepository {
         for row in rows {
             let id: uuid::Uuid = row.get("id");
             let card_deck_id: uuid::Uuid = row.get("deck_id");
+            let card_type_str: Option<String> = row.get("card_type");
+            let card_type = match card_type_str.as_deref() {
+                Some("cloze") => CardType::Cloze,
+                _ => CardType::Basic,
+            };
 
             cards.push(Card {
                 id: id.to_string(),
@@ -139,7 +146,7 @@ impl CardRepository for DbCardRepository {
                 front: row.get("front"),
                 back: row.get("back"),
                 media_url: row.get("media_url"),
-                card_type: CardType::default(),
+                card_type,
                 hints: row.get("hints"),
             });
         }

@@ -44,16 +44,16 @@ This document defines the application structure, navigation, and data model mapp
 
 Mapping screens to underlying data entities (Lexicon Records + Private State).
 
-| Screen / Component | Primary Data Entity            | Secondary Entities                        | Private/Public                |
-| :----------------- | :----------------------------- | :---------------------------------------- | :---------------------------- |
-| **Deck Overview**  | `app.malfestio.deck`           | `app.malfestio.card` (refs), User Profile | **Public**                    |
-| **Study Session**  | N/A (Ephemeral)                | `app.malfestio.card`, Private Review Log  | **Private**                   |
-| **Card View**      | `app.malfestio.card`           | `app.malfestio.note`, Media Blobs         | **Public**                    |
-| **Editor**         | Draft State (Local)            | Source (`article`), `note`                | **Private (Draft) -> Public** |
-| **Source View**    | `app.malfestio.source.article` | `app.malfestio.note` (linked)             | **Public**                    |
-| **Note View**      | `app.malfestio.note`           | Backlinks (`card`/`deck`)                 | **Public**                    |
-| **Library**        | `app.malfestio.collection`     | Bookmarks, User Prefs                     | **Mixed**                     |
-| **Comments**       | `app.malfestio.thread.comment` | User Profile                              | **Public**                    |
+| Screen / Component | Primary Data Entity                           | Secondary Entities                                       | Private/Public                |
+| :----------------- | :-------------------------------------------- | :------------------------------------------------------- | :---------------------------- |
+| **Deck Overview**  | `org.stormlightlabs.malfestio.deck`           | `org.stormlightlabs.malfestio.card` (refs), User Profile | **Public**                    |
+| **Study Session**  | N/A (Ephemeral)                               | `org.stormlightlabs.malfestio.card`, Private Review Log  | **Private**                   |
+| **Card View**      | `org.stormlightlabs.malfestio.card`           | `org.stormlightlabs.malfestio.note`, Media Blobs         | **Public**                    |
+| **Editor**         | Draft State (Local)                           | Source (`article`), `note`                               | **Private (Draft) -> Public** |
+| **Source View**    | `org.stormlightlabs.malfestio.source.article` | `org.stormlightlabs.malfestio.note` (linked)             | **Public**                    |
+| **Note View**      | `org.stormlightlabs.malfestio.note`           | Backlinks (`card`/`deck`)                                | **Public**                    |
+| **Library**        | `org.stormlightlabs.malfestio.collection`     | Bookmarks, User Prefs                                    | **Mixed**                     |
+| **Comments**       | `org.stormlightlabs.malfestio.thread.comment` | User Profile                                             | **Public**                    |
 
 ## URL Structure
 

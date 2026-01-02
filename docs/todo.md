@@ -131,7 +131,7 @@
 
 **Indexing:**
 
-- [ ] Subscribe to `com.atproto.sync.subscribeRepos` (or Jetstream) for `app.malfestio.*` records
+- [ ] Subscribe to `com.atproto.sync.subscribeRepos` (or Jetstream) for `org.stormlightlabs.malfestio.*` records
 - [ ] Index posts with compound cursor (timestamp::CID) for deterministic pagination
 - [ ] Garbage collect indexed data older than 48 hours (except pinned content)
 

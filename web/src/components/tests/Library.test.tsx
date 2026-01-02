@@ -32,7 +32,7 @@ describe("Library page", () => {
             title: "Federated Deck",
             description: "From another server",
             tags: ["remote"],
-            at_uri: "at://did:plc:other/app.malfestio.deck/deck1",
+            at_uri: "at://did:plc:other/org.stormlightlabs.malfestio.deck/deck1",
           },
           rank: 1,
           source: "remote",

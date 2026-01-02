@@ -9,7 +9,7 @@ vi.mock("$lib/api", () => ({ api: { getRemoteDeck: vi.fn() } }));
 vi.mock(
   "@solidjs/router",
   () => ({
-    useSearchParams: () => [{ uri: "at://did:plc:test/app.malfestio.deck/123" }],
+    useSearchParams: () => [{ uri: "at://did:plc:test/org.stormlightlabs.malfestio.deck/123" }],
     useNavigate: () => vi.fn(),
     A: (props: { href: string; children: JSX.Element }) => <a href={props.href}>{props.children}</a>,
   }),
@@ -29,7 +29,7 @@ describe("DeckPreview", () => {
       ok: true,
       json: async () => ({
         deck: {
-          id: "at://did:plc:test/app.malfestio.deck/123",
+          id: "at://did:plc:test/org.stormlightlabs.malfestio.deck/123",
           owner_did: "did:plc:test",
           title: "Remote Deck",
           description: "A test deck",

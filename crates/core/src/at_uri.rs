@@ -4,7 +4,7 @@
 //! Format: `at://<authority>/<collection>/<rkey>`
 //!
 //! - authority: DID or handle
-//! - collection: NSID (e.g., "app.malfestio.deck")
+//! - collection: NSID (e.g., "org.stormlightlabs.malfestio.deck")
 //! - rkey: Record key (usually a TID)
 
 use std::fmt;
@@ -14,7 +14,7 @@ use std::fmt;
 pub struct AtUri {
     /// The authority (DID or handle)
     pub authority: String,
-    /// The collection NSID (e.g., "app.malfestio.deck")
+    /// The collection NSID (e.g., "org.stormlightlabs.malfestio.deck")
     pub collection: String,
     /// The record key
     pub rkey: String,
@@ -34,17 +34,17 @@ impl AtUri {
 
     /// Create an AT-URI for a deck record.
     pub fn deck(did: &str, rkey: &str) -> Self {
-        Self::new(did, "app.malfestio.deck", rkey)
+        Self::new(did, "org.stormlightlabs.malfestio.deck", rkey)
     }
 
     /// Create an AT-URI for a card record.
     pub fn card(did: &str, rkey: &str) -> Self {
-        Self::new(did, "app.malfestio.card", rkey)
+        Self::new(did, "org.stormlightlabs.malfestio.card", rkey)
     }
 
     /// Create an AT-URI for a note record.
     pub fn note(did: &str, rkey: &str) -> Self {
-        Self::new(did, "app.malfestio.note", rkey)
+        Self::new(did, "org.stormlightlabs.malfestio.note", rkey)
     }
 
     /// Parse an AT-URI string.
@@ -126,29 +126,32 @@ mod tests {
 
     #[test]
     fn test_new_at_uri() {
-        let uri = AtUri::new("did:plc:abc123", "app.malfestio.deck", "3k5abc123");
+        let uri = AtUri::new("did:plc:abc123", "org.stormlightlabs.malfestio.deck", "3k5abc123");
         assert_eq!(uri.authority, "did:plc:abc123");
-        assert_eq!(uri.collection, "app.malfestio.deck");
+        assert_eq!(uri.collection, "org.stormlightlabs.malfestio.deck");
         assert_eq!(uri.rkey, "3k5abc123");
     }
 
     #[test]
     fn test_display() {
-        let uri = AtUri::new("did:plc:abc123", "app.malfestio.deck", "3k5abc123");
-        assert_eq!(uri.to_string(), "at://did:plc:abc123/app.malfestio.deck/3k5abc123");
+        let uri = AtUri::new("did:plc:abc123", "org.stormlightlabs.malfestio.deck", "3k5abc123");
+        assert_eq!(
+            uri.to_string(),
+            "at://did:plc:abc123/org.stormlightlabs.malfestio.deck/3k5abc123"
+        );
     }
 
     #[test]
     fn test_parse_valid() {
-        let uri = AtUri::parse("at://did:plc:abc123/app.malfestio.deck/3k5abc123").unwrap();
+        let uri = AtUri::parse("at://did:plc:abc123/org.stormlightlabs.malfestio.deck/3k5abc123").unwrap();
         assert_eq!(uri.authority, "did:plc:abc123");
-        assert_eq!(uri.collection, "app.malfestio.deck");
+        assert_eq!(uri.collection, "org.stormlightlabs.malfestio.deck");
         assert_eq!(uri.rkey, "3k5abc123");
     }
 
     #[test]
     fn test_parse_with_handle() {
-        let uri = AtUri::parse("at://alice.bsky.social/app.malfestio.note/abc123").unwrap();
+        let uri = AtUri::parse("at://alice.bsky.social/org.stormlightlabs.malfestio.note/abc123").unwrap();
         assert_eq!(uri.authority, "alice.bsky.social");
         assert!(uri.is_handle());
         assert!(!uri.is_did());
@@ -156,19 +159,19 @@ mod tests {
 
     #[test]
     fn test_parse_missing_scheme() {
-        let result = AtUri::parse("did:plc:abc123/app.malfestio.deck/3k5abc123");
+        let result = AtUri::parse("did:plc:abc123/org.stormlightlabs.malfestio.deck/3k5abc123");
         assert_eq!(result, Err(AtUriError::MissingScheme));
     }
 
     #[test]
     fn test_parse_invalid_format() {
-        let result = AtUri::parse("at://did:plc:abc123/app.malfestio.deck");
+        let result = AtUri::parse("at://did:plc:abc123/org.stormlightlabs.malfestio.deck");
         assert_eq!(result, Err(AtUriError::InvalidFormat));
     }
 
     #[test]
     fn test_parse_empty_authority() {
-        let result = AtUri::parse("at:///app.malfestio.deck/rkey");
+        let result = AtUri::parse("at:///org.stormlightlabs.malfestio.deck/rkey");
         assert_eq!(result, Err(AtUriError::EmptyAuthority));
     }
 
@@ -180,7 +183,7 @@ mod tests {
 
     #[test]
     fn test_roundtrip() {
-        let original = "at://did:plc:abc123/app.malfestio.deck/3k5abc123";
+        let original = "at://did:plc:abc123/org.stormlightlabs.malfestio.deck/3k5abc123";
         let uri = AtUri::parse(original).unwrap();
         assert_eq!(uri.to_string(), original);
     }
@@ -188,13 +191,13 @@ mod tests {
     #[test]
     fn test_convenience_constructors() {
         let deck = AtUri::deck("did:plc:abc", "tid123");
-        assert_eq!(deck.collection, "app.malfestio.deck");
+        assert_eq!(deck.collection, "org.stormlightlabs.malfestio.deck");
 
         let card = AtUri::card("did:plc:abc", "tid456");
-        assert_eq!(card.collection, "app.malfestio.card");
+        assert_eq!(card.collection, "org.stormlightlabs.malfestio.card");
 
         let note = AtUri::note("did:plc:abc", "tid789");
-        assert_eq!(note.collection, "app.malfestio.note");
+        assert_eq!(note.collection, "org.stormlightlabs.malfestio.note");
     }
 
     #[test]

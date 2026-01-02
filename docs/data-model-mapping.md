@@ -13,22 +13,22 @@ This document maps the public AT Protocol Lexicon records to our internal SQL da
 
 ## Mapping Table
 
-| Public Lexicon                 | Internal DB Table(s) | Notes                                                          |
-| :----------------------------- | :------------------- | :------------------------------------------------------------- |
-| `app.malfestio.deck`           | `decks`              | Public metadata.                                               |
-| `app.malfestio.card`           | `cards`              | Content.                                                       |
-| `app.malfestio.note`           | `notes`              | Standalone notes.                                              |
-| `app.malfestio.source.*`       | `sources`            | Metadata for articles/lectures.                                |
-| `app.malfestio.collection`     | `collections`        |                                                                |
-| `app.malfestio.thread.comment` | `comments`           |                                                                |
-| _(None)_                       | `reviews`            | **Private**. Logs of every review event.                       |
-| _(None)_                       | `study_progress`     | **Private**. Current SRS state for a card (box/interval/ease). |
-| _(None)_                       | `user_settings`      | **Private**. Daily goals, UI references.                       |
-| _(None)_                       | `drafts`             | **Private**. Content being authored before publishing.         |
+| Public Lexicon                                | Internal DB Table(s) | Notes                                                          |
+| :-------------------------------------------- | :------------------- | :------------------------------------------------------------- |
+| `org.stormlightlabs.malfestio.deck`           | `decks`              | Public metadata.                                               |
+| `org.stormlightlabs.malfestio.card`           | `cards`              | Content.                                                       |
+| `org.stormlightlabs.malfestio.note`           | `notes`              | Standalone notes.                                              |
+| `org.stormlightlabs.malfestio.source.*`       | `sources`            | Metadata for articles/lectures.                                |
+| `org.stormlightlabs.malfestio.collection`     | `collections`        |                                                                |
+| `org.stormlightlabs.malfestio.thread.comment` | `comments`           |                                                                |
+| _(None)_                                      | `reviews`            | **Private**. Logs of every review event.                       |
+| _(None)_                                      | `study_progress`     | **Private**. Current SRS state for a card (box/interval/ease). |
+| _(None)_                                      | `user_settings`      | **Private**. Daily goals, UI references.                       |
+| _(None)_                                      | `drafts`             | **Private**. Content being authored before publishing.         |
 
 ## Sync Strategy
 
 - **Publishing**:
-  Write to `drafts` -> User clicks "Publish" -> Sign record -> Push to PDS -> Move `drafts` content to `decks`/`cards` tables (or mark as synced).
+    Write to `drafts` -> User clicks "Publish" -> Sign record -> Push to PDS -> Move `drafts` content to `decks`/`cards` tables (or mark as synced).
 - **Consuming**:
-  Pull from PDS (firehose or direct sync) -> Validate signature -> Upsert into local tables.
+    Pull from PDS (firehose or direct sync) -> Validate signature -> Upsert into local tables.

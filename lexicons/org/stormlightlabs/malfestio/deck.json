@@ -1,6 +1,6 @@
 {
   "lexicon": 1,
-  "id": "app.malfestio.deck",
+  "id": "org.stormlightlabs.malfestio.deck",
   "defs": {
     "main": {
       "type": "record",

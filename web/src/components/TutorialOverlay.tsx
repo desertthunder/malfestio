@@ -11,12 +11,13 @@ const getTooltipPosition = (target: Position, placement: "top" | "bottom" | "lef
   const tooltipWidth = 320;
 
   switch (placement) {
-    case "top":
+    case "top": {
+      const tooltipHeight = 240;
       return {
-        top: target.top - padding - 8,
+        top: target.top - padding - 16 - tooltipHeight,
         left: target.left + target.width / 2 - tooltipWidth / 2,
-        transform: "translateY(-100%)",
       };
+    }
     case "bottom":
       return { top: target.top + target.height + padding, left: target.left + target.width / 2 - tooltipWidth / 2 };
     case "left":
@@ -94,7 +95,7 @@ export const TutorialOverlay: Component = () => {
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
           class="fixed inset-0 z-50 pointer-events-none">
-          <Show when={targetPos()}>
+          <Show when={targetPos()} keyed>
             {(pos) => (
               <>
                 <svg
@@ -104,10 +105,10 @@ export const TutorialOverlay: Component = () => {
                     <mask id="spotlight-mask">
                       <rect width="100%" height="100%" fill="white" />
                       <rect
-                        x={pos().left - 8}
-                        y={pos().top - 8}
-                        width={pos().width + 16}
-                        height={pos().height + 16}
+                        x={pos.left - 8}
+                        y={pos.top - 8}
+                        width={pos.width + 16}
+                        height={pos.height + 16}
                         rx="8"
                         fill="black" />
                     </mask>
@@ -120,22 +121,25 @@ export const TutorialOverlay: Component = () => {
                     onClick={() => tutorial.skipTutorial()} />
                 </svg>
 
-                <div
+                <Motion.div
                   class="absolute border-2 border-[#0F62FE] rounded-lg pointer-events-none"
                   style={{
-                    top: `${pos().top - 8}px`,
-                    left: `${pos().left - 8}px`,
-                    width: `${pos().width + 16}px`,
-                    height: `${pos().height + 16}px`,
+                    top: `${pos.top - 8}px`,
+                    left: `${pos.left - 8}px`,
+                    width: `${pos.width + 16}px`,
+                    height: `${pos.height + 16}px`,
                     "box-shadow": "0 0 0 4px rgba(15, 98, 254, 0.3)",
                   }} />
 
-                <div
+                <Motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.2 }}
                   class="absolute w-80 bg-[#262626] border border-[#393939] rounded-lg shadow-xl p-4 pointer-events-auto"
                   style={{
-                    top: `${getTooltipPosition(pos(), tutorial.currentStep()!.placement).top}px`,
-                    left: `${getTooltipPosition(pos(), tutorial.currentStep()!.placement).left}px`,
-                    transform: getTooltipPosition(pos(), tutorial.currentStep()!.placement).transform,
+                    top: `${getTooltipPosition(pos, tutorial.currentStep()!.placement).top}px`,
+                    left: `${getTooltipPosition(pos, tutorial.currentStep()!.placement).left}px`,
+                    transform: getTooltipPosition(pos, tutorial.currentStep()!.placement).transform,
                   }}>
                   <div class="h-1 bg-[#393939] rounded-full mb-4 overflow-hidden">
                     <div
@@ -178,7 +182,7 @@ export const TutorialOverlay: Component = () => {
                     </Index>
                   </div>
                   <p class="text-xs text-[#525252] text-center mt-3">Use ← → arrow keys or Esc to skip</p>
-                </div>
+                </Motion.div>
               </>
             )}
           </Show>

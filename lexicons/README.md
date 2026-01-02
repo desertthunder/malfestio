@@ -11,13 +11,13 @@ This directory contains the Lexicon definitions for the malfestio's public recor
 
 ### Namespace + NSID conventions
 
-- `app.malfestio.note`
-- `app.malfestio.card`
-- `app.malfestio.deck`
-- `app.malfestio.source.article`
-- `app.malfestio.source.lecture`
-- `app.malfestio.collection`
-- `app.malfestio.thread.comment`
+- `org.stormlightlabs.malfestio.note`
+- `org.stormlightlabs.malfestio.card`
+- `org.stormlightlabs.malfestio.deck`
+- `org.stormlightlabs.malfestio.source.article`
+- `org.stormlightlabs.malfestio.source.lecture`
+- `org.stormlightlabs.malfestio.collection`
+- `org.stormlightlabs.malfestio.thread.comment`
 
 ### Lexicon basics
 
@@ -38,4 +38,4 @@ This directory contains the Lexicon definitions for the malfestio's public recor
 2. **No Renaming**: Do not rename fields.
    If a semantic change is needed, add a new field and deprecate the old one.
 3. **No Type Changes**: Once published, a field's type is fixed.
-4. **Version by Copying**: If a breaking change is absolutely required, create a new Lexicon with a new major version or a new name (e.g., `app.malfestio.noteV2`).
+4. **Version by Copying**: If a breaking change is absolutely required, create a new Lexicon with a new major version or a new name (e.g., `org.stormlightlabs.malfestio.noteV2`).

@@ -1,6 +1,6 @@
 {
   "lexicon": 1,
-  "id": "app.malfestio.thread.comment",
+  "id": "org.stormlightlabs.malfestio.thread.comment",
   "defs": {
     "main": {
       "type": "record",
