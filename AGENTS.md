@@ -69,4 +69,16 @@ pnpm lint
 
 ## Rules & Workflows
 
-- *todo*
+In general, before working on features locally, specs should have already been drafted
+by the developer.
+
+### Specs
+
+When drafting specs, let's use the `.sandbox` directory and format filenames with the
+following format:
+
+```sh
+.sandbox/spec_<feature>-<description>_YYYY-MM-DD.md
+```
+
+Each section should have an overview and `- [ ]` items for tasks.
