@@ -1,54 +1,6 @@
 # Product + Technical Roadmap
 
-## Auth direction
-
-- ATProto is moving toward OAuth for client↔PDS authorization.
-- Plan for OAuth support even if MVP starts centralized.
-
 ## Roadmap Milestones
-
-> [!NOTE]
-> Completed milestones (A-K) have been moved to [CHANGELOG.md](/CHANGELOG.md).
-
-### Milestone L - ATProto Integration Pass
-
-#### Deliverables
-
-**Identity & Auth:**
-
-- [x] OAuth login directly to user's PDS
-- [x] Handle resolution via DNS TXT or `/.well-known/atproto-did`
-- [x] DPoP token binding for secure API calls
-
-**Local Development:**
-
-- [x] Document local testing with real Bluesky accounts
-- [x] Add justfile commands for common dev tasks
-- [x] Environment variable configuration guide
-- [x] Update health check endpoint for service monitoring
-- [x] Add logging for OAuth flow steps
-
-**Sync & Conflict Resolution:**
-
-- [x] Bi-directional sync infrastructure
-- [x] Conflict resolution strategy
-- [x] API endpoints for sync operations
-- [x] Offline queue for pending publishes
-- [x] Frontend sync store with IndexedDB persistence (Dexie.js)
-- [x] Sync status UI indicators
-
-**Deep Linking:**
-
-- [ ] AT-URI deep linking from external clients
-- [ ] Handle `at://` URL scheme in app
-- [ ] Link preview generation for shared content
-
-#### Acceptance
-
-- User can log in with existing Bluesky/PDS identity
-- OAuth flow works with production bsky.social accounts
-- Developers can test locally using real accounts (see [Local Development Guide](./local-dev.md))
-- Local drafts sync correctly after reconnecting
 
 ### Milestone M - Reliability, Observability, Launch (v0.1.0)
 
@@ -84,7 +36,20 @@
 - System handles 10x expected load without degradation.
 - Mean time to recovery < 5 minutes for common failures.
 
-### Milestone N - Custom Feed Generator (v0.2.0)
+### Milestone N - Deep Linking (v0.2.0)
+
+#### Deliverables
+
+- [ ] AT-URI deep linking from external clients
+- [ ] Handle `at://` URL scheme in app
+- [ ] Link preview generation for shared content (backend OG middleware)
+
+#### Acceptance
+
+- Users can share AT-URIs that open directly to content
+- Shared links show rich previews on Slack, Twitter, Discord, etc.
+
+### Milestone O - Custom Feed Generator (v0.3.0)
 
 #### Deliverables
 
@@ -154,7 +119,7 @@ type ReasonRepost = {
 - Most feeds can garbage collect data older than 48 hours
 - Reference: [Feed Generator Starter Kit](https://github.com/bluesky-social/feed-generator)
 
-### Milestone O - Moderation + Abuse Resistance (v0.3.0)
+### Milestone P - Moderation + Abuse Resistance (v0.4.0)
 
 #### Deliverables
 
@@ -185,7 +150,7 @@ type ReasonRepost = {
 
 **Reference:** [Ozone Moderation Service](https://github.com/bluesky-social/ozone)
 
-### Milestone P - Readability Updates
+### Milestone Q - Readability Updates (v0.5.0)
 
 #### Deliverables
 
