@@ -29,40 +29,40 @@ For local development, the defaults in `.env.example` work out of the box. You o
 
 1. **Start PostgreSQL**
 
-   ```bash
-   # Using Docker
-   docker run -d -p 5432:5432 -e POSTGRES_PASSWORD=postgres postgres:14
+    ```bash
+    # Using Docker
+    docker run -d -p 5432:5432 -e POSTGRES_PASSWORD=postgres postgres:14
 
-   # Or use your local PostgreSQL installation
-   ```
+    # Or use your local PostgreSQL installation
+    ```
 
 2. **Run migrations**
 
-   ```bash
-   just migrate
-   ```
+    ```bash
+    just migrate
+    ```
 
 3. **Start backend**
 
-   ```bash
-   just start
-   ```
+    ```bash
+    just start
+    ```
 
-   Server runs on <http://localhost:8080>
+    Server runs on <http://localhost:8080>
 
 4. **Start frontend**
 
-   ```bash
-   just web-dev
-   ```
+    ```bash
+    just web-dev
+    ```
 
-   Frontend runs on <http://localhost:3000>
+    Frontend runs on <http://localhost:3000>
 
 5. **Test OAuth login**
-   - Navigate to <http://localhost:3000/login>
-   - Enter your Bluesky handle (e.g., `thunderbot.bsky.social`)
-   - Authorize the application on bsky.social
-   - Verify redirect back to app with successful login
+    - Navigate to <http://localhost:3000/login>
+    - Enter your Bluesky handle (e.g., `thunderbot.bsky.social`)
+    - Authorize the application on bsky.social
+    - Verify redirect back to app with successful login
 
 ### OAuth Flow Details
 
@@ -83,6 +83,42 @@ After successful OAuth login:
 2. Click "Publish" to publish to your PDS
 3. Check your Bluesky profile at <https://bsky.app> to see the published record
 4. Verify record appears in your AT Protocol repository
+
+## Testing Sync Flow
+
+The app supports offline-first editing with automatic sync when online.
+
+### Local Storage (IndexedDB)
+
+All decks, notes, and cards are stored locally in IndexedDB via Dexie.js. You can view this data:
+
+1. Navigate to Settings page
+2. Scroll to "Local Sync Data" section
+3. Use the Records/Queue tabs to view stored data
+
+### Testing Offline Mode
+
+1. Create or edit a deck while online → syncs immediately
+2. Disconnect network (DevTools → Network → Offline)
+3. Create/edit content → stored locally with "local_only" or "pending_push" status
+4. Reconnect → content auto-syncs when online status changes
+
+### Sync Statuses
+
+| Status         | Meaning                          |
+| -------------- | -------------------------------- |
+| `local_only`   | New content, never synced        |
+| `synced`       | Content matches PDS              |
+| `pending_push` | Local changes waiting to sync    |
+| `conflict`     | Local and remote versions differ |
+
+### Conflict Resolution
+
+When conflicts occur:
+
+1. Settings → Local Sync Data shows records with "conflict" status
+2. Click "Keep Local" to overwrite remote with local version
+3. Or use the API: `POST /api/sync/resolve/:type/:id` with strategy
 
 ## Verifying Your Setup
 

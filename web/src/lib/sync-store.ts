@@ -3,7 +3,15 @@
  */
 import { createRoot, createSignal } from "solid-js";
 import { api } from "./api";
-import { db, generateLocalId, type LocalDeck, type LocalNote, type SyncStatus } from "./db";
+import {
+  db,
+  generateLocalId,
+  type LocalCard,
+  type LocalDeck,
+  type LocalNote,
+  type SyncQueueItem,
+  type SyncStatus,
+} from "./db";
 import { authStore } from "./store";
 
 export type SyncState = "idle" | "syncing" | "error" | "offline";
@@ -99,6 +107,36 @@ function createSyncStore() {
     return localNote;
   }
 
+  async function saveCardLocally(
+    card: Omit<LocalCard, "id" | "syncStatus" | "localVersion"> & { id?: string },
+  ): Promise<LocalCard> {
+    const existing = card.id ? await db.cards.get(card.id) : null;
+
+    const localCard: LocalCard = {
+      id: card.id || generateLocalId(),
+      deckId: card.deckId,
+      front: card.front,
+      back: card.back,
+      mediaUrl: card.mediaUrl,
+      cardType: card.cardType,
+      hints: card.hints,
+      syncStatus: existing ? "pending_push" : "local_only",
+      localVersion: existing ? existing.localVersion + 1 : 1,
+      pdsCid: existing?.pdsCid,
+    };
+
+    await db.cards.put(localCard);
+    return localCard;
+  }
+
+  async function getLocalCards(deckId: string): Promise<LocalCard[]> {
+    return db.cards.where("deckId").equals(deckId).toArray();
+  }
+
+  async function deleteLocalCard(id: string): Promise<void> {
+    await db.cards.delete(id);
+  }
+
   async function queueForSync(entityType: "deck" | "card" | "note", entityId: string, operation: "push" | "delete") {
     const existing = await db.syncQueue.where({ entityType, entityId, operation }).first();
 
@@ -189,6 +227,18 @@ function createSyncStore() {
     return db.notes.get(id);
   }
 
+  async function getAllLocalData(): Promise<
+    { decks: LocalDeck[]; notes: LocalNote[]; cards: LocalCard[]; queue: SyncQueueItem[] }
+  > {
+    const [decks, notes, cards, queue] = await Promise.all([
+      db.decks.toArray(),
+      db.notes.toArray(),
+      db.cards.toArray(),
+      db.syncQueue.toArray(),
+    ]);
+    return { decks, notes, cards, queue };
+  }
+
   async function clearAll() {
     await db.decks.clear();
     await db.cards.clear();
@@ -207,6 +257,9 @@ function createSyncStore() {
     isOnline,
     saveDeckLocally,
     saveNoteLocally,
+    saveCardLocally,
+    getLocalCards,
+    deleteLocalCard,
     queueForSync,
     processQueue,
     refreshCounts,
@@ -214,6 +267,7 @@ function createSyncStore() {
     getLocalNotes,
     getLocalDeck,
     getLocalNote,
+    getAllLocalData,
     clearAll,
   };
 }

@@ -1,3 +1,4 @@
+import "fake-indexeddb/auto";
 import { api } from "$lib/api";
 import type { Note } from "$lib/model";
 import { MemoryRouter, Route } from "@solidjs/router";
@@ -6,7 +7,8 @@ import { afterEach, describe, expect, it, type Mock, vi } from "vitest";
 import Notes from "../Notes";
 
 vi.mock("$lib/api", () => ({ api: { getNotes: vi.fn() } }));
-
+vi.mock("$lib/store", () => ({ authStore: { user: vi.fn(() => ({ did: "did:plc:test" })) } }));
+vi.mock("$lib/sync-store", () => ({ syncStore: { getLocalNotes: vi.fn().mockResolvedValue([]) } }));
 vi.mock("$lib/density-context", () => ({ useDensity: vi.fn(() => "comfortable") }));
 
 const mockNotes: Note[] = [{

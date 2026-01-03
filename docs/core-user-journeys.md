@@ -239,3 +239,39 @@ This document outlines the core user journeys and detailed user flows for Malfes
 
 - Help page displays prominent notice that Malfestio is in active development
 - Links to Bluesky and GitHub for community support
+
+## 8. Offline-First Sync
+
+**Goal**: Users can work seamlessly online or offline with automatic data synchronization.
+
+### High-Level Workflow
+
+1. **Local Storage**: All decks, notes, and cards stored in IndexedDB
+2. **Online**: Changes sync immediately to PDS
+3. **Offline**: Changes queued locally, sync when reconnected
+4. **Conflict**: Visual indicator when local and remote diverge
+
+### Detailed Flows
+
+#### Creating Content (Offline-Capable)
+
+1. User creates/edits deck, note, or card
+2. Content saved to IndexedDB immediately
+3. If online: queued for sync → pushed to PDS
+4. If offline: marked "local_only" or "pending_push"
+5. SyncIndicator in header shows current status
+
+#### Viewing Sync Status
+
+1. Header → "Settings"
+2. Scroll to "Local Sync Data" section
+3. View tabs: Records (all local data) / Queue (pending sync)
+4. Actions: Refresh, Clear All, Sync individual items
+
+#### Handling Conflicts
+
+1. System detects conflict (HTTP 409 from PDS)
+2. Card marked with "conflict" status
+3. User sees conflict count in SyncIndicator
+4. Settings → Local Sync Data → "Keep Local" to resolve
+5. Or API: `POST /api/sync/resolve/:type/:id`

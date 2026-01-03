@@ -1,3 +1,4 @@
+import "fake-indexeddb/auto";
 import { api } from "$lib/api";
 import { prefStore } from "$lib/store";
 import { cleanup, fireEvent, render, screen, waitFor } from "@solidjs/testing-library";
@@ -6,6 +7,17 @@ import Settings from "../Settings";
 
 vi.mock("$lib/api", () => ({ api: { exportData: vi.fn() } }));
 vi.mock("$lib/store", () => ({ prefStore: { densityMode: vi.fn(() => "comfortable"), updatePreferences: vi.fn() } }));
+vi.mock(
+  "$lib/sync-store",
+  () => ({
+    syncStore: {
+      getAllLocalData: vi.fn().mockResolvedValue({ decks: [], notes: [], cards: [], queue: [] }),
+      queueForSync: vi.fn(),
+      processQueue: vi.fn(),
+      clearAll: vi.fn(),
+    },
+  }),
+);
 
 vi.stubGlobal("URL", { createObjectURL: vi.fn(() => "blob:test"), revokeObjectURL: vi.fn() });
 

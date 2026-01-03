@@ -2,7 +2,8 @@ import { DeckEditor } from "$components/DeckEditor";
 import { TutorialOverlay } from "$components/TutorialOverlay";
 import { api } from "$lib/api";
 import type { CreateDeckPayload } from "$lib/model";
-import { prefStore } from "$lib/store";
+import { authStore, prefStore } from "$lib/store";
+import { syncStore } from "$lib/sync-store";
 import { toast } from "$lib/toast";
 import { TutorialProvider, useTutorial } from "$lib/TutorialProvider";
 import { Button } from "$ui/Button";
@@ -29,22 +30,53 @@ const DeckNewContent: Component = () => {
 
   const handleSave = async (data: CreateDeckPayload) => {
     try {
-      const res = await api.createDeck(data);
-      if (res.ok) {
-        const deck = await res.json();
-        if (!prefStore.prefs()?.tutorial_deck_completed) {
-          await api.updatePreferences({ tutorial_deck_completed: true });
-          prefStore.fetchPrefs();
-        }
-        toast.success("Deck created successfully");
-        navigate(`/decks/${deck.id}`);
-      } else {
-        const err = await res.json();
-        toast.error(err.error || "Failed to create deck");
+      const user = authStore.user();
+      if (!user) {
+        toast.error("Not authenticated");
+        return;
       }
+
+      const localDeck = await syncStore.saveDeckLocally({
+        ownerDid: user.did,
+        title: data.title,
+        description: data.description ?? "",
+        tags: data.tags ?? [],
+        visibility: data.visibility ?? { type: "Private" },
+      });
+
+      for (const card of data.cards ?? []) {
+        await syncStore.saveCardLocally({
+          deckId: localDeck.id,
+          front: card.front,
+          back: card.back,
+          cardType: card.cardType ?? "basic",
+          hints: card.hints ?? [],
+        });
+      }
+
+      if (syncStore.isOnline()) {
+        const res = await api.createDeck(data);
+        if (res.ok) {
+          const serverDeck = await res.json();
+          if (!prefStore.prefs()?.tutorial_deck_completed) {
+            await api.updatePreferences({ tutorial_deck_completed: true });
+            prefStore.fetchPrefs();
+          }
+          toast.success("Deck created and synced");
+          navigate(`/decks/${serverDeck.id}`);
+          return;
+        }
+      }
+
+      if (!prefStore.prefs()?.tutorial_deck_completed) {
+        await api.updatePreferences({ tutorial_deck_completed: true }).catch(() => {});
+        prefStore.fetchPrefs();
+      }
+      toast.success("Deck saved locally");
+      navigate(`/decks/${localDeck.id}`);
     } catch (e) {
       console.error(e);
-      toast.error("Network error");
+      toast.error("Failed to save deck");
     }
   };
 

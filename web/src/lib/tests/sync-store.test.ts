@@ -215,4 +215,105 @@ describe("syncStore", () => {
       expect(await db.syncQueue.count()).toBe(0);
     });
   });
+
+  describe("saveCardLocally", () => {
+    it("should save a new card with local_only status", async () => {
+      const card = await syncStore.saveCardLocally({
+        deckId: "deck-1",
+        front: "Question",
+        back: "Answer",
+        cardType: "basic",
+        hints: [],
+      });
+
+      expect(card.id).toMatch(/^local_/);
+      expect(card.syncStatus).toBe("local_only");
+      expect(card.localVersion).toBe(1);
+
+      const stored = await db.cards.get(card.id);
+      expect(stored?.front).toBe("Question");
+    });
+
+    it("should update existing card with pending_push status", async () => {
+      const card = await syncStore.saveCardLocally({
+        deckId: "deck-1",
+        front: "Original",
+        back: "Answer",
+        cardType: "basic",
+        hints: [],
+      });
+
+      const updated = await syncStore.saveCardLocally({
+        id: card.id,
+        deckId: "deck-1",
+        front: "Updated",
+        back: "Answer",
+        cardType: "basic",
+        hints: [],
+      });
+
+      expect(updated.id).toBe(card.id);
+      expect(updated.front).toBe("Updated");
+      expect(updated.syncStatus).toBe("pending_push");
+      expect(updated.localVersion).toBe(2);
+    });
+  });
+
+  describe("getLocalCards", () => {
+    it("should return cards for a specific deck", async () => {
+      await syncStore.saveCardLocally({ deckId: "deck-1", front: "Q1", back: "A1", cardType: "basic", hints: [] });
+      await syncStore.saveCardLocally({ deckId: "deck-1", front: "Q2", back: "A2", cardType: "basic", hints: [] });
+      await syncStore.saveCardLocally({ deckId: "deck-2", front: "Q3", back: "A3", cardType: "basic", hints: [] });
+
+      const cards = await syncStore.getLocalCards("deck-1");
+      expect(cards).toHaveLength(2);
+      expect(cards.map((c) => c.front)).toContain("Q1");
+      expect(cards.map((c) => c.front)).toContain("Q2");
+    });
+  });
+
+  describe("deleteLocalCard", () => {
+    it("should delete a card by id", async () => {
+      const card = await syncStore.saveCardLocally({
+        deckId: "deck-1",
+        front: "To Delete",
+        back: "Answer",
+        cardType: "basic",
+        hints: [],
+      });
+
+      await syncStore.deleteLocalCard(card.id);
+
+      const stored = await db.cards.get(card.id);
+      expect(stored).toBeUndefined();
+    });
+  });
+
+  describe("getAllLocalData", () => {
+    it("should return all local decks, notes, cards, and queue items", async () => {
+      await syncStore.saveDeckLocally({
+        ownerDid: "did:test",
+        title: "Deck",
+        description: "",
+        tags: [],
+        visibility: { type: "Private" },
+      });
+      await syncStore.saveNoteLocally({
+        ownerDid: "did:test",
+        title: "Note",
+        body: "Body",
+        tags: [],
+        visibility: { type: "Private" },
+        links: [],
+      });
+      await syncStore.saveCardLocally({ deckId: "deck-1", front: "Q", back: "A", cardType: "basic", hints: [] });
+
+      const data = await syncStore.getAllLocalData();
+
+      expect(data.decks).toHaveLength(1);
+      expect(data.notes).toHaveLength(1);
+      expect(data.cards).toHaveLength(1);
+      expect(data.queue.length).toBeGreaterThanOrEqual(0);
+    });
+  });
 });

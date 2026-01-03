@@ -3,6 +3,7 @@ import type { DensityMode } from "$lib/design-tokens";
 import { prefStore } from "$lib/store";
 import type { Component } from "solid-js";
 import { createSignal, For, Show } from "solid-js";
+import { SyncDataTable } from "../components/SyncDataTable";
 
 type DensityOption = { value: DensityMode; label: string; description: string };
 
@@ -132,6 +133,14 @@ const Settings: Component = () => {
               {exportingNotes() ? "Exporting..." : "Export Notes"}
             </button>
           </div>
+        </section>
+
+        <section class="p-6 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
+          <h2 class="text-xl font-semibold text-slate-900 dark:text-white mb-4">Local Sync Data</h2>
+          <p class="text-sm text-slate-600 dark:text-slate-400 mb-6">
+            View and manage locally cached data and pending sync operations.
+          </p>
+          <SyncDataTable />
         </section>
       </div>
     </div>

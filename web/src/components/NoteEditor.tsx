@@ -2,7 +2,9 @@
 import { EditorToolbar } from "$components/notes/EditorToolbar";
 import { MarkdownEditor, type MarkdownEditorAPI } from "$components/notes/MarkdownEditor";
 import { api } from "$lib/api";
-import type { Note } from "$lib/model";
+import type { Note, Visibility } from "$lib/model";
+import { authStore } from "$lib/store";
+import { syncStore } from "$lib/sync-store";
 import { toast } from "$lib/toast";
 import { Button } from "$ui/Button";
 import rehypeShiki from "@shikijs/rehype";
@@ -116,6 +118,12 @@ export function NoteEditor(props: NoteEditorProps) {
   const handleSubmit = async (e: Event) => {
     e.preventDefault();
     try {
+      const user = authStore.user();
+      if (!user) {
+        toast.error("Not authenticated");
+        return;
+      }
+
       let visibility;
       if (visibilityType() === "SharedWith") {
         visibility = { type: "SharedWith", content: sharedWith().split(",").map((s) => s.trim()).filter((s) => s) };
@@ -123,32 +131,36 @@ export function NoteEditor(props: NoteEditorProps) {
         visibility = { type: visibilityType() };
       }
 
-      const payload = {
+      const parsedTags = tags().split(",").map((t) => t.trim()).filter((t) => t);
+
+      const localNote = await syncStore.saveNoteLocally({
+        id: props.noteId,
+        ownerDid: user.did,
         title: title(),
         body: content(),
-        tags: tags().split(",").map((t) => t.trim()).filter((t) => t),
-        visibility,
-      };
+        tags: parsedTags,
+        visibility: visibility as Visibility,
+        links: [],
+      });
 
-      const res = props.noteId ? await api.updateNote(props.noteId, payload) : await api.post("/notes", payload);
+      if (syncStore.isOnline()) {
+        const payload = { title: title(), body: content(), tags: parsedTags, visibility };
+        const res = props.noteId ? await api.updateNote(props.noteId, payload) : await api.post("/notes", payload);
 
-      if (res.ok) {
-        toast.success("Note saved!");
-        if (props.noteId) {
-          navigate(`/notes/${props.noteId}`);
-        } else {
+        if (res.ok) {
+          toast.success("Note saved and synced!");
           try {
-            const newNote = await res.json();
-            navigate(`/notes/${newNote.id}`);
+            const serverNote = await res.json();
+            navigate(`/notes/${serverNote.id}`);
           } catch {
-            navigate("/notes");
+            navigate(`/notes/${localNote.id}`);
           }
+          return;
         }
-      } else {
-        const errorText = await res.text();
-        console.error("Failed to save note:", res.status, errorText);
-        toast.error("Failed to save note");
       }
+
+      toast.success("Note saved locally");
+      navigate(`/notes/${localNote.id}`);
     } catch (e) {
       console.error(e);
       toast.error("Failed to save note");

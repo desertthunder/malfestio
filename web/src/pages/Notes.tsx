@@ -4,14 +4,47 @@ import { Button } from "$components/ui/Button";
 import { EmptyState } from "$components/ui/EmptyState";
 import { api } from "$lib/api";
 import type { Note } from "$lib/model";
+import { authStore } from "$lib/store";
+import { syncStore } from "$lib/sync-store";
 import { A, useLocation } from "@solidjs/router";
 import type { Component } from "solid-js";
 import { createEffect, createMemo, createResource, createSignal, For, Show } from "solid-js";
 
 const fetchNotes = async (): Promise<Note[]> => {
-  const res = await api.getNotes();
-  if (!res.ok) return [];
-  return res.json();
+  const user = authStore.user();
+  const remoteNotes: Note[] = [];
+  const localNotes: Note[] = [];
+
+  try {
+    const res = await api.getNotes();
+    if (res.ok) {
+      remoteNotes.push(...(await res.json()));
+    }
+  } catch {
+    console.log("Offline - continuing with local only");
+  }
+
+  if (user) {
+    const locals = await syncStore.getLocalNotes(user.did);
+    for (const local of locals) {
+      if (local.syncStatus === "local_only" || local.syncStatus === "pending_push" || local.syncStatus === "conflict") {
+        localNotes.push(
+          {
+            id: local.id,
+            owner_did: local.ownerDid,
+            title: local.title,
+            body: local.body,
+            tags: local.tags,
+            visibility: local.visibility,
+            updated_at: local.updatedAt,
+            links: local.links ?? [],
+          } as Note,
+        );
+      }
+    }
+  }
+
+  return [...localNotes, ...remoteNotes];
 };
 
 type ViewMode = "grid" | "list" | "graph";

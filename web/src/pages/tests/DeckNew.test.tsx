@@ -1,3 +1,4 @@
+import "fake-indexeddb/auto";
 import { cleanup, render, screen } from "@solidjs/testing-library";
 import { JSX } from "solid-js";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -9,7 +10,21 @@ vi.mock("$lib/api", () => ({ api: { createDeck: vi.fn(), updatePreferences: vi.f
 
 vi.mock(
   "$lib/store",
-  () => ({ prefStore: { prefs: vi.fn(() => ({ tutorial_deck_completed: true })), fetchPrefs: vi.fn() } }),
+  () => ({
+    prefStore: { prefs: vi.fn(() => ({ tutorial_deck_completed: true })), fetchPrefs: vi.fn() },
+    authStore: { user: vi.fn(() => ({ did: "did:plc:test" })) },
+  }),
+);
+
+vi.mock(
+  "$lib/sync-store",
+  () => ({
+    syncStore: {
+      saveDeckLocally: vi.fn().mockResolvedValue({ id: "local_123" }),
+      saveCardLocally: vi.fn().mockResolvedValue({ id: "card_123" }),
+      isOnline: vi.fn(() => true),
+    },
+  }),
 );
 
 vi.mock("$lib/toast", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));

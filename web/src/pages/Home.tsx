@@ -4,7 +4,8 @@ import { Skeleton } from "$components/ui/Skeleton";
 import { Tag } from "$components/ui/Tag";
 import { api } from "$lib/api";
 import type { Deck, Persona } from "$lib/model";
-import { prefStore } from "$lib/store";
+import { authStore, prefStore } from "$lib/store";
+import { syncStore } from "$lib/sync-store";
 import { Button } from "$ui/Button";
 import { A } from "@solidjs/router";
 import type { Component, JSX } from "solid-js";
@@ -140,8 +141,41 @@ const getDefaultTip = (): PersonaTip => ({
 
 const Home: Component = () => {
   const [decks] = createResource(async () => {
-    const res = await api.getDecks();
-    return res.ok ? ((await res.json()) as Deck[]) : [];
+    const user = authStore.user();
+    const remoteDecks: Deck[] = [];
+    const localDecks: Deck[] = [];
+
+    try {
+      const res = await api.getDecks();
+      if (res.ok) {
+        remoteDecks.push(...((await res.json()) as Deck[]));
+      }
+    } catch {
+      console.log("Offline - continuing with local only");
+    }
+
+    if (user) {
+      const locals = await syncStore.getLocalDecks(user.did);
+      for (const local of locals) {
+        if (
+          local.syncStatus === "local_only" || local.syncStatus === "pending_push" || local.syncStatus === "conflict"
+        ) {
+          localDecks.push(
+            {
+              id: local.id,
+              owner_did: local.ownerDid,
+              title: local.title,
+              description: local.description,
+              tags: local.tags,
+              visibility: local.visibility,
+              updated_at: local.updatedAt,
+            } as Deck,
+          );
+        }
+      }
+    }
+
+    return [...localDecks, ...remoteDecks];
   });
 
   const currentTip = createMemo(() => {
