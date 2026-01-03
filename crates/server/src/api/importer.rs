@@ -1,8 +1,8 @@
 use crate::middleware::auth::UserContext;
 use crate::state::SharedState;
 use axum::{Json, extract::Extension, http::StatusCode, response::IntoResponse};
-use dom_smoothie::Readability;
 use malfestio_core::model::Visibility;
+use malfestio_readability::Readability;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
@@ -33,8 +33,6 @@ pub async fn import_article(Json(payload): Json<ImportRequest>) -> impl IntoResp
     }
 
     let url = payload.url.clone();
-
-    // Fetch HTML content
     let html_result = reqwest::get(&url).await;
     let html_content = match html_result {
         Ok(response) => match response.text().await {
@@ -56,32 +54,25 @@ pub async fn import_article(Json(payload): Json<ImportRequest>) -> impl IntoResp
         }
     };
 
-    // Extract article using dom_smoothie
     let url_for_task = url.clone();
-    let result = tokio::task::spawn_blocking(
-        move || -> Result<(String, String, Option<String>, Option<String>), String> {
-            let mut readability = Readability::new(html_content, Some(&url_for_task), None)
-                .map_err(|e| format!("Readability error: {}", e))?;
-            let article = readability.parse().map_err(|e| format!("Parse error: {}", e))?;
-            Ok((
-                article.title,
-                article.content.to_string(),
-                article.byline,
-                article.published_time,
-            ))
-        },
-    )
+    let result = tokio::task::spawn_blocking(move || -> Result<malfestio_readability::Article, String> {
+        let readability = Readability::new(html_content, Some(&url_for_task));
+        readability.parse().map_err(|e| format!("Parse error: {}", e))
+    })
     .await;
 
     match result {
-        Ok(Ok((title, content, author, publish_date))) => {
-            // Convert HTML content to markdown
-            let markdown = html2md::parse_html(&content);
+        Ok(Ok(article)) => {
+            let markdown = article.markdown;
 
             let response = ImportArticleResponse {
-                title,
+                title: article.title,
                 markdown,
-                metadata: ArticleMetadata { author, publish_date, source_url: payload.url },
+                metadata: ArticleMetadata {
+                    author: article.author,
+                    publish_date: article.published_date,
+                    source_url: payload.url,
+                },
             };
 
             Json(response).into_response()
@@ -121,8 +112,6 @@ pub async fn import_article_save(
     }
 
     let url = payload.url.clone();
-
-    // Fetch HTML content
     let html_result = reqwest::get(&url).await;
     let html_content = match html_result {
         Ok(response) => match response.text().await {
@@ -144,22 +133,17 @@ pub async fn import_article_save(
         }
     };
 
-    // Extract article using dom_smoothie
     let url_for_task = url.clone();
-    let result = tokio::task::spawn_blocking(move || -> Result<(String, String), String> {
-        let mut readability = Readability::new(html_content, Some(&url_for_task), None)
-            .map_err(|e| format!("Readability error: {}", e))?;
-        let article = readability.parse().map_err(|e| format!("Parse error: {}", e))?;
-        Ok((article.title, article.content.to_string()))
+    let result = tokio::task::spawn_blocking(move || -> Result<malfestio_readability::Article, String> {
+        let readability = Readability::new(html_content, Some(&url_for_task));
+        readability.parse().map_err(|e| format!("Parse error: {}", e))
     })
     .await;
 
     match result {
-        Ok(Ok((title, content))) => {
-            // Convert HTML content to markdown
-            let markdown = html2md::parse_html(&content);
-
-            // Merge auto-tags with user-provided tags
+        Ok(Ok(article)) => {
+            let title = article.title;
+            let markdown = article.markdown;
             let mut tags = payload.tags.clone();
             if !tags.contains(&"imported".to_string()) {
                 tags.push("imported".to_string());
@@ -168,10 +152,8 @@ pub async fn import_article_save(
                 tags.push("article".to_string());
             }
 
-            // Store source URL as first link
             let links = vec![payload.url.clone()];
 
-            // Create note
             match state
                 .note_repo
                 .create(&user_ctx.did, &title, &markdown, tags, payload.visibility, links)
@@ -222,13 +204,11 @@ mod tests {
         let body_json: serde_json::Value = serde_json::from_slice(&body_bytes).unwrap();
         let title = body_json["title"].as_str().unwrap();
         assert!(title.contains("Rust"));
-        // Verify markdown field exists and is non-empty
+
         let markdown = body_json["markdown"].as_str().unwrap();
         assert!(markdown.len() > 100);
-        // Verify no HTML tags leak through
         assert!(!markdown.contains("<div"));
         assert!(!markdown.contains("<p>"));
-        // Verify metadata structure exists
         assert!(body_json["metadata"].is_object());
         assert_eq!(
             body_json["metadata"]["source_url"].as_str().unwrap(),

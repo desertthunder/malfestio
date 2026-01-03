@@ -317,7 +317,7 @@ fn format_time_ago(timestamp: chrono::DateTime<chrono::Utc>) -> String {
 
 #[cfg(debug_assertions)]
 async fn debug_article(url: &str, output_file: Option<&str>) -> malfestio_core::Result<()> {
-    use dom_smoothie::Readability;
+    use malfestio_readability::Readability;
 
     println!("Fetching article from: {}", url);
 
@@ -327,7 +327,8 @@ async fn debug_article(url: &str, output_file: Option<&str>) -> malfestio_core::
         .build()
         .map_err(|e| malfestio_core::Error::Other(format!("Failed to build client: {}", e)))?;
 
-    let response = client.get(url)
+    let response = client
+        .get(url)
         .send()
         .await
         .map_err(|e| malfestio_core::Error::Other(format!("Failed to fetch URL: {}", e)))?;
@@ -339,58 +340,44 @@ async fn debug_article(url: &str, output_file: Option<&str>) -> malfestio_core::
 
     println!("Fetched {} bytes of HTML", html_content.len());
 
-    // Extract article using dom_smoothie
+    // Extract article using malfestio-readability
     println!("Extracting article content...");
     let url_clone = url.to_string();
-    let result = tokio::task::spawn_blocking(
-        move || -> Result<(String, String, Option<String>, Option<String>), String> {
-            let mut readability = Readability::new(html_content, Some(&url_clone), None)
-                .map_err(|e| format!("Readability error: {}", e))?;
-            let article = readability.parse().map_err(|e| format!("Parse error: {}", e))?;
-            Ok((
-                article.title,
-                article.content.to_string(),
-                article.byline,
-                article.published_time,
-            ))
-        },
-    )
+    let result = tokio::task::spawn_blocking(move || -> Result<malfestio_readability::Article, String> {
+        let readability = Readability::new(html_content, Some(&url_clone));
+        readability.parse().map_err(|e| format!("Parse error: {}", e))
+    })
     .await
     .map_err(|e| malfestio_core::Error::Other(format!("Task join error: {}", e)))?
     .map_err(malfestio_core::Error::Other)?;
 
-    let (title, content, author, publish_date) = result;
+    let article = result;
 
     println!("✓ Extracted article:");
-    println!("  Title: {}", title);
-    if let Some(author) = &author {
+    println!("  Title: {}", article.title);
+    if let Some(ref author) = article.author {
         println!("  Author: {}", author);
     }
-    if let Some(date) = &publish_date {
+    if let Some(ref date) = article.published_date {
         println!("  Published: {}", date);
     }
-    println!("  Content length: {} bytes", content.len());
+    println!("  Content length: {} bytes", article.content.len());
+    println!("  Markdown length: {} bytes", article.markdown.len());
 
-    // Convert HTML to markdown
-    println!("\nConverting to markdown...");
-    let markdown = html2md::parse_html(&content);
-    println!("✓ Converted to {} bytes of markdown", markdown.len());
-
-    // Output
     if let Some(file_path) = output_file {
         println!("\nSaving to file: {}", file_path);
 
         let mut output = String::new();
-        output.push_str(&format!("# {}\n\n", title));
-        if let Some(author) = author {
+        output.push_str(&format!("# {}\n\n", article.title));
+        if let Some(ref author) = article.author {
             output.push_str(&format!("**Author:** {}\n", author));
         }
-        if let Some(date) = publish_date {
+        if let Some(ref date) = article.published_date {
             output.push_str(&format!("**Published:** {}\n", date));
         }
         output.push_str(&format!("**Source:** {}\n\n", url));
         output.push_str("---\n\n");
-        output.push_str(&markdown);
+        output.push_str(&article.markdown);
 
         fs::write(file_path, output)
             .map_err(|e| malfestio_core::Error::Other(format!("Failed to write file: {}", e)))?;
@@ -398,16 +385,16 @@ async fn debug_article(url: &str, output_file: Option<&str>) -> malfestio_core::
         println!("✓ Saved to {}", file_path);
     } else {
         println!("\n{}", "=".repeat(80));
-        println!("# {}", title);
-        if let Some(author) = author {
+        println!("# {}", article.title);
+        if let Some(ref author) = article.author {
             println!("\n**Author:** {}", author);
         }
-        if let Some(date) = publish_date {
+        if let Some(ref date) = article.published_date {
             println!("**Published:** {}", date);
         }
         println!("**Source:** {}", url);
         println!("{}", "=".repeat(80));
-        println!("\n{}", markdown);
+        println!("\n{}", article.markdown);
     }
 
     Ok(())
