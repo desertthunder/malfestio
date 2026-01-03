@@ -36,6 +36,18 @@ pub async fn start() -> malfestio_core::Result<()> {
 
     tracing::info!("Starting Malfestio Server...");
 
+    let app = create_app().await?;
+
+    let addr = SocketAddr::from(([127, 0, 0, 1], 8080));
+
+    tracing::info!("Listening on {}", addr);
+
+    let listener = TcpListener::bind(addr).await.unwrap();
+    axum::serve(listener, app).await.unwrap();
+    Ok(())
+}
+
+pub async fn create_app() -> malfestio_core::Result<Router> {
     let database_url = std::env::var("DATABASE_URL")
         .unwrap_or_else(|_| std::env::var("DB_URL").expect("DATABASE_URL or DB_URL must be set"));
     let pool = db::create_pool(&database_url).map_err(|e| {
@@ -110,6 +122,7 @@ pub async fn start() -> malfestio_core::Result<()> {
         .route("/.well-known/atproto-did", get(well_known::atproto_did_handler))
         .route("/api/auth/login", post(api::auth::login))
         .route("/api/import/article", post(api::importer::import_article))
+        .route("/api/import/lecture", post(api::importer::post_import_lecture))
         .nest("/api/oauth", oauth_routes)
         .nest("/api", optional_auth_routes)
         .nest("/api", auth_routes)
@@ -122,13 +135,7 @@ pub async fn start() -> malfestio_core::Result<()> {
         )
         .with_state(state);
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], 8080));
-
-    tracing::info!("Listening on {}", addr);
-
-    let listener = TcpListener::bind(addr).await.unwrap();
-    axum::serve(listener, app).await.unwrap();
-    Ok(())
+    Ok(app)
 }
 
 /// Basic liveness check - returns 200 if the server is running.

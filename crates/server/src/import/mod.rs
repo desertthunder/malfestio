@@ -1,6 +1,7 @@
 use anyhow::Result;
 use std::path::Path;
 
+pub mod chunker;
 pub mod docx;
 pub mod pdf;
 

@@ -135,3 +135,5 @@ export type UpdatePreferencesPayload = {
   complete_onboarding?: boolean;
   tutorial_deck_completed?: boolean;
 };
+
+export type CreateNotePayload = { title: string; body: string; tags: string[]; visibility: { type: string } };

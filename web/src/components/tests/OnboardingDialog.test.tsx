@@ -56,7 +56,7 @@ describe("OnboardingDialog", () => {
       {
         ok: true,
         json: () => Promise.resolve({ persona: "creator", onboarding_completed_at: "2024-01-01" }),
-      } as unknown as Response,
+      } as Response,
     );
 
     const onComplete = vi.fn();
@@ -78,7 +78,7 @@ describe("OnboardingDialog", () => {
     const { api } = await import("$lib/api");
     vi.mocked(api.updatePreferences).mockImplementation(() =>
       new Promise((resolve) =>
-        setTimeout(() => resolve({ ok: true, json: () => Promise.resolve({}) } as unknown as Response), 100)
+        setTimeout(() => resolve({ ok: true, json: () => Promise.resolve({}) } as Response), 100)
       )
     );
 

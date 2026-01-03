@@ -1,10 +1,22 @@
+use crate::import::{
+    DocumentParser,
+    chunker::{Chunk, chunk_text},
+    docx::DocxParser,
+    pdf::PdfParser,
+};
 use crate::middleware::auth::UserContext;
 use crate::state::SharedState;
-use axum::{Json, extract::Extension, http::StatusCode, response::IntoResponse};
+use axum::{
+    Json,
+    extract::{Extension, Multipart},
+    http::StatusCode,
+    response::IntoResponse,
+};
 use malfestio_core::model::Visibility;
 use malfestio_readability::Readability;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use tokio::fs;
 
 #[derive(Deserialize)]
 pub struct ImportRequest {
@@ -25,6 +37,59 @@ pub struct ImportArticleResponse {
     title: String,
     markdown: String,
     metadata: ArticleMetadata,
+}
+
+#[derive(Serialize)]
+pub struct ImportLectureResponse {
+    filename: String,
+    content: String,
+    chunks: Vec<Chunk>,
+}
+
+pub async fn post_import_lecture(mut multipart: Multipart) -> impl IntoResponse {
+    while let Ok(Some(field)) = multipart.next_field().await {
+        let file_name = field.file_name().unwrap_or("lecture.pdf").to_string();
+        let _content_type = field.content_type().unwrap_or("application/octet-stream").to_string();
+
+        // TODO: in-memory parsing, but pdf-extract takes Path usually.
+        if let Ok(data) = field.bytes().await {
+            let temp_dir = std::env::temp_dir();
+            let temp_path = temp_dir.join(format!("upload_{}_{}", uuid::Uuid::new_v4(), file_name));
+
+            if let Err(e) = fs::write(&temp_path, &data).await {
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(json!({"error": format!("Failed to save temp file: {}", e)})),
+                )
+                    .into_response();
+            }
+
+            let parser: Box<dyn DocumentParser + Send + Sync> =
+                if file_name.ends_with(".docx") { Box::new(DocxParser) } else { Box::new(PdfParser) };
+
+            let result = parser.parse(&temp_path);
+
+            if let Err(e) = fs::remove_file(&temp_path).await {
+                tracing::warn!("Failed to remove temp file: {}", e);
+            }
+
+            match result {
+                Ok(text) => {
+                    let chunks = chunk_text(&text, 1000);
+                    return Json(ImportLectureResponse { filename: file_name, content: text, chunks }).into_response();
+                }
+                Err(e) => {
+                    return (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        Json(json!({"error": format!("Failed to parse document: {}", e)})),
+                    )
+                        .into_response();
+                }
+            }
+        }
+    }
+
+    (StatusCode::BAD_REQUEST, Json(json!({"error": "No file uploaded"}))).into_response()
 }
 
 pub async fn import_article(Json(payload): Json<ImportRequest>) -> impl IntoResponse {

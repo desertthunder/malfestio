@@ -1,4 +1,4 @@
-import type { CreateDeckPayload } from "./model";
+import type { CreateDeckPayload, CreateNotePayload } from "./model";
 import { authStore } from "./store";
 
 const API_BASE = "/api";
@@ -47,6 +47,7 @@ export const api = {
   exportData: (collection: "decks" | "notes") => apiFetch(`/export/${collection}`, { method: "GET" }),
   getNotes: () => apiFetch("/notes", { method: "GET" }),
   getNote: (id: string) => apiFetch(`/notes/${id}`, { method: "GET" }),
+  createNote: (payload: CreateNotePayload) => apiFetch("/notes", { method: "POST", body: JSON.stringify(payload) }),
   deleteNote: (id: string) => apiFetch(`/notes/${id}`, { method: "DELETE" }),
   updateNote: (id: string, payload: object) => {
     return apiFetch(`/notes/${id}`, { method: "PUT", body: JSON.stringify(payload) });
@@ -101,7 +102,7 @@ export const api = {
     }
     return res;
   },
-  // TODO: type visibility
+  // TODO: type check visibility
   saveImportedArticle: (payload: { url: string; tags?: string[]; visibility?: unknown }) => {
     return apiFetch("/import/article/save", { method: "POST", body: JSON.stringify(payload) });
   },
