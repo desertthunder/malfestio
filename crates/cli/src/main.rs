@@ -28,6 +28,25 @@ enum Commands {
         /// Bluesky handle to test (e.g., alice.bsky.social)
         handle: String,
     },
+    #[cfg(debug_assertions)]
+    /// [DEBUG ONLY] Debug utilities
+    Debug {
+        #[command(subcommand)]
+        command: DebugCommands,
+    },
+}
+
+#[cfg(debug_assertions)]
+#[derive(Subcommand)]
+enum DebugCommands {
+    /// Test article extraction and markdown conversion
+    Article {
+        /// Article URL to extract
+        url: String,
+        /// Save to file instead of printing to terminal
+        #[arg(short, long)]
+        output: Option<String>,
+    },
 }
 
 #[tokio::main]
@@ -47,6 +66,12 @@ async fn main() -> malfestio_core::Result<()> {
         Commands::Check { handle } => {
             check_flow(handle).await?;
         }
+        #[cfg(debug_assertions)]
+        Commands::Debug { command } => match command {
+            DebugCommands::Article { url, output } => {
+                debug_article(url, output.as_deref()).await?;
+            }
+        },
     }
 
     Ok(())
@@ -288,4 +313,102 @@ fn format_time_ago(timestamp: chrono::DateTime<chrono::Utc>) -> String {
     } else {
         format!("{} months ago", duration.num_days() / 30)
     }
+}
+
+#[cfg(debug_assertions)]
+async fn debug_article(url: &str, output_file: Option<&str>) -> malfestio_core::Result<()> {
+    use dom_smoothie::Readability;
+
+    println!("Fetching article from: {}", url);
+
+    // Fetch HTML content with user-agent
+    let client = reqwest::Client::builder()
+        .user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+        .build()
+        .map_err(|e| malfestio_core::Error::Other(format!("Failed to build client: {}", e)))?;
+
+    let response = client.get(url)
+        .send()
+        .await
+        .map_err(|e| malfestio_core::Error::Other(format!("Failed to fetch URL: {}", e)))?;
+
+    let html_content = response
+        .text()
+        .await
+        .map_err(|e| malfestio_core::Error::Other(format!("Failed to read response: {}", e)))?;
+
+    println!("Fetched {} bytes of HTML", html_content.len());
+
+    // Extract article using dom_smoothie
+    println!("Extracting article content...");
+    let url_clone = url.to_string();
+    let result = tokio::task::spawn_blocking(
+        move || -> Result<(String, String, Option<String>, Option<String>), String> {
+            let mut readability = Readability::new(html_content, Some(&url_clone), None)
+                .map_err(|e| format!("Readability error: {}", e))?;
+            let article = readability.parse().map_err(|e| format!("Parse error: {}", e))?;
+            Ok((
+                article.title,
+                article.content.to_string(),
+                article.byline,
+                article.published_time,
+            ))
+        },
+    )
+    .await
+    .map_err(|e| malfestio_core::Error::Other(format!("Task join error: {}", e)))?
+    .map_err(malfestio_core::Error::Other)?;
+
+    let (title, content, author, publish_date) = result;
+
+    println!("✓ Extracted article:");
+    println!("  Title: {}", title);
+    if let Some(author) = &author {
+        println!("  Author: {}", author);
+    }
+    if let Some(date) = &publish_date {
+        println!("  Published: {}", date);
+    }
+    println!("  Content length: {} bytes", content.len());
+
+    // Convert HTML to markdown
+    println!("\nConverting to markdown...");
+    let markdown = html2md::parse_html(&content);
+    println!("✓ Converted to {} bytes of markdown", markdown.len());
+
+    // Output
+    if let Some(file_path) = output_file {
+        println!("\nSaving to file: {}", file_path);
+
+        let mut output = String::new();
+        output.push_str(&format!("# {}\n\n", title));
+        if let Some(author) = author {
+            output.push_str(&format!("**Author:** {}\n", author));
+        }
+        if let Some(date) = publish_date {
+            output.push_str(&format!("**Published:** {}\n", date));
+        }
+        output.push_str(&format!("**Source:** {}\n\n", url));
+        output.push_str("---\n\n");
+        output.push_str(&markdown);
+
+        fs::write(file_path, output)
+            .map_err(|e| malfestio_core::Error::Other(format!("Failed to write file: {}", e)))?;
+
+        println!("✓ Saved to {}", file_path);
+    } else {
+        println!("\n{}", "=".repeat(80));
+        println!("# {}", title);
+        if let Some(author) = author {
+            println!("\n**Author:** {}", author);
+        }
+        if let Some(date) = publish_date {
+            println!("**Published:** {}", date);
+        }
+        println!("**Source:** {}", url);
+        println!("{}", "=".repeat(80));
+        println!("\n{}", markdown);
+    }
+
+    Ok(())
 }

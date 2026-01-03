@@ -58,12 +58,14 @@ export const api = {
 
     const deck = await res.json();
     if (cards && cards.length > 0) {
-      await Promise.all(cards.map((c) =>
-        apiFetch("/cards", {
-          method: "POST",
-          body: JSON.stringify({ deck_id: deck.id, front: c.front, back: c.back, media_url: c.mediaUrl }),
-        })
-      ));
+      await Promise.all(
+        cards.map((c) =>
+          apiFetch("/cards", {
+            method: "POST",
+            body: JSON.stringify({ deck_id: deck.id, front: c.front, back: c.back, media_url: c.mediaUrl }),
+          })
+        ),
+      );
     }
 
     return { ok: true, json: async () => deck };
@@ -98,5 +100,20 @@ export const api = {
       return { ok: true };
     }
     return res;
+  },
+  // TODO: type visibility
+  saveImportedArticle: (payload: { url: string; tags?: string[]; visibility?: unknown }) => {
+    return apiFetch("/import/article/save", { method: "POST", body: JSON.stringify(payload) });
+  },
+  downloadNoteAsMarkdown: (note: { title: string; body: string }) => {
+    const blob = new Blob([note.body], { type: "text/markdown" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${note.title.replace(/[^a-z0-9]/gi, "_").toLowerCase()}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   },
 };

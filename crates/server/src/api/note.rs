@@ -36,6 +36,7 @@ pub async fn create_note(
             &payload.body,
             payload.tags,
             payload.visibility,
+            Vec::new(),
         )
         .await;
 

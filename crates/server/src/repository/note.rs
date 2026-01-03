@@ -12,7 +12,13 @@ pub enum NoteRepoError {
 #[async_trait]
 pub trait NoteRepository: Send + Sync {
     async fn create(
-        &self, owner_did: &str, title: &str, body: &str, tags: Vec<String>, visibility: Visibility,
+        &self,
+        owner_did: &str,
+        title: &str,
+        body: &str,
+        tags: Vec<String>,
+        visibility: Visibility,
+        links: Vec<String>,
     ) -> Result<Note, NoteRepoError>;
     async fn list(&self, viewer_did: Option<&str>) -> Result<Vec<Note>, NoteRepoError>;
     async fn get(&self, id: &str, viewer_did: Option<&str>) -> Result<Note, NoteRepoError>;
@@ -32,7 +38,13 @@ impl DbNoteRepository {
 #[async_trait]
 impl NoteRepository for DbNoteRepository {
     async fn create(
-        &self, owner_did: &str, title: &str, body: &str, tags: Vec<String>, visibility: Visibility,
+        &self,
+        owner_did: &str,
+        title: &str,
+        body: &str,
+        tags: Vec<String>,
+        visibility: Visibility,
+        links: Vec<String>,
     ) -> Result<Note, NoteRepoError> {
         let client = self
             .pool
@@ -46,9 +58,9 @@ impl NoteRepository for DbNoteRepository {
 
         client
             .execute(
-                "INSERT INTO notes (id, owner_did, title, body, tags, visibility)
-                 VALUES ($1, $2, $3, $4, $5, $6)",
-                &[&note_id, &owner_did, &title, &body, &tags, &visibility_json],
+                "INSERT INTO notes (id, owner_did, title, body, tags, visibility, links)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7)",
+                &[&note_id, &owner_did, &title, &body, &tags, &visibility_json, &links],
             )
             .await
             .map_err(|e| NoteRepoError::DatabaseError(format!("Failed to insert note: {}", e)))?;
@@ -61,7 +73,7 @@ impl NoteRepository for DbNoteRepository {
             tags,
             visibility,
             published_at: None,
-            links: Vec::new(),
+            links,
             language: None,
         })
     }
@@ -257,7 +269,13 @@ pub mod mock {
     #[async_trait]
     impl NoteRepository for MockNoteRepository {
         async fn create(
-            &self, owner_did: &str, title: &str, body: &str, tags: Vec<String>, visibility: Visibility,
+            &self,
+            owner_did: &str,
+            title: &str,
+            body: &str,
+            tags: Vec<String>,
+            visibility: Visibility,
+            links: Vec<String>,
         ) -> Result<Note, NoteRepoError> {
             if *self.should_fail.lock().unwrap() {
                 return Err(NoteRepoError::DatabaseError("Mock failure".to_string()));
@@ -271,7 +289,7 @@ pub mod mock {
                 tags,
                 visibility,
                 published_at: None,
-                links: Vec::new(),
+                links,
                 language: None,
             };
 

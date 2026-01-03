@@ -57,6 +57,7 @@ pub async fn start() -> malfestio_core::Result<()> {
         .route("/decks/{id}/fork", post(api::deck::fork_deck))
         .route("/notes", post(api::note::create_note))
         .route("/cards", post(api::card::create_card))
+        .route("/import/article/save", post(api::importer::import_article_save))
         .route("/review/due", get(api::review::get_due_cards))
         .route("/review/submit", post(api::review::submit_review))
         .route("/review/stats", get(api::review::get_stats))

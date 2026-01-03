@@ -5,14 +5,8 @@ import { WikilinksPanel } from "$components/notes/WikilinksPanel";
 import { Button } from "$components/ui/Button";
 import { api } from "$lib/api";
 import type { Note } from "$lib/model";
-import {
-  extractHeadings,
-  findBacklinks,
-  type Heading,
-  parseWikilinks,
-  resolveWikilink,
-  type WikiLink,
-} from "$lib/wikilink";
+import { extractHeadings, findBacklinks, parseWikilinks, resolveWikilink } from "$lib/wikilink";
+import type { Heading, WikiLink } from "$lib/wikilink";
 import { Tag } from "$ui/Tag";
 import rehypeShiki from "@shikijs/rehype";
 import { A, useParams } from "@solidjs/router";
@@ -118,6 +112,7 @@ const NoteView: Component = () => {
                   <A href={`/notes/edit/${n().id}`}>
                     <Button variant="secondary">Edit</Button>
                   </A>
+                  <Button variant="secondary" onClick={() => api.downloadNoteAsMarkdown(n())}>Download Markdown</Button>
                 </div>
               </header>
 
