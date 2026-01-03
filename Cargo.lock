@@ -1736,6 +1736,7 @@ dependencies = [
  "html2md",
  "html5ever 0.36.1",
  "regex",
+ "reqwest",
  "scraper",
  "sxd-document",
  "sxd-xpath",

@@ -55,12 +55,6 @@ pub struct Readability {
 }
 
 impl Readability {
-    /// Create a new Readability instance
-    ///
-    /// # Arguments
-    ///
-    /// * `html` - The HTML content to extract from
-    /// * `url` - Optional URL of the article (used for rule matching)
     pub fn new(html: String, url: Option<&str>) -> Self {
         Self { html, url: url.map(String::from), rules_dir: None }
     }
@@ -75,28 +69,25 @@ impl Readability {
 
     /// Extract article content from HTML
     ///
-    /// ## Extraction Flow:
     /// 1. If URL provided: Try to load site-specific XPath rules from embedded rules
-    /// 2. If rules found: Attempt XPath-based extraction
+    /// 2. If rules found: Attempt XPath-based extraction with strip rules applied
     /// 3. If no rules OR XPath extraction fails: Fall back to generic heuristic extraction
-    /// 4. Convert extracted HTML to markdown
-    /// 5. Generate excerpt from markdown
-    /// 6. Return complete Article struct
+    /// 4. Clean extracted HTML (remove scripts, styles, unlikely elements)
+    /// 5. Convert cleaned HTML to markdown
+    /// 6. Generate excerpt from markdown
+    /// 7. Return complete Article struct
     ///
-    /// ## Implementation Gaps:
-    /// - XPath extraction doesn't handle complex expressions with `contains()`, `normalize-space()`, etc.
-    ///   These will fall back to generic extraction
-    /// - No content cleaning between XPath/generic extraction and markdown conversion
-    ///   (scripts, styles, etc. may be present in extracted HTML)
-    /// - Generic extraction may include non-content elements (nav, footer, etc.)
+    /// Supported XPath Features:
+    /// - Simple tag selection: `//tag`
+    /// - ID selection: `//tag[@id='value']`
+    /// - Class matching: `//tag[@class='value']`, `//tag[contains(@class, 'value')]`
+    /// - Normalized class: `//tag[contains(concat(' ',normalize-space(@class),' '),' value ')]`
+    /// - Attribute extraction: `//meta[@name='value']/@content`
+    /// - Strip rules: `strip_id_or_class` and `strip` XPath directives
     ///
-    /// ## Design Decision:
+    /// Design:
     /// We prefer to return *something* (via generic extraction) rather than fail completely.
     /// This maximizes success rate at the cost of potentially lower quality extraction.
-    ///
-    /// TODO: Add HTML cleaning step before markdown conversion
-    /// TODO: Implement XPath strip directives to remove unwanted elements
-    /// TODO: Add content validation (minimum length, etc.)
     pub fn parse(&self) -> Result<Article> {
         use config::ConfigLoader;
         use converter::to_markdown;
@@ -121,9 +112,10 @@ impl Readability {
             self.extract_with_generic()?
         };
 
-        let markdown = to_markdown(&content);
+        let cleaned_content = cleaner::HtmlCleaner::clean(&content);
+        let markdown = to_markdown(&cleaned_content);
         let excerpt = Some(converter::html2md::generate_excerpt(&markdown, 200));
-        Ok(Article { title, content, markdown, author, published_date: date, excerpt })
+        Ok(Article { title, content: cleaned_content, markdown, author, published_date: date, excerpt })
     }
 
     /// Extract using generic heuristic-based algorithm

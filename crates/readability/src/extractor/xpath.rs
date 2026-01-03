@@ -23,6 +23,10 @@ use crate::error::{Error, Result};
 use regex::Regex;
 use scraper::{ElementRef, Html, Selector};
 
+static VOID_ELEMENTS: &[&str] = &[
+    "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr",
+];
+
 /// Extracted content from XPath rules
 #[derive(Debug, Clone)]
 pub struct ExtractedContent {
@@ -142,11 +146,6 @@ impl XPathExtractor {
                 output.push_str(&html_escape::encode_text(&text.to_string()));
             }
         }
-
-        const VOID_ELEMENTS: &[&str] = &[
-            "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track",
-            "wbr",
-        ];
 
         if !VOID_ELEMENTS.contains(&tag) {
             output.push_str("</");
@@ -491,4 +490,51 @@ mod tests {
         assert_eq!(result.author, Some("Test Author".to_string()));
         assert_eq!(result.date, Some("2024-01-15".to_string()));
     }
+
+    #[test]
+    fn test_strip_elements_inside_body() {
+        let html = r#"
+            <html>
+                <body>
+                    <div id="bodyContent">
+                        <h2>Section Title <span class="mw-editsection">[edit]</span></h2>
+                        <p>Main content here.</p>
+                        <h2>Another Section <span class="mw-editsection-bracket">[</span></h2>
+                    </div>
+                </body>
+            </html>
+        "#;
+
+        let config = SiteConfig {
+            body: vec!["//*[@id='bodyContent']".to_string()],
+            strip_id_or_class: vec!["editsection".to_string()],
+            ..Default::default()
+        };
+
+        let extractor = XPathExtractor::new(html.to_string());
+        let result = extractor.extract(&config).unwrap();
+
+        let body = result.body_html.expect("Should extract body");
+        println!("Extracted body: {}", body);
+
+        assert!(!body.contains("mw-editsection"), "mw-editsection should be stripped");
+        assert!(!body.contains("[edit]"), "[edit] text should be stripped");
+        assert!(body.contains("Main content here"));
+        assert!(body.contains("Section Title"));
+    }
+}
+
+#[test]
+fn test_wikipedia_xpath_patterns() {
+    let extractor = XPathExtractor::new(String::new());
+
+    // Wikipedia title XPath
+    let (css, filter) = extractor.xpath_to_css_with_attr("//h1[@id='firstHeading']").unwrap();
+    assert_eq!(css, "h1#firstHeading");
+    assert!(filter.is_none());
+
+    // Wikipedia body XPath (note space around =)
+    let (css, filter) = extractor.xpath_to_css_with_attr("//div[@id = 'bodyContent']").unwrap();
+    assert_eq!(css, "div#bodyContent");
+    assert!(filter.is_none());
 }
