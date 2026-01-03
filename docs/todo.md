@@ -32,7 +32,7 @@
 
 - [x] Bi-directional sync infrastructure
 - [x] Conflict resolution strategy
-- [ ] API endpoints for sync operations
+- [x] API endpoints for sync operations
 - [ ] Offline queue for pending publishes
     - [ ] Frontend sync store with IndexedDB persistence
 - [ ] Sync status UI indicators
@@ -57,9 +57,8 @@
 **Observability:**
 
 - [ ] Structured logging with correlation IDs
-- [ ] Metrics collection (Prometheus/OpenTelemetry)
-- [ ] Distributed tracing for request flows
-- [ ] Error tracking (Sentry or similar)
+- [ ] Metrics collection (Tracing spans)
+- [ ] Error tracking
 
 **Reliability:**
 

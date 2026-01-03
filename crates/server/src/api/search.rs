@@ -102,6 +102,8 @@ mod tests {
         let search_repo_trait = search_repo.clone() as Arc<dyn SearchRepository>;
         let prefs_repo = Arc::new(crate::repository::preferences::mock::MockPreferencesRepository::new())
             as Arc<dyn crate::repository::preferences::PreferencesRepository>;
+        let sync_repo = Arc::new(crate::repository::sync::mock::MockSyncRepository::new())
+            as Arc<dyn crate::repository::sync::SyncRepository>;
 
         Arc::new(AppState {
             pool,
@@ -113,6 +115,7 @@ mod tests {
             social_repo,
             deck_repo,
             search_repo: search_repo_trait,
+            sync_repo,
             config,
             auth_cache,
             dpop_nonces: Arc::new(tokio::sync::RwLock::new(std::collections::HashMap::new())),

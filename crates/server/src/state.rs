@@ -1,15 +1,11 @@
 use crate::db::DbPool;
 use crate::middleware::auth::UserContext;
 use crate::oauth::resolver::IdentityResolver;
-use crate::repository;
-use crate::repository::card::CardRepository;
-use crate::repository::deck::DeckRepository;
-use crate::repository::note::NoteRepository;
-use crate::repository::oauth::OAuthRepository;
-use crate::repository::preferences::PreferencesRepository;
-use crate::repository::review::ReviewRepository;
-use crate::repository::search::SearchRepository;
-use crate::repository::social::SocialRepository;
+use crate::repository::{
+    self, card::CardRepository, deck::DeckRepository, note::NoteRepository, oauth::OAuthRepository,
+    preferences::PreferencesRepository, review::ReviewRepository, search::SearchRepository, social::SocialRepository,
+    sync::SyncRepository,
+};
 
 use deadpool_postgres::Pool;
 use std::collections::HashMap;
@@ -38,6 +34,7 @@ pub struct Repositories {
     pub review: Arc<dyn ReviewRepository>,
     pub social: Arc<dyn SocialRepository>,
     pub search: Arc<dyn SearchRepository>,
+    pub sync: Arc<dyn SyncRepository>,
 }
 
 #[cfg(test)]
@@ -52,6 +49,7 @@ impl Default for Repositories {
             review: Arc::new(repository::review::mock::MockReviewRepository::new()),
             social: Arc::new(repository::social::mock::MockSocialRepository::new()),
             search: Arc::new(repository::search::mock::MockSearchRepository::new()),
+            sync: Arc::new(repository::sync::mock::MockSyncRepository::new()),
         }
     }
 }
@@ -66,6 +64,7 @@ impl From<&Pool> for Repositories {
         let review_repo = std::sync::Arc::new(repository::review::DbReviewRepository::new(pool.clone()));
         let social_repo = std::sync::Arc::new(repository::social::DbSocialRepository::new(pool.clone()));
         let search_repo = std::sync::Arc::new(repository::search::DbSearchRepository::new(pool.clone()));
+        let sync_repo = std::sync::Arc::new(repository::sync::DbSyncRepository::new(pool.clone()));
 
         Self {
             oauth: oauth_repo,
@@ -76,6 +75,7 @@ impl From<&Pool> for Repositories {
             review: review_repo,
             social: social_repo,
             search: search_repo,
+            sync: sync_repo,
         }
     }
 }
@@ -90,6 +90,7 @@ pub struct AppState {
     pub review_repo: Arc<dyn ReviewRepository>,
     pub social_repo: Arc<dyn SocialRepository>,
     pub search_repo: Arc<dyn SearchRepository>,
+    pub sync_repo: Arc<dyn SyncRepository>,
     pub config: AppConfig,
     pub auth_cache: AuthCache,
     /// Cache of valid DPoP nonces. Nonces are single-use and expire after TTL.
@@ -113,6 +114,7 @@ impl AppState {
             review_repo: repos.review,
             social_repo: repos.social,
             search_repo: repos.search,
+            sync_repo: repos.sync,
             config,
             auth_cache,
             dpop_nonces,
@@ -131,6 +133,7 @@ impl AppState {
         let social_repo = Arc::new(repository::social::mock::MockSocialRepository::new()) as Arc<dyn SocialRepository>;
         let search_repo = Arc::new(repository::search::mock::MockSearchRepository::new()) as Arc<dyn SearchRepository>;
         let deck_repo = Arc::new(repository::deck::mock::MockDeckRepository::new()) as Arc<dyn DeckRepository>;
+        let sync_repo = Arc::new(repository::sync::mock::MockSyncRepository::new()) as Arc<dyn SyncRepository>;
         let config = AppConfig { pds_url: "https://bsky.social".to_string() };
         let prefs_repo =
             Arc::new(repository::preferences::mock::MockPreferencesRepository::new()) as Arc<dyn PreferencesRepository>;
@@ -144,6 +147,7 @@ impl AppState {
             social: social_repo,
             search: search_repo,
             deck: deck_repo,
+            sync: sync_repo,
         };
 
         Self::new(pool, repos, config)

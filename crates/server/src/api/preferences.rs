@@ -117,6 +117,8 @@ mod tests {
             as Arc<dyn crate::repository::search::SearchRepository>;
         let review_repo = Arc::new(crate::repository::review::mock::MockReviewRepository::new())
             as Arc<dyn crate::repository::review::ReviewRepository>;
+        let sync_repo = Arc::new(crate::repository::sync::mock::MockSyncRepository::new())
+            as Arc<dyn crate::repository::sync::SyncRepository>;
 
         let config = AppConfig { pds_url: "https://bsky.social".to_string() };
 
@@ -129,6 +131,7 @@ mod tests {
             deck: deck_repo,
             search: search_repo,
             prefs: prefs_repo,
+            sync: sync_repo,
         };
 
         AppState::new(pool, repos, config)

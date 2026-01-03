@@ -82,6 +82,10 @@ pub async fn create_app() -> malfestio_core::Result<Router> {
         .route("/preferences", get(api::preferences::get_preferences))
         .route("/preferences", axum::routing::put(api::preferences::update_preferences))
         .route("/export/{collection}", get(api::export::export_collection))
+        .route("/sync/push/deck/{id}", post(api::sync::push_deck))
+        .route("/sync/push/note/{id}", post(api::sync::push_note))
+        .route("/sync/status", get(api::sync::get_sync_status))
+        .route("/sync/resolve/{entity_type}/{id}", post(api::sync::resolve_conflict))
         .layer(axum_middleware::from_fn_with_state(
             state.clone(),
             middleware::auth::auth_middleware,

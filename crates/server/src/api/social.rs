@@ -195,6 +195,8 @@ mod tests {
         let search_repo = Arc::new(crate::repository::search::mock::MockSearchRepository::new())
             as Arc<dyn crate::repository::search::SearchRepository>;
         let auth_cache = Arc::new(tokio::sync::RwLock::new(std::collections::HashMap::new()));
+        let sync_repo = Arc::new(crate::repository::sync::mock::MockSyncRepository::new())
+            as Arc<dyn crate::repository::sync::SyncRepository>;
 
         Arc::new(AppState {
             pool,
@@ -206,6 +208,7 @@ mod tests {
             social_repo,
             deck_repo,
             search_repo,
+            sync_repo,
             config,
             auth_cache,
             dpop_nonces: Arc::new(tokio::sync::RwLock::new(std::collections::HashMap::new())),

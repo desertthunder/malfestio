@@ -52,6 +52,8 @@ mod tests {
             social_repo: social_repo.clone() as Arc<dyn SocialRepository>,
             deck_repo: Arc::new(MockDeckRepository::new()) as Arc<dyn crate::repository::deck::DeckRepository>,
             search_repo: Arc::new(MockSearchRepository::new()) as Arc<dyn crate::repository::search::SearchRepository>,
+            sync_repo: Arc::new(crate::repository::sync::mock::MockSyncRepository::new())
+                as Arc<dyn crate::repository::sync::SyncRepository>,
             config: crate::state::AppConfig { pds_url: "https://bsky.social".to_string() },
             auth_cache: Arc::new(tokio::sync::RwLock::new(std::collections::HashMap::new())),
             dpop_nonces: Arc::new(tokio::sync::RwLock::new(std::collections::HashMap::new())),

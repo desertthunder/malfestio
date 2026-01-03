@@ -159,6 +159,9 @@ mod tests {
         let search_repo = Arc::new(crate::repository::search::mock::MockSearchRepository::new())
             as Arc<dyn crate::repository::search::SearchRepository>;
 
+        let sync_repo = Arc::new(crate::repository::sync::mock::MockSyncRepository::new())
+            as Arc<dyn crate::repository::sync::SyncRepository>;
+
         let repos = crate::state::Repositories {
             card: card_repo,
             note: note_repo,
@@ -168,6 +171,7 @@ mod tests {
             social: social_repo,
             deck: deck_repo,
             search: search_repo,
+            sync: sync_repo,
         };
 
         AppState::new(pool, repos, config)
