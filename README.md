@@ -13,3 +13,8 @@ and sharing progress & notes.
 - [Information Architecture](./docs/information-architecture.md) - Navigation and URL structure
 - [Data Model Mapping](./docs/data-model-mapping.md) - Lexicon to database mapping
 - [Roadmap](./docs/todo.md) - Development milestones
+
+## Test Data
+
+The file `crates/server/tests/data/1904.09828v2.pdf` is included for testing purposes.
+It contains the paper "Magic: The Gathering is Turing Complete" (arXiv:1904.09828).

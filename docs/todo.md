@@ -184,6 +184,46 @@ type ReasonRepost = {
 
 **Reference:** [Ozone Moderation Service](https://github.com/bluesky-social/ozone)
 
+### Milestone P - Readability Updates
+
+#### Deliverables
+
+**Multi-page Support:**
+
+- [ ] `single_page_link` directive - find "view full article" link
+- [ ] `next_page_link` directive - paginate through article pages
+- [ ] Concatenate content from multiple pages
+- [ ] Avoid circular pagination
+
+**Advanced Directives:**
+
+- [ ] `http_header(name)` directive - custom headers for fetching
+- [ ] `replace_string(find): replace` directive - text replacement
+- [ ] `find_string` directive - text pattern matching
+
+**Quality:**
+
+- [ ] Better table handling in markdown
+- [ ] Image caption extraction
+- [ ] JSON-LD support
+
+**Performance:**
+
+- [ ] LRU cache for parsed configs
+- [ ] Parallel candidate scoring
+- [ ] Lazy XPath evaluation
+
+**Markdown Conversion:**
+
+- [ ] Custom markdown converter (more control than html2md)
+- [ ] Code block language detection
+
+#### Acceptance
+
+- [ ] Can correctly extract multi-page articles (e.g., long news reports).
+- [ ] Advanced string manipulation allows for cleaner output on tricky sites.
+- [ ] Performance remains stable under high load.
+
 ## Open Question/Parked Decisions
 
 - Full offline authoring + later publish

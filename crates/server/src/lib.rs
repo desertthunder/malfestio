@@ -1,6 +1,7 @@
 pub mod api;
 pub mod db;
 pub mod firehose;
+pub mod import;
 pub mod middleware;
 pub mod oauth;
 pub mod pds;

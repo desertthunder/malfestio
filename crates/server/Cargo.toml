@@ -37,3 +37,5 @@ tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
 uuid = { version = "1.19.0", features = ["v4", "fast-rng"] }
 hickory-resolver = "0.24"
+pdf-extract = "0.10"
+docx-rs = "0.4"
