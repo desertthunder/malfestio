@@ -25,6 +25,15 @@ export async function apiFetch(path: string, options: RequestInit = {}) {
   return response;
 }
 
+const syncMethods = {
+  pushDeck: (id: string) => apiFetch(`/sync/push/deck/${id}`, { method: "POST" }),
+  pushNote: (id: string) => apiFetch(`/sync/push/note/${id}`, { method: "POST" }),
+  getSyncStatus: () => apiFetch("/sync/status", { method: "GET" }),
+  resolveConflict: (entityType: string, id: string, strategy: "last_write_wins" | "keep_local" | "keep_remote") => {
+    return apiFetch(`/sync/resolve/${entityType}/${id}`, { method: "POST", body: JSON.stringify({ strategy }) });
+  },
+};
+
 export const api = {
   get: (path: string) => apiFetch(path, { method: "GET" }),
   post: (path: string, body: unknown) => apiFetch(path, { method: "POST", body: JSON.stringify(body) }),
@@ -117,4 +126,5 @@ export const api = {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   },
+  ...syncMethods,
 };

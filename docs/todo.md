@@ -33,9 +33,9 @@
 - [x] Bi-directional sync infrastructure
 - [x] Conflict resolution strategy
 - [x] API endpoints for sync operations
-- [ ] Offline queue for pending publishes
-    - [ ] Frontend sync store with IndexedDB persistence
-- [ ] Sync status UI indicators
+- [x] Offline queue for pending publishes
+- [x] Frontend sync store with IndexedDB persistence (Dexie.js)
+- [x] Sync status UI indicators
 
 **Deep Linking:**
 

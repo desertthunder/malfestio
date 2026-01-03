@@ -2,6 +2,7 @@ import { authStore } from "$lib/store";
 import { Avatar } from "$ui/Avatar";
 import { A } from "@solidjs/router";
 import { type Component, Show } from "solid-js";
+import { SyncIndicator } from "../SyncIndicator";
 
 const Login: Component = () => (
   <A href="/login" class="px-4 py-2 bg-white text-gray-900 text-sm font-medium hover:bg-gray-100 transition-colors">
@@ -29,6 +30,7 @@ export const Header: Component = () => {
       <div class="flex items-center gap-4">
         <Show when={authStore.user()} fallback={<Login />}>
           <div class="flex items-center gap-3">
+            <SyncIndicator />
             <span class="text-xs text-gray-400">{authStore.user()?.handle}</span>
             <button
               onClick={() => authStore.logout()}
