@@ -40,6 +40,23 @@ pub struct PutRecordResponse {
     pub cid: String,
 }
 
+/// Response from getRecord XRPC.
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GetRecordResponse {
+    pub uri: String,
+    pub cid: String,
+    pub value: serde_json::Value,
+}
+
+/// Result of getting a record from PDS.
+#[derive(Debug, Clone)]
+pub struct GetRecordResult {
+    pub uri: String,
+    pub cid: String,
+    pub value: serde_json::Value,
+}
+
 /// Request body for deleteRecord XRPC.
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -124,13 +141,6 @@ impl PdsClient {
     }
 
     /// Create or update a record in the repository.
-    ///
-    /// # Arguments
-    ///
-    /// * `did` - The user's DID (repository owner)
-    /// * `collection` - The collection NSID (e.g., "org.stormlightlabs.malfestio.deck")
-    /// * `rkey` - The record key (TID)
-    /// * `record` - The record data as JSON
     pub async fn put_record(
         &self, did: &str, collection: &str, rkey: &str, record: serde_json::Value,
     ) -> Result<AtUri, PdsError> {
@@ -164,6 +174,42 @@ impl PdsClient {
             .map_err(|e| PdsError::NetworkError(e.to_string()))?;
 
         self.handle_response(response).await
+    }
+
+    /// Get a record from the repository.
+    pub async fn get_record(&self, did: &str, collection: &str, rkey: &str) -> Result<GetRecordResult, PdsError> {
+        let url = format!(
+            "{}/xrpc/com.atproto.repo.getRecord?repo={}&collection={}&rkey={}",
+            self.pds_url, did, collection, rkey
+        );
+
+        let mut request_builder = self.http_client.get(&url);
+
+        if let Some(ref dpop_keypair) = self.dpop_keypair {
+            let dpop_proof = dpop_keypair.generate_proof("GET", &url, Some(&self.access_token));
+            request_builder = request_builder
+                .header("Authorization", format!("DPoP {}", self.access_token))
+                .header("DPoP", dpop_proof);
+        } else {
+            request_builder = request_builder.header("Authorization", format!("Bearer {}", self.access_token));
+        }
+
+        let response = request_builder
+            .send()
+            .await
+            .map_err(|e| PdsError::NetworkError(e.to_string()))?;
+
+        if response.status().is_success() {
+            let get_response: GetRecordResponse = response
+                .json()
+                .await
+                .map_err(|e| PdsError::NetworkError(format!("Failed to parse response: {}", e)))?;
+            Ok(GetRecordResult { uri: get_response.uri, cid: get_response.cid, value: get_response.value })
+        } else {
+            let status = response.status();
+            let body = response.text().await.unwrap_or_default();
+            Err(self.map_error_status(status, body))
+        }
     }
 
     /// Delete a record from the repository.

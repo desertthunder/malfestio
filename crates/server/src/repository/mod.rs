@@ -6,3 +6,4 @@ pub mod preferences;
 pub mod review;
 pub mod search;
 pub mod social;
+pub mod sync;

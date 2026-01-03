@@ -7,6 +7,7 @@ pub mod oauth;
 pub mod pds;
 pub mod repository;
 pub mod state;
+pub mod sync_service;
 pub mod well_known;
 
 use axum::http::Method;

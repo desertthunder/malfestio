@@ -30,9 +30,11 @@
 
 **Sync & Conflict Resolution:**
 
-- [ ] Bi-directional sync: local drafts → PDS records, PDS records → local cache
-- [ ] Conflict resolution strategy for concurrent edits (last-write-wins or merge UI)
+- [x] Bi-directional sync infrastructure
+- [x] Conflict resolution strategy
+- [ ] API endpoints for sync operations
 - [ ] Offline queue for pending publishes
+    - [ ] Frontend sync store with IndexedDB persistence
 - [ ] Sync status UI indicators
 
 **Deep Linking:**
