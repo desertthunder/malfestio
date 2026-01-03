@@ -237,7 +237,6 @@ mod tests {
         let document = Html::parse_fragment(html);
         let selector = Selector::parse("div").unwrap();
         let element = document.select(&selector).next().unwrap();
-
         let weight = calculate_class_weight(element);
         assert!(weight > 0.0, "Should have positive weight for content/article classes");
     }
@@ -248,7 +247,6 @@ mod tests {
         let document = Html::parse_fragment(html);
         let selector = Selector::parse("div").unwrap();
         let element = document.select(&selector).next().unwrap();
-
         let weight = calculate_class_weight(element);
         assert!(weight < 0.0, "Should have negative weight for sidebar/comment classes");
     }
@@ -259,7 +257,6 @@ mod tests {
         let document = Html::parse_fragment(html);
         let selector = Selector::parse("div").unwrap();
         let element = document.select(&selector).next().unwrap();
-
         let density = calculate_link_density(element);
         assert!(density > 0.0 && density < 1.0, "Link density should be between 0 and 1");
     }
@@ -270,7 +267,6 @@ mod tests {
         let document = Html::parse_fragment(html);
         let selector = Selector::parse("div").unwrap();
         let element = document.select(&selector).next().unwrap();
-
         let density = calculate_link_density(element);
         assert!(
             density > 0.8,
@@ -332,5 +328,27 @@ mod tests {
 
         let score = calculate_tag_score(element);
         assert_eq!(score, -5.0, "Nav tag should score -5");
+    }
+    #[test]
+    fn test_mixed_signals() {
+        let html = r#"<div class="sidebar article-content">Content</div>"#;
+        let document = Html::parse_fragment(html);
+        let selector = Selector::parse("div").unwrap();
+        let element = document.select(&selector).next().unwrap();
+
+        assert!(
+            !is_unlikely_candidate(element),
+            "Mixed signals with positive pattern should be valid"
+        );
+    }
+
+    #[test]
+    fn test_empty_link_density() {
+        let html = r#"<div></div>"#;
+        let document = Html::parse_fragment(html);
+        let selector = Selector::parse("div").unwrap();
+        let element = document.select(&selector).next().unwrap();
+
+        assert_eq!(calculate_link_density(element), 0.0);
     }
 }

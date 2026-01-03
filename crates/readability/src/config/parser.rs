@@ -153,4 +153,25 @@ strip_id_or_class: nav
         assert_eq!(config.strip.len(), 2);
         assert_eq!(config.strip_id_or_class.len(), 2);
     }
+    #[test]
+    fn test_parse_invalid_boolean() {
+        let content = "prune: perhaps";
+        let result = parse_config(content);
+        assert!(result.is_err());
+        match result.unwrap_err() {
+            Error::ConfigError(msg) => assert_eq!(msg, "Invalid boolean value: perhaps"),
+            _ => panic!("Expected ConfigError"),
+        }
+    }
+
+    #[test]
+    fn test_parse_malformed_lines() {
+        let content = r#"
+title: //h1
+malformed line here
+another: valid
+        "#;
+        let config = parse_config(content).unwrap();
+        assert_eq!(config.title.len(), 1);
+    }
 }

@@ -22,3 +22,6 @@ target
 .env
 
 .sandbox
+
+# Test data
+crates/readability/tests/data/

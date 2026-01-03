@@ -522,18 +522,48 @@ mod tests {
         assert!(body.contains("Main content here"));
         assert!(body.contains("Section Title"));
     }
+    #[test]
+    fn test_rebuild_void_elements() {
+        let html = r#"
+            <html>
+                <body>
+                    <p>Text <br> with break</p>
+                    <img src="test.jpg">
+                    <div id="remove">Remove me</div>
+                </body>
+            </html>
+        "#;
+
+        let config = SiteConfig { strip: vec!["//*[@id='remove']".to_string()], ..Default::default() };
+        let extractor = XPathExtractor::new(html.to_string());
+        let result = extractor.apply_strip_rules(html, &config).unwrap();
+
+        assert!(result.contains("<br>"));
+        assert!(!result.contains("</br>"));
+        assert!(result.contains("<img src=\"test.jpg\">"));
+        assert!(!result.contains("</img>"));
+        assert!(!result.contains("Remove me"));
+    }
+
+    #[test]
+    fn test_unsupported_xpath() {
+        let html = "<html></html>";
+        let extractor = XPathExtractor::new(html.to_string());
+        let document = Html::parse_document(html);
+
+        // TODO: implement complex axis navigation
+        let result = extractor.evaluate_xpath(&document, "//div/following-sibling::p", false);
+        assert!(matches!(result, Err(Error::XPathError(_))));
+    }
 }
 
 #[test]
 fn test_wikipedia_xpath_patterns() {
     let extractor = XPathExtractor::new(String::new());
-
-    // Wikipedia title XPath
     let (css, filter) = extractor.xpath_to_css_with_attr("//h1[@id='firstHeading']").unwrap();
     assert_eq!(css, "h1#firstHeading");
     assert!(filter.is_none());
 
-    // Wikipedia body XPath (note space around =)
     let (css, filter) = extractor.xpath_to_css_with_attr("//div[@id = 'bodyContent']").unwrap();
     assert_eq!(css, "div#bodyContent");
     assert!(filter.is_none());

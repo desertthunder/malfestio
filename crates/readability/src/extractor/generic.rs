@@ -561,4 +561,73 @@ mod tests {
 
         assert!(result.body_html.contains("main article content"));
     }
+    #[test]
+    fn test_extract_body_simple_fallback() {
+        let html = r#"
+            <html>
+                <body>
+                    <div class="article-content">
+                        Short content.
+                    </div>
+                </body>
+            </html>
+        "#;
+
+        let extractor = GenericExtractor::new(html.to_string());
+        let document = Html::parse_document(html);
+        let body = extractor.extract_body_simple(&document);
+
+        assert!(body.is_some());
+        assert!(body.unwrap().contains("Short content"));
+    }
+
+    #[test]
+    fn test_extract_title_fallback_tag() {
+        let html = r#"
+            <html>
+                <head>
+                    <title>Fallback Title</title>
+                </head>
+                <body></body>
+            </html>
+        "#;
+
+        let extractor = GenericExtractor::new(html.to_string());
+        let document = Html::parse_document(html);
+        let title = extractor.extract_title(&document);
+
+        assert_eq!(title, Some("Fallback Title".to_string()));
+    }
+
+    #[test]
+    fn test_extract_date_fallback_time_element() {
+        let html = r#"
+            <html>
+                <body>
+                    <time datetime="2025-12-25">Christmas 2025</time>
+                </body>
+            </html>
+        "#;
+
+        let extractor = GenericExtractor::new(html.to_string());
+        let document = Html::parse_document(html);
+        let date = extractor.extract_date(&document);
+        assert_eq!(date, Some("2025-12-25".to_string()));
+    }
+
+    #[test]
+    fn test_extract_date_fallback_schema() {
+        let html = r#"
+            <html>
+                <body>
+                    <span itemprop="datePublished" content="2025-01-01">Jan 1st</span>
+                </body>
+            </html>
+        "#;
+
+        let extractor = GenericExtractor::new(html.to_string());
+        let document = Html::parse_document(html);
+        let date = extractor.extract_date(&document);
+        assert_eq!(date, Some("2025-01-01".to_string()));
+    }
 }

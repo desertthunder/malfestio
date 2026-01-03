@@ -12,6 +12,14 @@ build-release:
 start:
     cargo run --bin malfestio-cli start
 
+# Fetch test data for readability tests
+fetch-test-data:
+    ./scripts/fetch_test_data.sh
+
+# Run readability tests (fetches data first)
+test-readability: fetch-test-data
+    cargo test -p malfestio-readability --test readability_tests
+
 # Run all tests
 test:
     cargo test --quiet
