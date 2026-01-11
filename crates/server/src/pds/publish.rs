@@ -70,16 +70,19 @@ pub struct PublishDeckResult {
 /// 4. Publishes each card (with placeholder deck ref initially)
 /// 5. Publishes the deck with card AT-URIs
 ///
-/// Note: Cards are published with an empty deck_ref since we don't have the
-/// deck's AT-URI yet. This is acceptable per the Lexicon - the deck holds
-/// the authoritative list of card references.
+/// Note: Cards are published with an empty deck_ref since we don't have the deck's AT-URI yet.
+///
+/// This is acceptable per the Lexicon - the deck holds the authoritative list of card references.
 pub async fn publish_deck_to_pds(
     oauth_repo: Arc<dyn OAuthRepository>, user_ctx: &UserContext, deck: &Deck, cards: &[Card],
 ) -> Result<PublishDeckResult, PublishError> {
     let pds_client = if user_ctx.has_dpop {
         if let Ok(stored_token) = oauth_repo.get_tokens(&user_ctx.did).await {
             if let Some(dpop_keypair) = stored_token.dpop_keypair() {
-                tracing::info!("Using stored OAuth tokens with DPoP for publishing");
+                tracing::info!(
+                    did = %user_ctx.did,
+                    "Using stored OAuth tokens with DPoP for publishing"
+                );
                 PdsClient::new_with_dpop(
                     stored_token.pds_url.clone(),
                     stored_token.access_token.clone(),
@@ -87,18 +90,23 @@ pub async fn publish_deck_to_pds(
                 )
             } else {
                 tracing::info!(
+                    did = %user_ctx.did,
                     "Current session has DPoP flag but stored token lacks keypair, using current session with Bearer auth"
                 );
                 PdsClient::new_bearer(user_ctx.pds_url.clone(), user_ctx.access_token.clone())
             }
         } else {
             tracing::info!(
+                did = %user_ctx.did,
                 "Current session has DPoP flag but no stored tokens found, using current session with Bearer auth"
             );
             PdsClient::new_bearer(user_ctx.pds_url.clone(), user_ctx.access_token.clone())
         }
     } else {
-        tracing::info!("Using current session with Bearer auth for publishing (app password)");
+        tracing::info!(
+            did = %user_ctx.did,
+            "Using current session with Bearer auth for publishing (app password)"
+        );
         PdsClient::new_bearer(user_ctx.pds_url.clone(), user_ctx.access_token.clone())
     };
 

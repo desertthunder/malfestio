@@ -118,7 +118,12 @@ impl MalfestioEventHandler {
 
         self.update_repo_state(did, rev).await?;
 
-        tracing::debug!("Indexed deck: {}", at_uri);
+        tracing::debug!(
+            at_uri = %at_uri,
+            did = %did,
+            rkey = %rkey,
+            "Indexed deck"
+        );
         Ok(())
     }
 
@@ -156,7 +161,12 @@ impl MalfestioEventHandler {
 
         self.update_repo_state(did, rev).await?;
 
-        tracing::debug!("Indexed card: {}", at_uri);
+        tracing::debug!(
+            at_uri = %at_uri,
+            did = %did,
+            rkey = %rkey,
+            "Indexed card"
+        );
         Ok(())
     }
 
@@ -193,7 +203,12 @@ impl MalfestioEventHandler {
 
         self.update_repo_state(did, rev).await?;
 
-        tracing::debug!("Indexed note: {}", at_uri);
+        tracing::debug!(
+            at_uri = %at_uri,
+            did = %did,
+            rkey = %rkey,
+            "Indexed note"
+        );
         Ok(())
     }
 
@@ -217,7 +232,11 @@ impl MalfestioEventHandler {
         );
         client.execute(&query, &[&at_uri]).await?;
 
-        tracing::info!("Soft-deleted record: {}", at_uri);
+        tracing::info!(
+            at_uri = %at_uri,
+            table = %table,
+            "Soft-deleted record"
+        );
         Ok(())
     }
 
@@ -283,11 +302,11 @@ impl EventHandler for MalfestioEventHandler {
                 let operation = &commit.operation;
 
                 tracing::info!(
-                    "Received {} {} event: did={}, rkey={}",
-                    collection,
-                    operation,
-                    did,
-                    rkey
+                    did = %did,
+                    collection = %collection,
+                    operation = %operation,
+                    rkey = %rkey,
+                    "Received commit event"
                 );
 
                 match operation.as_str() {
@@ -306,19 +325,39 @@ impl EventHandler for MalfestioEventHandler {
                         };
 
                         if let Err(e) = result {
-                            tracing::warn!("Failed to index record: {}", e);
+                            tracing::warn!(
+                                error = %e,
+                                did = %did,
+                                collection = %collection,
+                                rkey = %rkey,
+                                "Failed to index record"
+                            );
                         }
                     }
                     "delete" => {
                         if let Err(e) = self.handle_delete(&did, collection, rkey).await {
-                            tracing::warn!("Failed to handle delete: {}", e);
+                            tracing::warn!(
+                                error = %e,
+                                did = %did,
+                                collection = %collection,
+                                rkey = %rkey,
+                                "Failed to handle delete"
+                            );
                         }
                     }
-                    _ => tracing::debug!("Unknown operation type: {}", operation),
+                    _ => tracing::debug!(
+                        operation = %operation,
+                        did = %did,
+                        "Unknown operation type"
+                    ),
                 }
 
                 if let Err(e) = self.save_cursor(time_us as i64).await {
-                    tracing::warn!("Failed to save cursor: {}", e);
+                    tracing::warn!(
+                        error = %e,
+                        cursor_us = time_us,
+                        "Failed to save cursor"
+                    );
                 }
             }
             JetstreamEvent::Delete { did, commit, .. } => {
@@ -327,14 +366,20 @@ impl EventHandler for MalfestioEventHandler {
                 if MALFESTIO_COLLECTIONS.iter().any(|c| collection == *c) {
                     let rkey = &commit.rkey;
                     tracing::info!(
-                        "Received delete event: did={}, collection={}, rkey={}",
-                        did,
-                        collection,
-                        rkey
+                        did = %did,
+                        collection = %collection,
+                        rkey = %rkey,
+                        "Received delete event"
                     );
 
                     if let Err(e) = self.handle_delete(&did, collection, rkey).await {
-                        tracing::warn!("Failed to handle delete: {}", e);
+                        tracing::warn!(
+                            error = %e,
+                            did = %did,
+                            collection = %collection,
+                            rkey = %rkey,
+                            "Failed to handle delete"
+                        );
                     }
                 }
             }
@@ -373,12 +418,15 @@ pub async fn start_firehose(pool: DbPool, config: FirehoseConfig) -> Cancellatio
 
     let handler = MalfestioEventHandler::new(pool);
 
+    let collections = config.collections.clone();
+    let compress = config.compress;
+    let collections_log = collections.clone();
     let task_config = ConsumerTaskConfig {
         user_agent: "malfestio-indexer/0.1.0".to_string(),
         compression: config.compress,
         zstd_dictionary_location: String::new(),
         jetstream_hostname: config.jetstream_url.replace("wss://", "").replace("/subscribe", ""),
-        collections: config.collections,
+        collections,
         dids: vec![],
         max_message_size_bytes: None,
         cursor: None,
@@ -386,20 +434,30 @@ pub async fn start_firehose(pool: DbPool, config: FirehoseConfig) -> Cancellatio
     };
 
     tokio::spawn(async move {
-        tracing::info!("Starting Jetstream firehose consumer...");
+        tracing::info!(
+            collections = %collections_log.join(","),
+            compress = compress,
+            "Starting Jetstream firehose consumer"
+        );
 
         if let Some(cursor) = handler.get_cursor().await {
-            tracing::info!("Resuming from cursor: {}", cursor);
+            tracing::info!(cursor_us = cursor, "Resuming from cursor");
         }
 
         let consumer = Consumer::new(task_config);
         if let Err(e) = consumer.register_handler(std::sync::Arc::new(handler)).await {
-            tracing::error!("Failed to register handler: {}", e);
+            tracing::error!(
+                error = %e,
+                "Failed to register handler"
+            );
             return;
         }
 
         if let Err(e) = consumer.run_background(cancel_clone).await {
-            tracing::error!("Firehose consumer error: {}", e);
+            tracing::error!(
+                error = %e,
+                "Firehose consumer error"
+            );
         }
 
         tracing::info!("Firehose consumer stopped");

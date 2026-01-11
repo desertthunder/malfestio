@@ -342,7 +342,9 @@ pub mod mock {
             Ok(())
         }
 
-        async fn store_app_password_session(&self, req: StoreAppPasswordSessionRequest<'_>) -> Result<(), OAuthRepoError> {
+        async fn store_app_password_session(
+            &self, req: StoreAppPasswordSessionRequest<'_>,
+        ) -> Result<(), OAuthRepoError> {
             if *self.should_fail.lock().unwrap() {
                 return Err(OAuthRepoError::DatabaseError("Mock failure".to_string()));
             }

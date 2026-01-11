@@ -49,17 +49,21 @@ pub async fn get_connection_with_retry(
             Err(e) if attempts < max_retries => {
                 attempts += 1;
                 tracing::warn!(
-                    "Failed to get database connection (attempt {}/{}): {}. Retrying in {:?}...",
-                    attempts,
-                    max_retries,
-                    e,
-                    delay
+                    error = %e,
+                    attempt = attempts,
+                    max_retries = max_retries,
+                    retry_delay_ms = delay.as_millis(),
+                    "Failed to get database connection, retrying"
                 );
                 tokio::time::sleep(delay).await;
                 delay = delay.saturating_mul(2).min(Duration::from_secs(5));
             }
             Err(e) => {
-                tracing::error!("Failed to get database connection after {} attempts: {}", attempts, e);
+                tracing::error!(
+                    error = %e,
+                    attempts = attempts,
+                    "Failed to get database connection after retries"
+                );
                 return Err(e);
             }
         }

@@ -52,7 +52,10 @@ pub async fn create_card(
             (StatusCode::BAD_REQUEST, Json(json!({"error": msg}))).into_response()
         }
         Err(CardRepoError::DatabaseError(msg)) => {
-            tracing::error!("Database error: {}", msg);
+            tracing::error!(
+                error = %msg,
+                "Database error in create_card"
+            );
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(json!({"error": "Failed to create card"})),
@@ -74,7 +77,11 @@ pub async fn list_cards(
             (StatusCode::BAD_REQUEST, Json(json!({"error": msg}))).into_response()
         }
         Err(CardRepoError::DatabaseError(msg)) => {
-            tracing::error!("Database error: {}", msg);
+            tracing::error!(
+                error = %msg,
+                deck_id = %deck_id,
+                "Database error in list_cards"
+            );
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(json!({"error": "Failed to retrieve cards"})),

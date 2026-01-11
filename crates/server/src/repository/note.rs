@@ -12,13 +12,7 @@ pub enum NoteRepoError {
 #[async_trait]
 pub trait NoteRepository: Send + Sync {
     async fn create(
-        &self,
-        owner_did: &str,
-        title: &str,
-        body: &str,
-        tags: Vec<String>,
-        visibility: Visibility,
-        links: Vec<String>,
+        &self, owner_did: &str, title: &str, body: &str, tags: Vec<String>, visibility: Visibility, links: Vec<String>,
     ) -> Result<Note, NoteRepoError>;
     async fn list(&self, viewer_did: Option<&str>) -> Result<Vec<Note>, NoteRepoError>;
     async fn get(&self, id: &str, viewer_did: Option<&str>) -> Result<Note, NoteRepoError>;
@@ -38,13 +32,7 @@ impl DbNoteRepository {
 #[async_trait]
 impl NoteRepository for DbNoteRepository {
     async fn create(
-        &self,
-        owner_did: &str,
-        title: &str,
-        body: &str,
-        tags: Vec<String>,
-        visibility: Visibility,
-        links: Vec<String>,
+        &self, owner_did: &str, title: &str, body: &str, tags: Vec<String>, visibility: Visibility, links: Vec<String>,
     ) -> Result<Note, NoteRepoError> {
         let client = self
             .pool
@@ -269,12 +257,7 @@ pub mod mock {
     #[async_trait]
     impl NoteRepository for MockNoteRepository {
         async fn create(
-            &self,
-            owner_did: &str,
-            title: &str,
-            body: &str,
-            tags: Vec<String>,
-            visibility: Visibility,
+            &self, owner_did: &str, title: &str, body: &str, tags: Vec<String>, visibility: Visibility,
             links: Vec<String>,
         ) -> Result<Note, NoteRepoError> {
             if *self.should_fail.lock().unwrap() {

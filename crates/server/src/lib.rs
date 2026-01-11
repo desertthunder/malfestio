@@ -24,24 +24,43 @@ use std::net::SocketAddr;
 use tokio::net::TcpListener;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
 
 pub async fn start() -> malfestio_core::Result<()> {
-    tracing_subscriber::registry()
-        .with(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "malfestio_server=debug,tower_http=debug".into()),
-        )
-        .with(tracing_subscriber::fmt::layer())
-        .init();
+    // Configure structured logging with correlation IDs
+    let env_filter = EnvFilter::try_from_default_env()
+        .unwrap_or_else(|_| "malfestio_server=debug,tower_http=debug,axum=debug".into());
 
-    tracing::info!("Starting Malfestio Server...");
+    // Use JSON format for production when RUST_LOG is set explicitly,
+    // otherwise use pretty format for development
+    let is_json = std::env::var("RUST_LOG").is_ok_and(|v| !v.is_empty());
+
+    if is_json {
+        tracing_subscriber::registry()
+            .with(env_filter)
+            .with(tracing_subscriber::fmt::layer().json().with_target(true))
+            .init();
+    } else {
+        tracing_subscriber::registry()
+            .with(env_filter)
+            .with(tracing_subscriber::fmt::layer().pretty().with_target(false))
+            .init();
+    }
+
+    tracing::info!(
+        service = "malfestio-server",
+        version = env!("CARGO_PKG_VERSION"),
+        "Starting Malfestio Server"
+    );
 
     let app = create_app().await?;
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 8080));
 
-    tracing::info!("Listening on {}", addr);
+    tracing::info!(
+        addr = %addr,
+        "Listening"
+    );
 
     let listener = TcpListener::bind(addr).await.unwrap();
     axum::serve(listener, app).await.unwrap();
@@ -52,7 +71,11 @@ pub async fn create_app() -> malfestio_core::Result<Router> {
     let database_url = std::env::var("DATABASE_URL")
         .unwrap_or_else(|_| std::env::var("DB_URL").expect("DATABASE_URL or DB_URL must be set"));
     let pool = db::create_pool(&database_url).map_err(|e| {
-        tracing::error!("Failed to create database pool: {}", e);
+        tracing::error!(
+            error = %e,
+            database_url = %database_url,
+            "Failed to create database pool"
+        );
         malfestio_core::Error::Database(format!("Failed to create database pool: {}", e))
     })?;
 
@@ -131,6 +154,9 @@ pub async fn create_app() -> malfestio_core::Result<Router> {
         .nest("/api/oauth", oauth_routes)
         .nest("/api", optional_auth_routes)
         .nest("/api", auth_routes)
+        .layer(axum_middleware::from_fn(
+            middleware::correlation::correlation_middleware,
+        ))
         .layer(TraceLayer::new_for_http())
         .layer(
             CorsLayer::new()
@@ -143,7 +169,7 @@ pub async fn create_app() -> malfestio_core::Result<Router> {
     Ok(app)
 }
 
-/// Basic liveness check - returns 200 if the server is running.
+/// Basic check - returns 200 if the server is running.
 ///
 /// For simple uptime monitoring and should always respond quickly without checking external dependencies.
 async fn health_check() -> impl IntoResponse {
@@ -170,7 +196,12 @@ async fn readiness_check(State(state): State<state::SharedState>) -> (StatusCode
                 })),
             ),
             Err(e) => {
-                tracing::error!("Readiness check failed: database query error: {}", e);
+                tracing::error!(
+                    error = %e,
+                    check = "database",
+                    status = "query_failed",
+                    "Readiness check failed"
+                );
                 (
                     StatusCode::SERVICE_UNAVAILABLE,
                     Json(json!({
@@ -183,7 +214,12 @@ async fn readiness_check(State(state): State<state::SharedState>) -> (StatusCode
             }
         },
         Err(e) => {
-            tracing::error!("Readiness check failed: unable to get database connection: {}", e);
+            tracing::error!(
+                error = %e,
+                check = "database",
+                status = "connection_failed",
+                "Readiness check failed"
+            );
             (
                 StatusCode::SERVICE_UNAVAILABLE,
                 Json(json!({

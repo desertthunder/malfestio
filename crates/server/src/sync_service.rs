@@ -306,7 +306,11 @@ impl SyncService {
             .get_record(&parsed.authority, &parsed.collection, &parsed.rkey)
             .await
             .map_err(|e| {
-                tracing::error!("Failed to pull record from PDS: {:?}", e);
+                tracing::error!(
+                    error = ?e,
+                    at_uri = %at_uri,
+                    "Failed to pull record from PDS"
+                );
                 SyncError::PdsError(e)
             })?;
 

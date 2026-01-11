@@ -43,16 +43,20 @@ impl DbSocialRepository {
     fn parse_deck_rows(rows: Vec<tokio_postgres::Row>) -> Vec<Deck> {
         let mut decks = Vec::new();
         for row in rows {
+            let id: uuid::Uuid = row.get("id");
             let visibility_json: serde_json::Value = row.get("visibility");
             let visibility: Visibility = match serde_json::from_value(visibility_json) {
                 Ok(v) => v,
                 Err(e) => {
-                    tracing::error!("Failed to deserialize visibility: {}", e);
+                    tracing::error!(
+                        error = %e,
+                        deck_id = %id,
+                        "Failed to deserialize visibility"
+                    );
                     continue;
                 }
             };
 
-            let id: uuid::Uuid = row.get("id");
             let fork_of: Option<uuid::Uuid> = row.get("fork_of");
 
             decks.push(Deck {

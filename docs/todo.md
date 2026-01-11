@@ -8,16 +8,16 @@
 
 **Observability:**
 
-- [ ] Structured logging with correlation IDs
+- [x] Structured logging with correlation IDs
 - [ ] Metrics collection (Tracing spans)
 - [ ] Error tracking
 
 **Reliability:**
 
-- [ ] Database backups + restore drills
 - [ ] Health check endpoints (`/health`, `/ready`)
 - [ ] Graceful shutdown handling
 - [ ] Circuit breakers for external dependencies
+- [ ] Database backups + restore drills
 
 **Load Testing:**
 
@@ -27,7 +27,6 @@
 
 **Launch Prep:**
 
-- [ ] Beta program signup flow
 - [ ] Feedback collection mechanism
 - [ ] Feature flags for gradual rollout
 

@@ -94,7 +94,12 @@ pub async fn auth_middleware(State(state): State<SharedState>, mut req: Request,
         let verify_result = verify_proof(DpopVerifyRequest::new(dpop_proof, method, &uri, Some(&token), None));
 
         if let Err(e) = verify_result {
-            tracing::warn!("DPoP verification failed: {}", e);
+            tracing::warn!(
+                error = %e,
+                method = %req.method(),
+                uri = %req.uri(),
+                "DPoP verification failed"
+            );
             let nonce = generate_nonce();
             {
                 let mut nonces = state.dpop_nonces.write().await;
@@ -133,7 +138,10 @@ pub async fn auth_middleware(State(state): State<SharedState>, mut req: Request,
     let lookup_result = state.oauth_repo.get_token_by_access_token(&token).await;
 
     if let Err(ref e) = lookup_result {
-        tracing::debug!("Token lookup failed: {}", e);
+        tracing::debug!(
+            error = %e,
+            "Token lookup failed"
+        );
     }
 
     let stored_token = lookup_result.ok();
@@ -150,7 +158,11 @@ pub async fn auth_middleware(State(state): State<SharedState>, mut req: Request,
     loop {
         attempt += 1;
         if attempt > 3 {
-            tracing::error!("Failed to verify token with PDS after multiple attempts");
+            tracing::error!(
+                attempts = attempt,
+                pds_url = %target_pds_url,
+                "Failed to verify token with PDS after multiple attempts"
+            );
             return (
                 axum::http::StatusCode::UNAUTHORIZED,
                 axum::Json(json!({ "error": "Invalid session" })),
@@ -162,11 +174,14 @@ pub async fn auth_middleware(State(state): State<SharedState>, mut req: Request,
 
         if let Some(ref stored) = stored_token {
             if attempt == 1 {
-                tracing::debug!("Found stored DPoP token for validation");
+                tracing::debug!(has_dpop = true, "Found stored DPoP token for validation");
             }
             if let Some(dpop_keypair) = stored.dpop_keypair() {
                 if attempt == 1 {
-                    tracing::debug!("Signing PDS request with DPoP Key");
+                    tracing::debug!(
+                        pds_url = %target_pds_url,
+                        "Signing PDS request with DPoP Key"
+                    );
                 }
 
                 let method = "GET";
@@ -184,7 +199,10 @@ pub async fn auth_middleware(State(state): State<SharedState>, mut req: Request,
             }
         } else {
             if attempt == 1 {
-                tracing::debug!("No stored DPoP token found, using standard Bearer auth");
+                tracing::debug!(
+                    has_dpop = false,
+                    "No stored DPoP token found, using standard Bearer auth"
+                );
             }
             request_builder = request_builder.header("Authorization", format!("Bearer {}", token));
         }
@@ -204,7 +222,12 @@ pub async fn auth_middleware(State(state): State<SharedState>, mut req: Request,
                     has_dpop: stored_token.is_some(),
                 };
 
-                tracing::debug!("PDS verification successful for DID: {}", did);
+                tracing::debug!(
+                    did = %did,
+                    handle = %user_ctx.handle,
+                    pds_url = %target_pds_url,
+                    "PDS verification successful"
+                );
 
                 {
                     let mut cache = state.auth_cache.write().await;
@@ -221,13 +244,22 @@ pub async fn auth_middleware(State(state): State<SharedState>, mut req: Request,
                     && let Some(new_nonce) = response.headers().get("DPoP-Nonce")
                     && let Ok(nonce_str) = new_nonce.to_str()
                 {
-                    tracing::info!("Received DPoP nonce challenge from PDS, retrying verification...");
+                    tracing::info!(
+                        pds_url = %target_pds_url,
+                        attempt = attempt,
+                        "Received DPoP nonce challenge from PDS, retrying verification"
+                    );
                     nonce = Some(nonce_str.to_string());
                     continue;
                 }
 
                 let body = response.text().await.unwrap_or_default();
-                tracing::error!("PDS Verification failed. Status: {}, Body: {}", status, body);
+                tracing::error!(
+                    status = %status,
+                    body = %body,
+                    pds_url = %target_pds_url,
+                    "PDS verification failed"
+                );
                 return (
                     axum::http::StatusCode::UNAUTHORIZED,
                     axum::Json(json!({ "error": "Invalid session", "pds_error": body })),
@@ -235,7 +267,11 @@ pub async fn auth_middleware(State(state): State<SharedState>, mut req: Request,
                     .into_response();
             }
             Err(e) => {
-                tracing::error!("PDS Request failed: {}", e);
+                tracing::error!(
+                    error = %e,
+                    pds_url = %target_pds_url,
+                    "PDS request failed"
+                );
                 return (
                     axum::http::StatusCode::UNAUTHORIZED,
                     axum::Json(json!({ "error": "Invalid session" })),
@@ -246,7 +282,7 @@ pub async fn auth_middleware(State(state): State<SharedState>, mut req: Request,
     }
 }
 
-/// Optional auth middleware - populates UserContext if valid token is present,
+/// Optional auth middleware - populates [UserContext] if valid token is present,
 /// but continues without error if no token or invalid token.
 ///
 /// Used by endpoints that need to check permissions but don't require authentication.
@@ -258,6 +294,7 @@ pub async fn optional_auth_middleware(State(state): State<SharedState>, req: Req
 }
 
 /// Cleanup expired nonces from the cache.
+///
 /// This should be called periodically (e.g., via a background task).
 #[allow(dead_code)]
 pub async fn cleanup_expired_nonces(state: &SharedState) {
